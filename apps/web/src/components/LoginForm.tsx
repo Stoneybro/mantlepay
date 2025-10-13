@@ -6,7 +6,6 @@ import { useLogin, usePrivy } from "@privy-io/react-auth"
 import { FcGoogle } from "react-icons/fc"
 import { SiGmail } from "react-icons/si"
 import { FaGithub, FaWallet } from "react-icons/fa"
-
 import { Button } from "@/components/ui/button"
 import LoginFormSkeleton from "./LoginSkeleton"
 
@@ -15,6 +14,12 @@ export default function LoginForm() {
   const { ready, authenticated } = usePrivy();
   const { login } = useLogin();
   const router = useRouter();
+  useEffect(() => {
+    if (ready && authenticated) {
+      console.log('[LoginForm] User authenticated, redirecting to /deploy');
+      router.replace("/deploy")
+    }
+  }, [ready, authenticated, router])
   type LoginMethod = "google" | "github" | "email" | "wallet"
   const [loadingProvider, setLoadingProvider] = useState<LoginMethod | null>(null)
 
@@ -29,11 +34,7 @@ export default function LoginForm() {
     }
   }
 
-  useEffect(() => {
-    if (ready && authenticated) {
-      router.replace("/dashboard")
-    }
-  }, [ready, authenticated, router])
+
 
   if (!ready) {
     return <LoginFormSkeleton />
