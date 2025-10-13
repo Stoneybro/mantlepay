@@ -1,0 +1,14 @@
+{
+  "name": "aidra",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "devDependencies": {
+    "turbo": "^2.1.0"
+  },
+  "scripts": {
+    "dev:web": "cd apps/web && pnpm dev",
+    "dev:contracts": "cd packages/contracts && forge test",
+    "build": "turbo run build",
+    "dev": "turbo run dev"
+  }
+}
