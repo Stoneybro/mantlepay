@@ -6,6 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "type": "module",
+  "exports": {
+    "./AidraSmartWalletFactory": "./abi/AidraSmartWalletFactory.abi.json",
+    "./AidraSmartWallet": "./abi/AidraSmartWallet.abi.json"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

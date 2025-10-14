@@ -6,8 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
+import { useDeployWallet } from "@/hooks/useDeployWallet";
 
 function page() {
   const [checked, setChecked] = useState(false);
@@ -16,7 +16,7 @@ function page() {
   const [isActivating, setIsActivating] = useState(false); // Add isActivating state
   const router = useRouter();
   const queryClient = useQueryClient();
-
+  const { mutate: deployWallet, isPending } = useDeployWallet();
   const { ready, authenticated, user } = usePrivy();
 
 
@@ -51,7 +51,14 @@ function page() {
               </p>
             </div>
           </Label>
-            <Button variant={"default"} className="w-full"> Deploy Wallet</Button>
+            <Button 
+              variant={"default"} 
+              className="w-full"
+              onClick={() => deployWallet()}
+              disabled={!checked || isPending}
+            >
+              {isPending ? "Deploying..." : "Deploy Wallet"}
+            </Button>
 
         </div>
         
