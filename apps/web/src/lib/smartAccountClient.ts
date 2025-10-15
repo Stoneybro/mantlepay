@@ -1,7 +1,7 @@
 import { createSmartAccountClient } from "permissionless";
 import { http } from "viem";
 import { baseSepolia } from "viem/chains";
-import { pimlicoClient, pimlicoBundlerUrl } from "./pimlico";
+import { pimlicoClient, pimlicoBundlerUrl, publicClient } from "./pimlico";
 import { CustomSmartAccount } from "./customSmartAccount";
 
 // Build a Smart Account client around your custom account
@@ -10,13 +10,9 @@ export async function getSmartAccountClient(
 ) {
   return createSmartAccountClient({
     account: customSmartAccount,          
-    chain: baseSepolia,                   
+    chain: baseSepolia,
+    client: publicClient,  // Use public RPC for state reads
     bundlerTransport: http(pimlicoBundlerUrl), 
-    paymaster: pimlicoClient,             // optional paymaster for sponsored txs
-    userOperation: {
-      // fetch fast gas price for userOps
-      estimateFeesPerGas: async () =>
-        (await pimlicoClient.getUserOperationGasPrice()).fast,
-    },
+    paymaster: pimlicoClient,
   });
 }

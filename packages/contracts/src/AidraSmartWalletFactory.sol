@@ -17,6 +17,8 @@ contract AidraSmartWalletFactory {
     /// @notice Address of the ERC-1167 implementation used as implementation for new accounts.
     address public immutable implementation;
 
+    /// @notice Mapping from user EOA to deployed SmartAccount clone.
+    mapping(address user => address clone) public userClones;
     /*//////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -40,7 +42,7 @@ contract AidraSmartWalletFactory {
     /*CONSTRUCTOR*/
     /**
      * @notice Factory constructor used to initialize the implementation address to use for future
-     *         AidraSmartWallet deployments.
+     *   AidraSmartWallet deployments.
      *
      * @param _implementation The address of the AidraSmartWallet implementation which new accounts will proxy to.
      */
@@ -56,17 +58,20 @@ contract AidraSmartWalletFactory {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Deploys and initializes a deterministic AidraSmartWallet for the caller, or returns
+     * @notice Deploys and initializes a deterministic AidraSmartWallet for a specific owner, or returns
      *         the existing account if already deployed.
      *
      * @dev Deployed as an ERC-1167 minimal proxy whose implementation is `this.implementation`.
-     *      Uses `msg.sender` to generate a unique salt, ensuring one wallet per address.
+     *      Uses `owner` to generate a unique salt, ensuring one wallet per address.
+     *      This function is compatible with ERC-4337 initCode deployment.
      *
-     * @return account The address of the ERC-1167 proxy created for `msg.sender`, or the existing
+     * @param owner The address that will own the smart account.
+     *
+     * @return account The address of the ERC-1167 proxy created for `owner`, or the existing
      *                 account address if already deployed.
      */
-    function createSmartAccount() external returns (address account) {
-        bytes32 salt = _getSalt(msg.sender);
+    function createSmartAccount(address owner) public returns (address account) {
+        bytes32 salt = _getSalt(owner);
         address predictedAddress = Clones.predictDeterministicAddress(implementation, salt, address(this));
 
         // Return existing account if already deployed
@@ -77,10 +82,12 @@ contract AidraSmartWalletFactory {
         // Deploy new account
         account = Clones.cloneDeterministic(implementation, salt);
 
-        // Initialize with caller as owner
-        AidraSmartWallet(payable(account)).initialize(msg.sender);
+        // Initialize with specified owner
+        AidraSmartWallet(payable(account)).initialize(owner);
 
-        emit AccountCreated(account, msg.sender);
+        // Record mapping and emit after successful initialize
+        userClones[owner] = account;
+        emit AccountCreated(account, owner);
     }
 
     /**
@@ -93,6 +100,17 @@ contract AidraSmartWalletFactory {
     function getPredictedAddress(address owner) external view returns (address) {
         bytes32 salt = _getSalt(owner);
         return Clones.predictDeterministicAddress(implementation, salt, address(this));
+    }
+
+    /**
+     * @notice Returns the deployed account for a given owner or zero if none.
+     *
+     * @param user The address of the owner for which to retrieve the account.
+     *
+     * @return The deployed account address.
+     */
+    function getUserClone(address user) external view returns (address) {
+        return userClones[user];
     }
 
     /**

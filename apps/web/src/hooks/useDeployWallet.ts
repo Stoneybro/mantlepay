@@ -1,20 +1,17 @@
 "use client";
 import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
-import { encodeFunctionData } from "viem";
-import AidraSmartWalletABI from "@aidra/contracts/AidraSmartWallet";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/smartAccountProvider";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
-import type { Abi } from "viem";
 // Custom Hook that returns an activation handler for the smart account
 export function useDeployWallet() {
   const { getClient } = useSmartAccountContext();
   const { wallets } = useWallets();
   const owner = wallets?.find((wallet) => wallet.walletClientType === "privy"); // pick Privy wallet
   const queryClient = useQueryClient();
-  const router=useRouter()
+  const router = useRouter()
 
   return useMutation({
     mutationFn: async () => {
@@ -23,20 +20,14 @@ export function useDeployWallet() {
         if (!smartAccountClient)
           throw new Error("Smart Account Client is not initialized");
 
-        // prepare calldata for SmartAccount "execute"
-        const callData = encodeFunctionData({
-          abi: AidraSmartWalletABI as Abi,
-          functionName: "execute",
-          args: [owner?.address as `0x${string}`, 0n, "0x"],
-        });
-
         // send user operation through bundler/paymaster
+        // The smart account client will automatically encode the call using encodeCalls
         const hash = await smartAccountClient.sendUserOperation({
           account: smartAccountClient.account,
           calls: [
             {
               to: owner?.address as `0x${string}`,
-              data: callData,
+              data: "0x",
               value: 0n,
             },
           ],
@@ -52,17 +43,17 @@ export function useDeployWallet() {
         toast.error("Failed to deploy wallet");
         return false;
       }
-    },onSuccess: () => {
+    }, onSuccess: () => {
       // Update cookie immediately
-      Cookies.set('wallet-deployed', 'true', { 
+      Cookies.set('wallet-deployed', 'true', {
         expires: 7,
         sameSite: 'strict',
         secure: process.env.NODE_ENV === 'production'
       });
 
       // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['walletDeployment',owner?.address] });
-      
+      queryClient.invalidateQueries({ queryKey: ['walletDeployment', owner?.address] });
+
       // Navigate to dashboard - middleware will allow it now
       router.push('/wallet');
     },

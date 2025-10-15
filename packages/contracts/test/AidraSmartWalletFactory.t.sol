@@ -148,6 +148,91 @@ contract AidraSmartWalletFactoryTest is Test {
     }
 
     /*//////////////////////////////////////////////////////////////
+                CREATE SMART ACCOUNT FOR TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function test_CreateSmartAccountFor_Success() public {
+        // Anyone can call createSmartAccountFor for any owner
+        vm.startPrank(owner2); // owner2 creates account for owner1
+
+        // Predict the address
+        address predictedAddress = factory.getPredictedAddress(owner1);
+
+        // Expect AccountCreated event
+        vm.expectEmit(true, true, false, false);
+        emit AccountCreated(predictedAddress, owner1);
+
+        // Create account for owner1
+        address account = factory.createSmartAccountFor(owner1);
+
+        // Verify account was created at predicted address
+        assertEq(account, predictedAddress);
+
+        // Verify account has code (was deployed)
+        assertTrue(account.code.length > 0);
+
+        // Verify owner is set correctly to owner1 (not owner2)
+        AidraSmartWallet wallet = AidraSmartWallet(payable(account));
+        assertEq(wallet.s_owner(), owner1);
+
+        vm.stopPrank();
+    }
+
+    function test_CreateSmartAccountFor_ReturnsSameAddressIfAlreadyDeployed() public {
+        // Create account first time
+        vm.prank(owner1);
+        address account1 = factory.createSmartAccountFor(owner2);
+
+        // Create account second time from different caller
+        vm.prank(owner3);
+        address account2 = factory.createSmartAccountFor(owner2);
+
+        // Verify same address returned
+        assertEq(account1, account2);
+
+        // Verify owner is still owner2
+        assertEq(AidraSmartWallet(payable(account1)).s_owner(), owner2);
+    }
+
+    function test_CreateSmartAccountFor_MatchesCreateSmartAccount() public {
+        // Create account using createSmartAccount
+        vm.prank(owner1);
+        address account1 = factory.createSmartAccount();
+
+        // Try to create account for owner2 using createSmartAccountFor from owner2
+        vm.prank(owner2);
+        address account2 = factory.createSmartAccountFor(owner2);
+
+        // Create account for owner3 using createSmartAccountFor from owner1
+        vm.prank(owner1);
+        address account3 = factory.createSmartAccountFor(owner3);
+
+        // Verify all accounts are different
+        assertTrue(account1 != account2);
+        assertTrue(account1 != account3);
+        assertTrue(account2 != account3);
+
+        // Verify owners are correct
+        assertEq(AidraSmartWallet(payable(account1)).s_owner(), owner1);
+        assertEq(AidraSmartWallet(payable(account2)).s_owner(), owner2);
+        assertEq(AidraSmartWallet(payable(account3)).s_owner(), owner3);
+    }
+
+    function test_CreateSmartAccountFor_ERC4337Compatible() public {
+        // Simulate EntryPoint calling factory
+        address entryPoint = makeAddr("entryPoint");
+        
+        vm.prank(entryPoint);
+        address account = factory.createSmartAccountFor(owner1);
+
+        // Verify account was created for owner1, not entryPoint
+        assertEq(AidraSmartWallet(payable(account)).s_owner(), owner1);
+        
+        // Verify it matches predicted address
+        assertEq(account, factory.getPredictedAddress(owner1));
+    }
+
+    /*//////////////////////////////////////////////////////////////
                     GET PREDICTED ADDRESS TESTS
     //////////////////////////////////////////////////////////////*/
 

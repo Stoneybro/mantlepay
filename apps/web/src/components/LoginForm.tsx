@@ -16,7 +16,6 @@ export default function LoginForm() {
   const router = useRouter();
   useEffect(() => {
     if (ready && authenticated) {
-      console.log('[LoginForm] User authenticated, redirecting to /deploy');
       router.replace("/deploy")
     }
   }, [ready, authenticated, router])

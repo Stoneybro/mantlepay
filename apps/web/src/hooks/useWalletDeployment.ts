@@ -4,17 +4,17 @@ import Cookies from "js-cookie";
 import AidraSmartWalletFactoryABI from "@aidra/contracts/AidraSmartWalletFactory";
 import { readContract } from "@/lib/server";
 import type { Abi } from "viem";
+import { AidraSmartWalletFactoryAddress } from "@/lib/CA";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
-const AIDRA_SMART_WALLET_FACTORY_ADDRESS = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"; // Update with your actual factory address
 
 async function checkWalletDeployment(address: string): Promise<boolean> {
   let rawRes;
   try {
     rawRes = await readContract({
-      address: AIDRA_SMART_WALLET_FACTORY_ADDRESS,
+      address: AidraSmartWalletFactoryAddress,
       abi: AidraSmartWalletFactoryABI as Abi,
-      functionName: "getPredictedAddress",
+      functionName: "getUserClone",
       args: [address],
     });
   } catch (e) {
@@ -28,6 +28,7 @@ async function checkWalletDeployment(address: string): Promise<boolean> {
     });
     return true;
   } else {
+    console.log("Wallet not deployed");
     return false;
   }
 }

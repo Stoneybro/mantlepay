@@ -8,7 +8,7 @@ export const pimlicoBundlerUrl = `https://api.pimlico.io/v2/84532/rpc?apikey=${p
 export const pimlicoBundlerTransport = http(pimlicoBundlerUrl);
 
 // Pimlico client for account abstraction (ERC-4337)
-export const pimlicoClient = createPimlicoClient({ 
+export const pimlicoClient = createPimlicoClient({
   transport: pimlicoBundlerTransport,
   entryPoint: {
     address: entryPoint06Address,

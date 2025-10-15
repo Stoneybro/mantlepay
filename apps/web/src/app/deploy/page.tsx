@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useDeployWallet } from "@/hooks/useDeployWallet";
 
-function page() {
+function Page() {
   const [checked, setChecked] = useState(false);
   const [activated, setActivated] = useState<string>("");
   const [shouldNavigate, setShouldNavigate] = useState(false);
@@ -67,4 +67,4 @@ function page() {
   );
 }
 
-export default page;
+export default Page;

@@ -3,7 +3,7 @@ import useWalletDeployment from "@/hooks/useWalletDeployment";
 import { usePrivy } from "@privy-io/react-auth";
 
 export function DeploymentStatusSync() {
-  const { authenticated, ready } = usePrivy();
+  const { authenticated, ready,user } = usePrivy();
   const { data: isDeployed, isLoading: isDeploymentCheckLoading } =
     useWalletDeployment();
   useEffect(() => {

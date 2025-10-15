@@ -155,7 +155,9 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         payPrefund(missingAccountFunds)
         returns (uint256 validationData)
     {
-        (address signer, ECDSA.RecoverError err,) = ECDSA.tryRecover(userOpHash, userOp.signature);
+        // Apply EIP-191 prefix to match how wallets sign messages
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        (address signer, ECDSA.RecoverError err,) = ECDSA.tryRecover(ethSignedMessageHash, userOp.signature);
 
         if (err != ECDSA.RecoverError.NoError) {
             return _packValidationData(true, 0, 0);

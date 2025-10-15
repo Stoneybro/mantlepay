@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { toSmartAccount, entryPoint06Abi } from "viem/account-abstraction";
-import { encodeFunctionData, decodeFunctionData } from "viem";
+import { toSmartAccount, entryPoint07Abi } from "viem/account-abstraction";
 import AidraSmartWalletFactoryABI from "@aidra/contracts/AidraSmartWalletFactory";
+import { recoverAddress, hashMessage } from "viem";
+import { AidraSmartWalletFactoryAddress } from "./CA";
 import AidraSmartWalletABI from "@aidra/contracts/AidraSmartWallet";
+import { encodeFunctionData, decodeFunctionData, concat, pad, toHex } from "viem";
 import {
   useWallets,
   useSignMessage,
@@ -14,8 +16,7 @@ import type { SmartAccount } from "viem/account-abstraction";
 export type CustomSmartAccount = SmartAccount;
 // function for initializing and managing a custom Smart Account (ERC-4337 style)
 export default function CustomSmartAccount() {
-  const [customSmartAccount, setCustomSmartAccount] =
-    useState<CustomSmartAccount | null>(null);
+  const [customSmartAccount, setCustomSmartAccount] = useState<CustomSmartAccount | null>(null);
   const { wallets } = useWallets();
   const owner = wallets?.find((wallet) => wallet.walletClientType === "privy");
   const { signMessage: privySignMessage } = useSignMessage();
@@ -23,19 +24,15 @@ export default function CustomSmartAccount() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Reset account state when owner changes
   useEffect(() => {
     setCustomSmartAccount(null);
     setError(null);
     setIsLoading(false);
   }, [owner?.address]);
 
-  // ----------------- CONFIG -----------------
-  const ENTRY_POINT_ADDR = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"; // v0.6 entry point
-  const ENTRY_POINT_VERSION = "0.6";
-  const AidraSmartWalletFactoryAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+  const ENTRY_POINT_ADDR = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
+  const ENTRY_POINT_VERSION = "0.7";
 
-  // Predict smart account address (factory call)
   async function predictAddress(ownerAddress: `0x${string}`) {
     return publicClient.readContract({
       address: AidraSmartWalletFactoryAddress,
@@ -45,12 +42,11 @@ export default function CustomSmartAccount() {
     }) as Promise<`0x${string}`>;
   }
 
-  // Initialize custom smart account
   const initCustomAccount = useCallback(async () => {
     setError(null);
 
     if (!owner || !owner.address) {
-      const err = new Error("Owner address is undefined. Ensure a valid wallet is connected.");
+      const err = new Error("Owner address is undefined");
       setError(err);
       throw err;
     }
@@ -64,12 +60,11 @@ export default function CustomSmartAccount() {
         entryPoint: {
           address: ENTRY_POINT_ADDR,
           version: ENTRY_POINT_VERSION,
-          abi: entryPoint06Abi,
+          abi: entryPoint07Abi,
         },
-        // Adapter for encoding/decoding calls (supports single and batch)
+        
         async decodeCalls(data) {
           try {
-            // Try to decode as batch call first
             const decoded = decodeFunctionData({
               abi: AidraSmartWalletABI,
               data: data as `0x${string}`,
@@ -87,21 +82,16 @@ export default function CustomSmartAccount() {
                 data: call.data,
               }));
             } else if (decoded.functionName === "execute" && decoded.args) {
-              const [target, value, callData] = decoded.args as [
-                `0x${string}`,
-                bigint,
-                `0x${string}`,
-              ];
+              const [target, value, callData] = decoded.args as [`0x${string}`, bigint, `0x${string}`];
               return [{ to: target, value, data: callData }];
             }
           } catch (e) {
-            // Fallback for unknown format
             console.warn("Failed to decode calls:", e);
           }
           return [{ to: "0x0000000000000000000000000000000000000000", value: 0n, data }];
         },
+
         async encodeCalls(calls) {
-          // Single call - use execute()
           if (calls.length === 1) {
             const call = calls[0];
             return encodeFunctionData({
@@ -111,7 +101,6 @@ export default function CustomSmartAccount() {
             });
           }
           
-          // Multiple calls - use executeBatch()
           const batchCalls = calls.map((call) => ({
             target: call.to,
             value: call.value || 0n,
@@ -124,38 +113,42 @@ export default function CustomSmartAccount() {
             args: [batchCalls],
           });
         },
-        // Account factory + nonce helpers
+
         async getAddress() {
           return predictAddress(owner.address as `0x${string}`);
         },
+
         async getFactoryArgs() {
           return {
             factory: AidraSmartWalletFactoryAddress,
             factoryData: encodeFunctionData({
               abi: AidraSmartWalletFactoryABI,
               functionName: "createSmartAccount",
-              args: [],
+              args: [owner.address as `0x${string}`],
             }),
           };
         },
+
         async getNonce() {
           const sender = await predictAddress(owner.address as `0x${string}`);
           return publicClient.readContract({
             address: ENTRY_POINT_ADDR,
-            abi: entryPoint06Abi,
+            abi: entryPoint07Abi,
             functionName: "getNonce",
             args: [sender, 0n],
           }) as Promise<bigint>;
         },
+
         async getStubSignature() {
           return "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c" as `0x${string}`;
         },
-        // Message + typedData signing (via Privy)
+
         async signMessage({ message }) {
           const msgStr = typeof message === "string" ? message : (message.raw as `0x${string}`);
           const { signature } = await privySignMessage({ message: msgStr });
           return signature as `0x${string}`;
         },
+
         async signTypedData(typedData) {
           const { signature } = await privySignTypedData({
             types: typedData.types as Record<string, Array<{ name: string; type: string }>>,
@@ -171,40 +164,87 @@ export default function CustomSmartAccount() {
           });
           return signature as `0x${string}`;
         },
-        // UserOperation signing for EntryPoint
-        async signUserOperation(userOperation) {
 
+        // FIXED: Proper UserOperation signing for v0.7
+        async signUserOperation(parameters) {
+          const userOperation = parameters;
 
-          // Build hash for signing
-          const uoForHash = {
+          // Build initCode
+          const initCode = userOperation.factory && userOperation.factoryData 
+            ? concat([userOperation.factory, userOperation.factoryData])
+            : ("0x" as `0x${string}`);
+
+          // Build paymasterAndData
+          let paymasterAndData: `0x${string}` = "0x";
+          if (userOperation.paymaster) {
+            paymasterAndData = concat([
+              userOperation.paymaster,
+              pad(toHex(userOperation.paymasterVerificationGasLimit || 0n), { size: 16 }),
+              pad(toHex(userOperation.paymasterPostOpGasLimit || 0n), { size: 16 }),
+              userOperation.paymasterData || "0x"
+            ]);
+          }
+
+          // Pack gas limits for v0.7
+          const accountGasLimits = concat([
+            pad(toHex(userOperation.verificationGasLimit || 0n), { size: 16 }),
+            pad(toHex(userOperation.callGasLimit || 0n), { size: 16 })
+          ]);
+
+          const gasFees = concat([
+            pad(toHex(userOperation.maxPriorityFeePerGas || 0n), { size: 16 }),
+            pad(toHex(userOperation.maxFeePerGas || 0n), { size: 16 })
+          ]);
+
+          // Ensure sender is defined
+          if (!userOperation.sender) {
+            throw new Error("UserOperation sender is undefined");
+          }
+          // Create packed UserOp for hash computation
+          const packedUserOp = {
             sender: userOperation.sender as `0x${string}`,
             nonce: userOperation.nonce,
-            initCode: userOperation.initCode ?? "0x",
+            initCode,
             callData: userOperation.callData,
-            callGasLimit: userOperation.callGasLimit!,
-            verificationGasLimit: userOperation.verificationGasLimit!,
-            preVerificationGas: userOperation.preVerificationGas!,
-            maxFeePerGas: userOperation.maxFeePerGas!,
-            maxPriorityFeePerGas: userOperation.maxPriorityFeePerGas!,
-            paymasterAndData: userOperation.paymasterAndData ?? "0x",
-            signature: "0x",
-          } as const;
+            accountGasLimits,
+            preVerificationGas: userOperation.preVerificationGas || 0n,
+            gasFees,
+            paymasterAndData,
+            signature: "0x" as `0x${string}`,
+          };
 
           // Get userOpHash from EntryPoint
           const userOpHash = await publicClient.readContract({
             address: ENTRY_POINT_ADDR,
-            abi: entryPoint06Abi,
+            abi: entryPoint07Abi,
             functionName: "getUserOpHash",
-            args: [uoForHash],
+            args: [packedUserOp],
+          }) as `0x${string}`;
+
+          console.log("📝 UserOpHash:", userOpHash);
+
+          // Sign the raw hash (Privy applies EIP-191 automatically)
+          const { signature } = await privySignMessage({ message: userOpHash });
+
+          // Verify signature will work
+          const ethSignedMessageHash = hashMessage({ raw: userOpHash });
+          const recoveredAddress = await recoverAddress({
+            hash: ethSignedMessageHash,
+            signature: signature as `0x${string}`,
           });
 
+          console.log("🔍 Recovered Address:", recoveredAddress);
+          console.log("📝 Owner Address:", owner.address);
+          console.log("✅ Match:", recoveredAddress.toLowerCase() === owner.address.toLowerCase());
 
-
-          const { signature } = await privySignMessage({message: userOpHash});
+          if (recoveredAddress.toLowerCase() !== owner.address.toLowerCase()) {
+            throw new Error(`Signature verification failed: ${recoveredAddress} !== ${owner.address}`);
+          }
 
           return signature as `0x${string}`;
         },
       });
+
       setCustomSmartAccount(account);
       return account;
     } catch (err) {
@@ -214,9 +254,8 @@ export default function CustomSmartAccount() {
     } finally {
       setIsLoading(false);
     }
-  }, [owner?.address, privySignMessage, customSmartAccount]);
+  }, [owner, privySignTypedData, privySignMessage, customSmartAccount]);
 
-  // Reset state manually if needed
   const resetCustomAccount = useCallback(() => {
     setCustomSmartAccount(null);
     setError(null);
