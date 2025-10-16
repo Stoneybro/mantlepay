@@ -8,7 +8,8 @@ export async function middleware(req: NextRequest) {
     const cookieStore = await cookies();
     const token = cookieStore.get("privy-token");
     const isAuthenticated = !!token;
-    const walletDeployed = req.cookies.get("walletDeployed")?.value === "true";
+    const walletAddress = req.cookies.get("wallet-deployed")?.value;
+    const walletDeployed = !!walletAddress;
     const isProtected = PROTECTED_PATHS.some((path) => pathname.startsWith(path));
     const isPublic = !isProtected && PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(path + "/"));
     if (isPublic) {
