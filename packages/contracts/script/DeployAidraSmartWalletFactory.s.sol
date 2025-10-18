@@ -10,9 +10,10 @@ contract DeployAidraSmartWalletFactory is Script {
         HelperConfig helperConfig=new HelperConfig();
         HelperConfig.NetworkConfig memory networkConfig=helperConfig.getConfig();
         vm.startBroadcast();
-        AidraSmartWalletFactory factory= new AidraSmartWalletFactory(networkConfig.implementation);
+        AidraSmartWalletFactory factory= new AidraSmartWalletFactory(networkConfig.implementation,networkConfig.registry);
         vm.stopBroadcast();
         console.log("Factory deployed to: ",address(factory));
         console.log("Implementation: ",networkConfig.implementation);
+        console.log("Registry: ",networkConfig.registry);
     }
 }

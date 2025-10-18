@@ -10,6 +10,7 @@ contract HelperConfig is Script {
     //////////////////////////////////////////////////////////////*/
     struct NetworkConfig {
         address implementation;
+        address registry;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -55,7 +56,7 @@ contract HelperConfig is Script {
     }
 
     function getBaseSepoliaEthConfig() public pure returns (NetworkConfig memory) {
-        return NetworkConfig({implementation: 0xbfEC49a63Dc711B02731cbcFc8C5b7F15d07BeEa});
+        return NetworkConfig({implementation: 0x738DAF8cb17b3EB9a09C8d996420Ec4c0C4532D9, registry: 0x48898Dc7186b5AbD6028D12810CdeFf8eD8cb46B});
     }
 
     function getAnvilEthConfig() public returns (NetworkConfig memory) {
@@ -65,7 +66,7 @@ contract HelperConfig is Script {
 
         // Deploy new EntryPoint for local network
 
-        localNetwork = NetworkConfig({implementation: address(0)});
+        localNetwork = NetworkConfig({implementation: address(0), registry: address(0)});
 
         return localNetwork;
     }

@@ -9,7 +9,8 @@
   "type": "module",
   "exports": {
     "./AidraSmartWalletFactory": "./abi/AidraSmartWalletFactory.abi.json",
-    "./AidraSmartWallet": "./abi/AidraSmartWallet.abi.json"
+    "./AidraSmartWallet": "./abi/AidraSmartWallet.abi.json",
+    "./AidraIntentRegistry": "./abi/AidraIntentRegistry.abi.json"
   },
   "keywords": [],
   "author": "",

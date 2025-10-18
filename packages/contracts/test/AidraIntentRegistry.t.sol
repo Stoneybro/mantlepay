@@ -52,7 +52,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__NoRecipients.selector);
-        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0);
+        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0, false);
     }
 
     function test_CreateIntent_RevertsWhenArrayLengthMismatch() public {
@@ -64,7 +64,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__ArrayLengthMismatch.selector);
-        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0);
+        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0, false);
     }
 
     function test_CreateIntent_RevertsWhenInvalidRecipient() public {
@@ -74,7 +74,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__InvalidRecipient.selector);
-        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0);
+        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0, false);
     }
 
     function test_CreateIntent_RevertsWhenInvalidAmount() public {
@@ -84,7 +84,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__InvalidAmount.selector);
-        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0);
+        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0, false);
     }
 
     function test_CreateIntent_RevertsWhenDurationZero() public {
@@ -93,7 +93,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__InvalidDuration.selector);
-        registry.createIntent("", recipients, amounts, 0, INTERVAL, 0);
+        registry.createIntent("", recipients, amounts, 0, INTERVAL, 0, false);
     }
 
     function test_CreateIntent_RevertsWhenIntervalZero() public {
@@ -102,7 +102,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__InvalidInterval.selector);
-        registry.createIntent("", recipients, amounts, DURATION, 0, 0);
+        registry.createIntent("", recipients, amounts, DURATION, 0, 0, false);
     }
 
     function test_CreateIntent_RevertsWhenTotalTransactionCountZero() public {
@@ -112,7 +112,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__InvalidTotalTransactionCount.selector);
-        registry.createIntent("", recipients, amounts, shortDuration, INTERVAL, 0);
+        registry.createIntent("", recipients, amounts, shortDuration, INTERVAL, 0, false);
     }
 
     function test_CreateIntent_RevertsWhenInsufficientFunds() public {
@@ -122,7 +122,7 @@ contract AidraIntentRegistryTest is Test {
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__InsufficientFunds.selector);
-        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0);
+        registry.createIntent("", recipients, amounts, DURATION, INTERVAL, 0, false);
     }
 
     function test_CreateIntent_DoesNotDuplicateWalletRegistration() public {
@@ -139,7 +139,7 @@ contract AidraIntentRegistryTest is Test {
         assertEq(registry.walletCommittedFunds(address(wallet)), expectedCommitment);
 
         vm.prank(address(wallet));
-        registry.cancelIntent(address(wallet), intentId);
+        registry.cancelIntent(intentId);
 
         assertEq(registry.walletCommittedFunds(address(wallet)), 0);
 
@@ -151,22 +151,26 @@ contract AidraIntentRegistryTest is Test {
     }
 
     function test_CancelIntent_RevertsForUnauthorizedCaller() public {
-        bytes32 intentId = _createDefaultIntent(0);
+        // Create intent for wallet
+        vm.prank(address(wallet));
+        bytes32 intentId = registry.createIntent("Test", _recipients(), _amounts(), DURATION, INTERVAL, 0, false);
 
+        // Try to cancel from unauthorized address - this will look for intents belonging to 'other'
+        // Since 'other' doesn't have any intents, it should revert with IntentNotActive
         vm.prank(other);
-        vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__Unauthorized.selector);
-        registry.cancelIntent(address(wallet), intentId);
+        vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__IntentNotActive.selector);
+        registry.cancelIntent(intentId);
     }
 
     function test_CancelIntent_RevertsWhenAlreadyInactive() public {
         bytes32 intentId = _createDefaultIntent(0);
 
         vm.prank(address(wallet));
-        registry.cancelIntent(address(wallet), intentId);
+        registry.cancelIntent(intentId);
 
         vm.prank(address(wallet));
         vm.expectRevert(AidraIntentRegistry.AidraIntentRegistry__IntentNotActive.selector);
-        registry.cancelIntent(address(wallet), intentId);
+        registry.cancelIntent(intentId);
     }
 
     function test_CheckUpkeep_ReturnsFalseWhenNoWallets() public {
@@ -186,7 +190,7 @@ contract AidraIntentRegistryTest is Test {
         bytes32 intentId = _createDefaultIntent(0);
 
         vm.prank(address(wallet));
-        registry.cancelIntent(address(wallet), intentId);
+        registry.cancelIntent(intentId);
 
         (bool upkeepNeeded,) = registry.checkUpkeep("");
         assertFalse(upkeepNeeded);
@@ -268,7 +272,7 @@ contract AidraIntentRegistryTest is Test {
         uint256 start = startOffset == 0 ? block.timestamp : block.timestamp + startOffset;
 
         vm.prank(address(wallet));
-        intentId = registry.createIntent("Payroll", recipients, amounts, DURATION, INTERVAL, start);
+        intentId = registry.createIntent("Payroll", recipients, amounts, DURATION, INTERVAL, start, false);
     }
 
     function _executeIntent(bytes32 intentId)
@@ -324,7 +328,13 @@ contract MockSmartWallet is IAidraSmartWallet {
         registry = registry_;
     }
 
-    function executeBatchIntentTransfer(address[] calldata recipients, uint256[] calldata amounts) external override {
+    function executeBatchIntentTransfer(
+        address[] calldata recipients,
+        uint256[] calldata amounts,
+        bytes32 intentId,
+        uint256 transactionCount,
+        bool revertOnFailure
+    ) external override {
         if (registry == address(0)) revert MockSmartWallet__RegistryNotSet();
         if (msg.sender != registry) revert MockSmartWallet__Unauthorized();
         if (recipients.length == 0 || recipients.length != amounts.length) revert MockSmartWallet__InvalidBatchInput();
@@ -335,6 +345,18 @@ contract MockSmartWallet is IAidraSmartWallet {
             (bool success,) = payable(recipients[i]).call{value: amounts[i]}("");
             if (!success) revert MockSmartWallet__TransferFailed(recipients[i], amounts[i]);
         }
+    }
+
+    function decreaseCommitment(uint256 amount) external override {
+        // Mock implementation
+    }
+
+    function increaseCommitment(uint256 amount) external override {
+        // Mock implementation
+    }
+
+    function getAvailableBalance() external view override returns (uint256) {
+        return address(this).balance;
     }
 
     receive() external payable {}

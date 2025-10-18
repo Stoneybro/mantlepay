@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
+import {IAidraSmartWallet} from "./IAidraSmartWallet.sol";
 
 contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
@@ -34,6 +35,8 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         uint256 latestTransactionTime;
         /// @notice Whether the intent is active
         bool active;
+        /// @notice Whether to revert entire transaction on any failure (true) or skip failed transfers (false)
+        bool revertOnFailure;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -52,6 +55,12 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /// @notice The amount of funds committed to intents per wallet
     mapping(address => uint256) public walletCommittedFunds;
 
+    /// @notice A counter used to generate unique intent ids
+    uint256 public intentCounter;
+
+    /// @notice Maximum number of recipients allowed per intent
+    uint256 public constant MAX_RECIPIENTS = 10;
+
     /*//////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -63,17 +72,10 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /// @notice The event emitted when an intent is cancelled
     event IntentCancelled(address indexed wallet, bytes32 indexed intentId, uint256 amountRefunded);
 
-    /// @notice A counter used to generate unique intent ids
-    uint256 public intentCounter;
-
-    /// @notice Maximum number of recipients allowed per intent
-    uint256 public constant MAX_RECIPIENTS = 10;
-
     /*//////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    //errors
     /// @notice Thrown when no recipients are provided
     error AidraIntentRegistry__NoRecipients();
     /// @notice Thrown when a recipient address is zero
@@ -112,6 +114,7 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
      * @param duration The total duration of the intent in seconds
      * @param interval The interval between transactions in seconds
      * @param transactionStartTime The start time of the transaction (0 for immediate start)
+     * @param revertOnFailure Whether to revert entire transaction on any failure (true) or skip failed transfers (false)
      *
      * @return intentId The unique identifier for the created intent
      */
@@ -121,7 +124,8 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         uint256[] memory amounts,
         uint256 duration,
         uint256 interval,
-        uint256 transactionStartTime
+        uint256 transactionStartTime,
+        bool revertOnFailure
     ) external returns (bytes32) {
         address wallet = msg.sender;
 
@@ -136,6 +140,10 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         if (recipients.length != amounts.length) revert AidraIntentRegistry__ArrayLengthMismatch();
         if (recipients.length > MAX_RECIPIENTS) revert AidraIntentRegistry__TooManyRecipients();
 
+        ///@notice Validate timing parameters
+        if (duration == 0) revert AidraIntentRegistry__InvalidDuration();
+        if (interval == 0) revert AidraIntentRegistry__InvalidInterval();
+
         ///@notice Calculate total amount per execution and validate each recipient/amount
         uint256 totalAmountPerExecution = 0;
         for (uint256 i = 0; i < recipients.length; i++) {
@@ -144,10 +152,6 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             totalAmountPerExecution += amounts[i];
         }
 
-        ///@notice Validate timing parameters
-        if (duration == 0) revert AidraIntentRegistry__InvalidDuration();
-        if (interval == 0) revert AidraIntentRegistry__InvalidInterval();
-
         ///@notice Calculate projected final transaction count
         uint256 totalTransactionCount = duration / interval;
         if (totalTransactionCount == 0) revert AidraIntentRegistry__InvalidTotalTransactionCount();
@@ -155,8 +159,9 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Calculate total commitment across all executions
         uint256 totalCommitment = totalAmountPerExecution * totalTransactionCount;
 
-        ///@notice Check if the wallet has enough funds to cover the intent
-        if (wallet.balance < walletCommittedFunds[wallet] + totalCommitment) {
+        ///@notice Check if the wallet has enough available funds to cover the intent
+        uint256 availableBalance = IAidraSmartWallet(wallet).getAvailableBalance();
+        if (availableBalance < totalCommitment) {
             revert AidraIntentRegistry__InsufficientFunds();
         }
 
@@ -174,15 +179,17 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             totalTransactionCount: totalTransactionCount,
             interval: interval,
             ///@dev If transactionStartTime is 0, the current block timestamp is used
-            ///@dev Defaulting the value to zero if not specified will be handled on the frontend
             transactionStartTime: transactionStartTime == 0 ? block.timestamp : transactionStartTime,
             transactionEndTime: transactionStartTime == 0 ? block.timestamp + duration : transactionStartTime + duration,
             latestTransactionTime: 0,
-            active: true
+            active: true,
+            revertOnFailure: revertOnFailure
         });
 
         ///@notice Update the wallet's committed funds
         walletCommittedFunds[wallet] += totalCommitment;
+        IAidraSmartWallet(wallet).increaseCommitment(totalCommitment);
+        
         ///@notice Add the intent id to the wallet's active intent ids
         walletActiveIntentIds[wallet].push(intentId);
 
@@ -265,8 +272,8 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         }
 
         ///@notice Check if the wallet has enough funds to cover the execution
-        ///@dev This should not fail as funds are checked during intent creation.
-        if (intent.wallet.balance < totalAmount) return false;
+        uint256 availableBalance = IAidraSmartWallet(intent.wallet).getAvailableBalance();
+        if (totalAmount > availableBalance) return false;
 
         return true;
     }
@@ -286,6 +293,9 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Verify the intent should be executed
         if (!shouldExecuteIntent(intent)) revert AidraIntentRegistry__IntentNotExecutable();
 
+        ///@notice Store current transaction count before incrementing
+        uint256 currentTransactionCount = intent.transactionCount;
+
         ///@notice Update intent state before external calls (checks-effects-interactions pattern)
         intent.transactionCount++;
         intent.latestTransactionTime = block.timestamp;
@@ -304,9 +314,16 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Update the wallet's committed funds
         walletCommittedFunds[wallet] -= totalAmount;
+        IAidraSmartWallet(wallet).decreaseCommitment(totalAmount);
 
-        ///@notice Execute the batch intent transfer
-        IAidraSmartWallet(wallet).executeBatchIntentTransfer(intent.recipients, intent.amounts);
+        ///@notice Execute the batch intent transfer with intentId and transaction count
+        IAidraSmartWallet(wallet).executeBatchIntentTransfer(
+            intent.recipients,
+            intent.amounts,
+            intentId,
+            currentTransactionCount,
+            intent.revertOnFailure
+        );
 
         emit IntentExecuted(wallet, intentId);
     }
@@ -328,9 +345,13 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         }
     }
 
-    function cancelIntent(address wallet, bytes32 intentId) external {
-        if (msg.sender != wallet) revert AidraIntentRegistry__Unauthorized();
-
+    /**
+     * @notice Allows wallet owner to cancel an active intent
+     *
+     * @param intentId The intent id to cancel
+     */
+    function cancelIntent(bytes32 intentId) external {
+        address wallet = msg.sender;
         Intent storage intent = walletIntents[wallet][intentId];
         if (!intent.active) revert AidraIntentRegistry__IntentNotActive();
 
@@ -342,12 +363,13 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         uint256 remainingTransactions = intent.totalTransactionCount - intent.transactionCount;
         uint256 amountRemaining = remainingTransactions * totalAmount;
 
-        ///@notice unlock funds when the intent is cancelled
+        ///@notice Unlock funds when the intent is cancelled
         walletCommittedFunds[wallet] -= amountRemaining;
+        IAidraSmartWallet(wallet).decreaseCommitment(amountRemaining);
         intent.active = false;
         _removeFromActiveIntents(wallet, intentId);
 
-        ///@notice emit event
+        ///@notice Emit event
         emit IntentCancelled(wallet, intentId, amountRemaining);
     }
 
@@ -382,17 +404,4 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     function getRegisteredWalletsCount() external view returns (uint256) {
         return registeredWallets.length;
     }
-}
-
-/**
- * @notice Interface for AidraSmartWallet to execute batch transfers
- */
-interface IAidraSmartWallet {
-    /**
-     * @notice Executes a batch transfer to multiple recipients
-     *
-     * @param recipients The array of recipient addresses
-     * @param amounts The array of amounts to send to each recipient
-     */
-    function executeBatchIntentTransfer(address[] calldata recipients, uint256[] calldata amounts) external;
 }

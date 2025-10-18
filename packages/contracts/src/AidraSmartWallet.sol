@@ -7,7 +7,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {_packValidationData} from "@account-abstraction/contracts/core/Helpers.sol";
-import {AidraIntentRegistry} from "./AidraIntentRegistry.sol";
+import {IAidraSmartWallet} from "./IAidraSmartWallet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
@@ -36,11 +36,30 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
 
     /// @notice Account owner address. Signer of UserOperations.
     address public s_owner;
+
     /// @notice Aidra intent registry authorized to trigger scheduled transfers.
-    AidraIntentRegistry public s_intentRegistry;
+    address public immutable intentRegistry;
+
+    /// @notice Amount of funds committed to intents (locked)
+    uint256 public s_committedFunds;
 
     /// @notice EIP-1271 magic return value for valid signatures.
     bytes4 internal constant _EIP1271_MAGICVALUE = 0x1626ba7e;
+
+    /*//////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Emitted when the committed funds are increased.
+    event CommitmentIncreased(uint256 amount, uint256 newTotal);
+
+    /// @notice Emitted when the committed funds are decreased.
+    event CommitmentDecreased(uint256 amount, uint256 newTotal);
+
+    /// @notice Emitted when a transfer fails during intent execution.
+    event TransferFailed(
+        bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, uint256 amount
+    );
 
     /*//////////////////////////////////////////////////////////////
                                 ERRORS
@@ -58,19 +77,27 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /// @notice Thrown when registry address is zero.
     error AidraSmartWallet__IntentRegistryZeroAddress();
 
-    /// @notice Thrown when registry is already configured.
-    error AidraSmartWallet__IntentRegistryAlreadySet();
-
-    /// @notice Thrown when registry not yet configured.
-    error AidraSmartWallet__IntentRegistryNotSet();
-
     /// @notice Thrown when batch inputs are invalid.
     error AidraSmartWallet__InvalidBatchInput();
 
     /// @notice Thrown when a transfer fails.
     error AidraSmartWallet__TransferFailed(address recipient, uint256 amount);
 
-    /*MODIFIER */
+    /// @notice Thrown when there are insufficient uncommitted funds.
+    error AidraSmartWallet__InsufficientUncommittedFunds();
+
+    /// @notice Thrown when caller is not the registry.
+    error AidraSmartWallet__NotFromRegistry();
+
+    /// @notice Thrown when registry not yet configured.
+    error AidraSmartWallet__IntentRegistryNotSet();
+
+    /// @notice Thrown when registry is already set.
+    error AidraSmartWallet__IntentRegistryAlreadySet();
+
+    /*//////////////////////////////////////////////////////////////
+                              MODIFIERS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Reverts if the caller is not the EntryPoint.
     modifier onlyEntryPoint() {
@@ -87,6 +114,15 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         }
         _;
     }
+
+    /// @notice Reverts if the caller is not the registry.
+    modifier onlyRegistry() {
+        if (msg.sender != intentRegistry) {
+            revert AidraSmartWallet__NotFromRegistry();
+        }
+        _;
+    }
+
     /**
      * @notice Sends to the EntryPoint (i.e. `msg.sender`) the missing funds for this transaction.
      *
@@ -98,39 +134,46 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
      *  MAY be zero, in case there is enough deposit, or the userOp has a
      *  paymaster.
      */
-
     modifier payPrefund(uint256 missingAccountFunds) {
         _;
 
         assembly ("memory-safe") {
             if missingAccountFunds {
                 // Ignore failure (it's EntryPoint's job to verify, not the account's).
-                pop(call(gas(), caller(), missingAccountFunds, codesize(), 0x00, codesize(), 0x00))
+                pop(call(gas(), caller(), missingAccountFunds, 0x00, 0x00, 0x00, 0x00))
             }
         }
     }
 
+    /*//////////////////////////////////////////////////////////////
+                             CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Constructor prevents initialization of implementation contract.
-    /*CONSTRUCTOR*/
-    constructor() {
+    constructor(address registry) {
+        if (registry == address(0)) revert AidraSmartWallet__IntentRegistryZeroAddress();
+        intentRegistry = registry;
         _disableInitializers();
     }
+
     /**
-     * @notice Initializes the account with the owner.
+     * @notice Initializes the account with the owner and intent registry.
      *
      * @dev Reverts if the account has already been initialized.
      *
      * @param _owner Address that will own this account and sign UserOperations.
      */
-
     function initialize(address _owner) external initializer {
         if (_owner == address(0)) revert AidraSmartWallet__OwnerIsZeroAddress();
         s_owner = _owner;
     }
 
+
+
     /*//////////////////////////////////////////////////////////////
                               FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
     /**
      * @inheritdoc IAccount
      *
@@ -171,14 +214,23 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Sets the authorized intent registry.
-     *
-     * @param registry The address of the Aidra intent registry contract.
+     * @notice Increases the committed funds for intents.
+     * @dev Only callable by the registry.
+     * @param amount The amount to add to committed funds.
      */
-    function setIntentRegistry(address registry) external onlyEntryPointOrOwner {
-        if (registry == address(0)) revert AidraSmartWallet__IntentRegistryZeroAddress();
-        if (address(s_intentRegistry) != address(0)) revert AidraSmartWallet__IntentRegistryAlreadySet();
-        s_intentRegistry = AidraIntentRegistry(registry);
+    function increaseCommitment(uint256 amount) external onlyRegistry {
+        s_committedFunds += amount;
+        emit CommitmentIncreased(amount, s_committedFunds);
+    }
+
+    /**
+     * @notice Decreases the committed funds after intent execution/cancellation.
+     * @dev Only callable by the registry.
+     * @param amount The amount to subtract from committed funds.
+     */
+    function decreaseCommitment(uint256 amount) external onlyRegistry {
+        s_committedFunds -= amount;
+        emit CommitmentDecreased(amount, s_committedFunds);
     }
 
     /**
@@ -196,6 +248,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         nonReentrant
         onlyEntryPointOrOwner
     {
+        _checkCommitment(value);
         _call(target, value, data);
     }
 
@@ -207,6 +260,13 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
      * @param calls The list of `Call`s to execute.
      */
     function executeBatch(Call[] calldata calls) external payable nonReentrant onlyEntryPointOrOwner {
+        uint256 totalValue = 0;
+        for (uint256 i; i < calls.length; i++) {
+            totalValue += calls[i].value;
+        }
+
+        _checkCommitment(totalValue);
+
         for (uint256 i; i < calls.length; i++) {
             _call(calls[i].target, calls[i].value, calls[i].data);
         }
@@ -217,24 +277,54 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
      *
      * @param recipients The array of recipient addresses.
      * @param amounts The array of amounts corresponding to each recipient.
+     * @param intentId The unique identifier for the intent being executed.
+     * @param transactionCount The current transaction number within the intent.
+     * @param revertOnFailure Whether to revert entire transaction on any failure (true) or skip failed transfers (false).
      */
-    function executeBatchIntentTransfer(address[] calldata recipients, uint256[] calldata amounts)
-        external
-        nonReentrant
-    {
-        if (address(s_intentRegistry) == address(0)) revert AidraSmartWallet__IntentRegistryNotSet();
-        if (msg.sender != address(s_intentRegistry)) revert AidraSmartWallet__Unauthorized();
-        if (recipients.length == 0 || recipients.length != amounts.length) revert AidraSmartWallet__InvalidBatchInput();
+    function executeBatchIntentTransfer(
+        address[] calldata recipients,
+        uint256[] calldata amounts,
+        bytes32 intentId,
+        uint256 transactionCount,
+        bool revertOnFailure
+    ) external nonReentrant onlyRegistry {
+        if (address(intentRegistry) == address(0)) {
+            revert AidraSmartWallet__IntentRegistryNotSet();
+        }
+
+        if (recipients.length == 0 || recipients.length != amounts.length) {
+            revert AidraSmartWallet__InvalidBatchInput();
+        }
 
         for (uint256 i; i < recipients.length; i++) {
             address recipient = recipients[i];
             uint256 amount = amounts[i];
 
-            if (recipient == address(0) || amount == 0) revert AidraSmartWallet__InvalidBatchInput();
+            if (recipient == address(0) || amount == 0) {
+                revert AidraSmartWallet__InvalidBatchInput();
+            }
 
             (bool success,) = recipient.call{value: amount}("");
-            if (!success) revert AidraSmartWallet__TransferFailed(recipient, amount);
+
+            if (!success) {
+                emit TransferFailed(intentId, transactionCount, recipient, amount);
+
+                if (revertOnFailure) {
+                    // Atomic mode: revert entire transaction on any failure
+                    revert AidraSmartWallet__TransferFailed(recipient, amount);
+                }
+                // Skip mode: continue to next recipient
+            }
         }
+    }
+
+    /**
+     * @notice Returns the available (uncommitted) balance.
+     *
+     * @return The available balance in wei.
+     */
+    function getAvailableBalance() external view returns (uint256) {
+        return address(this).balance - s_committedFunds;
     }
 
     /**
@@ -247,7 +337,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice EIP-1271 signature validation for contract signatures and off-chain t    ooling.
+     * @notice EIP-1271 signature validation for contract signatures and off-chain tooling.
      *
      * @dev Supports EIP-191 (`eth_sign`) prefix for message hashing.
      *
@@ -264,6 +354,20 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         }
 
         return bytes4(0);
+    }
+
+    /**
+     * @notice Checks if a transfer value would exceed uncommitted funds.
+     *
+     * @param value The value to check.
+     */
+    function _checkCommitment(uint256 value) internal view {
+        if (value > 0) {
+            uint256 availableBalance = address(this).balance - s_committedFunds;
+            if (value > availableBalance) {
+                revert AidraSmartWallet__InsufficientUncommittedFunds();
+            }
+        }
     }
 
     /**

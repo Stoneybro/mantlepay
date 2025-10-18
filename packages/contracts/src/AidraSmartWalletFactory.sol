@@ -17,6 +17,9 @@ contract AidraSmartWalletFactory {
     /// @notice Address of the ERC-1167 implementation used as implementation for new accounts.
     address public immutable implementation;
 
+    /// @notice Address of the intent registry.
+    address public immutable intentRegistry;
+
     /// @notice Mapping from user EOA to deployed SmartAccount clone.
     mapping(address user => address clone) public userClones;
     /*//////////////////////////////////////////////////////////////
@@ -45,12 +48,14 @@ contract AidraSmartWalletFactory {
      *   AidraSmartWallet deployments.
      *
      * @param _implementation The address of the AidraSmartWallet implementation which new accounts will proxy to.
+     * @param _intentRegistry The address of the intent registry.
      */
-    constructor(address _implementation) {
+    constructor(address _implementation, address _intentRegistry) {
         if (_implementation.code.length == 0) {
             revert AidraSmartWalletFactory__ImplementationUndeployed();
         }
         implementation = _implementation;
+        intentRegistry = _intentRegistry;
     }
 
     /*//////////////////////////////////////////////////////////////
