@@ -1,18 +1,16 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppSidebarRight } from "@/components/app-siderbar-right";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupTextarea,
-} from "@/components/ui/input-group";
+import { cookies } from "next/headers";
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { ArrowUpIcon, CirclePlus } from "lucide-react";
+import Chat from "../../components/Chat";
 
-export default function Page() {
+
+export default async function Page() {
+  const walletAddress = (await cookies()).get("wallet-deployed")
+    ?.value as `0x${string}`;
   return (
     <SidebarProvider
       style={
@@ -21,9 +19,9 @@ export default function Page() {
         } as React.CSSProperties
       }
     >
-      <AppSidebar />
+      <AppSidebar walletAddress={walletAddress}/>
       <SidebarInset>
-        <header className='bg-background sticky top-0 flex shrink-0 items-center gap-2 border-b p-4'>
+        <header className='bg-background sticky top-0 flex shrink-0 items-center gap-2  p-4'>
           {/* <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
@@ -31,37 +29,9 @@ export default function Page() {
           /> */}
         </header>
 
-        <div className='w-full h-full flex justify-center items-center'>
-          <div className=' w-lg '>
-            <InputGroup>
-              <InputGroupTextarea
-                className=' '
-                placeholder='Ask, Search or Chat...'
-              />
-              <InputGroupAddon align={"block-end"}>
-                <InputGroupButton
-                  variant='outline'
-                  className='rounded-full'
-                  size='icon-xs'
-                >
-                  <CirclePlus />
-                </InputGroupButton>
-                <InputGroupButton
-                  variant='default'
-                  className='rounded-full ml-auto'
-                  size='icon-xs'
-                  disabled
-                >
-                  <ArrowUpIcon />
-                  <span className='sr-only'>Send</span>
-                </InputGroupButton>
-              </InputGroupAddon>
-            </InputGroup>
-          </div>
-
-        </div>
+        <Chat />
       </SidebarInset>
-      <AppSidebarRight side='right' />
+      <AppSidebarRight side='right' walletAddress={walletAddress} />
     </SidebarProvider>
   );
 }
