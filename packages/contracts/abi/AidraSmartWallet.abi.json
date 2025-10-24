@@ -23,6 +23,11 @@
     "name": "decreaseCommitment",
     "inputs": [
       {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
         "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
@@ -102,6 +107,11 @@
     "name": "executeBatchIntentTransfer",
     "inputs": [
       {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
         "name": "recipients",
         "type": "address[]",
         "internalType": "address[]"
@@ -127,13 +137,25 @@
         "internalType": "bool"
       }
     ],
-    "outputs": [],
+    "outputs": [
+      {
+        "name": "failedAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {
     "type": "function",
     "name": "getAvailableBalance",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "outputs": [
       {
         "name": "",
@@ -147,6 +169,11 @@
     "type": "function",
     "name": "increaseCommitment",
     "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
       {
         "name": "amount",
         "type": "uint256",
@@ -209,7 +236,13 @@
   {
     "type": "function",
     "name": "s_committedFunds",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "outputs": [
       {
         "name": "",
@@ -313,6 +346,12 @@
     "name": "CommitmentDecreased",
     "inputs": [
       {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
         "name": "amount",
         "type": "uint256",
         "indexed": false,
@@ -331,6 +370,12 @@
     "type": "event",
     "name": "CommitmentIncreased",
     "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
       {
         "name": "amount",
         "type": "uint256",
@@ -420,6 +465,12 @@
         "internalType": "uint256"
       },
       {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
         "name": "recipientCount",
         "type": "uint256",
         "indexed": false,
@@ -427,6 +478,49 @@
       },
       {
         "name": "totalValue",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "failedAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "IntentTransferSuccess",
+    "inputs": [
+      {
+        "name": "intentId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "transactionCount",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -457,10 +551,59 @@
         "internalType": "address"
       },
       {
+        "name": "token",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
         "name": "amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "WalletAction",
+    "inputs": [
+      {
+        "name": "initiator",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "indexed": true,
+        "internalType": "bytes4"
+      },
+      {
+        "name": "success",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "actionType",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
       }
     ],
     "anonymous": false
@@ -472,22 +615,17 @@
   },
   {
     "type": "error",
-    "name": "AidraSmartWallet__IntentRegistryAlreadySet",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "AidraSmartWallet__IntentRegistryNotSet",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "AidraSmartWallet__IntentRegistryZeroAddress",
     "inputs": []
   },
   {
     "type": "error",
     "name": "AidraSmartWallet__InvalidBatchInput",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AidraSmartWallet__InvalidCommitmentDecrease",
     "inputs": []
   },
   {
@@ -511,6 +649,11 @@
     "inputs": [
       {
         "name": "recipient",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
         "type": "address",
         "internalType": "address"
       },

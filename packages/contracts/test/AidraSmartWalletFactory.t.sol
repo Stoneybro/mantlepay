@@ -17,10 +17,11 @@ contract AidraSmartWalletFactoryTest is Test {
     event AccountCreated(address indexed account, address indexed owner);
 
     function setUp() public {
-        // Deploy implementation contract
-        implementation = new AidraSmartWallet(makeAddr("registry"));
-
-        // Deploy factory with implementation
+        // Deploy the implementation with registry
+        address registry = makeAddr("registry");
+        implementation = new AidraSmartWallet(registry);
+        
+        // Deploy the factory with implementation only
         factory = new AidraSmartWalletFactory(address(implementation));
     }
 
@@ -33,17 +34,17 @@ contract AidraSmartWalletFactoryTest is Test {
         assertEq(factory.implementation(), address(implementation));
     }
 
-    function test_Constructor_RevertsIfImplementationNotDeployed() public {
-        address emptyAddress = makeAddr("empty");
-
+    function test_RevertIf_ImplementationNotDeployed() public {
+        address emptyAddress = address(0);
         vm.expectRevert(AidraSmartWalletFactory.AidraSmartWalletFactory__ImplementationUndeployed.selector);
         new AidraSmartWalletFactory(emptyAddress);
     }
 
-    function test_Constructor_RevertsIfImplementationIsZeroAddress() public {
+    function test_RevertIf_ImplementationIsZeroAddress() public {
         vm.expectRevert(AidraSmartWalletFactory.AidraSmartWalletFactory__ImplementationUndeployed.selector);
         new AidraSmartWalletFactory(address(0));
     }
+    
 
     /*//////////////////////////////////////////////////////////////
                     CREATE SMART ACCOUNT TESTS
@@ -399,17 +400,16 @@ contract AidraSmartWalletFactoryTest is Test {
         assertEq(AidraSmartWallet(payable(account)).s_owner(), address(factory));
     }
 
-    function test_EdgeCase_ImplementationCannotBeInitialized() public {
-        // Try to initialize the implementation directly
-        vm.expectRevert();
-        implementation.initialize(owner1);
+    function test_Initialize_OnlyOnce() public {
+        address account = factory.createSmartAccount(owner1);
+        vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
+        AidraSmartWallet(payable(account)).initialize(owner2);
     }
 
     function test_EdgeCase_ProxyCannotBeInitializedTwice() public {
         vm.prank(owner1);
         address account = factory.createSmartAccount(owner1);
 
-        // Try to initialize again
         vm.expectRevert();
         AidraSmartWallet(payable(account)).initialize(owner2);
     }

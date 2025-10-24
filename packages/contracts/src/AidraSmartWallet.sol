@@ -9,15 +9,15 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {_packValidationData} from "@account-abstraction/contracts/core/Helpers.sol";
 import {IAidraSmartWallet} from "./IAidraSmartWallet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Aidra Smart Wallet
  * @author Zion Livingstone
- * @notice ERC-4337-compatible smart account.
- * @dev Integrates with Chainlink Automation for decentralized intent execution.
+ * @notice ERC-4337-compatible smart account supporting ETH and ERC20 token intents.
+ * @dev Integrates with AidraIntentRegistry for  intent execution.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-
 contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
@@ -43,8 +43,9 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /// @notice Aidra intent registry authorized to trigger scheduled transfers.
     address public immutable intentRegistry;
 
-    /// @notice Amount of funds committed to intents (locked)
-    uint256 public s_committedFunds;
+    /// @notice Amount of funds committed to intents per token (locked)
+    /// @dev address(0) represents ETH, other addresses represent ERC20 tokens
+    mapping(address => uint256) public s_committedFunds;
 
     /// @notice EIP-1271 magic return value for valid signatures.
     bytes4 internal constant _EIP1271_MAGICVALUE = 0x1626ba7e;
@@ -54,24 +55,53 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Emitted when the committed funds are increased.
-    event CommitmentIncreased(uint256 amount, uint256 newTotal);
+    event CommitmentIncreased(address indexed token, uint256 amount, uint256 newTotal);
 
     /// @notice Emitted when the committed funds are decreased.
-    event CommitmentDecreased(uint256 amount, uint256 newTotal);
+    event CommitmentDecreased(address indexed token, uint256 amount, uint256 newTotal);
 
     /// @notice Emitted when a transfer fails during intent execution.
     event TransferFailed(
-        bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, uint256 amount
+        bytes32 indexed intentId,
+        uint256 indexed transactionCount,
+        address indexed recipient,
+        address token,
+        uint256 amount
     );
+
     /// @notice Emitted when a single execute is performed
     event Executed(address indexed target, uint256 value, bytes data);
 
     /// @notice Emitted when a batch execute is performed
     event ExecutedBatch(uint256 indexed batchSize, uint256 totalValue);
 
+    /// @notice The event emitted when a wallet action is performed
+    event WalletAction( // "EXECUTE" or "BATCH" for context
+        address indexed initiator,
+        address indexed target,
+        uint256 value,
+        bytes4 indexed selector,
+        bool success,
+        bytes32 actionType
+    );
+
     /// @notice Emitted when an intent batch transfer is executed
     event IntentBatchTransferExecuted(
-        bytes32 indexed intentId, uint256 indexed transactionCount, uint256 recipientCount, uint256 totalValue
+        bytes32 indexed intentId,
+        uint256 indexed transactionCount,
+        address indexed token,
+        uint256 recipientCount,
+        uint256 totalValue,
+        uint256 failedAmount
+    );
+
+    /// @notice Emitted for each successful transfer in an intent batch
+    event IntentTransferSuccess(
+        bytes32 indexed intentId,
+        uint256 indexed transactionCount,
+        address indexed recipient,
+        address token,
+        uint256 amount
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -94,7 +124,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     error AidraSmartWallet__InvalidBatchInput();
 
     /// @notice Thrown when a transfer fails.
-    error AidraSmartWallet__TransferFailed(address recipient, uint256 amount);
+    error AidraSmartWallet__TransferFailed(address recipient, address token, uint256 amount);
 
     /// @notice Thrown when there are insufficient uncommitted funds.
     error AidraSmartWallet__InsufficientUncommittedFunds();
@@ -102,11 +132,8 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /// @notice Thrown when caller is not the registry.
     error AidraSmartWallet__NotFromRegistry();
 
-    /// @notice Thrown when registry not yet configured.
-    error AidraSmartWallet__IntentRegistryNotSet();
-
-    /// @notice Thrown when registry is already set.
-    error AidraSmartWallet__IntentRegistryAlreadySet();
+    /// @notice commitment decrease is more than commited balance
+    error AidraSmartWallet__InvalidCommitmentDecrease();
 
     /*//////////////////////////////////////////////////////////////
                               MODIFIERS
@@ -153,7 +180,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         assembly ("memory-safe") {
             if missingAccountFunds {
                 // Ignore failure (it's EntryPoint's job to verify, not the account's).
-               pop(call(gas(), caller(), missingAccountFunds, codesize(), 0x00, codesize(), 0x00))
+                pop(call(gas(), caller(), missingAccountFunds, codesize(), 0x00, codesize(), 0x00))
             }
         }
     }
@@ -170,7 +197,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Initializes the account with the owner and intent registry.
+     * @notice Initializes the account with the owner.
      *
      * @dev Reverts if the account has already been initialized.
      *
@@ -227,27 +254,34 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /**
      * @notice Increases the committed funds for intents.
      * @dev Only callable by the registry.
+     * @param token The token address (address(0) for ETH).
      * @param amount The amount to add to committed funds.
      */
-    function increaseCommitment(uint256 amount) external onlyRegistry {
-        s_committedFunds += amount;
-        emit CommitmentIncreased(amount, s_committedFunds);
+    function increaseCommitment(address token, uint256 amount) external onlyRegistry {
+        s_committedFunds[token] += amount;
+        emit CommitmentIncreased(token, amount, s_committedFunds[token]);
     }
 
     /**
      * @notice Decreases the committed funds after intent execution/cancellation.
      * @dev Only callable by the registry.
+     * @param token The token address (address(0) for ETH).
      * @param amount The amount to subtract from committed funds.
      */
-    function decreaseCommitment(uint256 amount) external onlyRegistry {
-        s_committedFunds -= amount;
-        emit CommitmentDecreased(amount, s_committedFunds);
+    function decreaseCommitment(address token, uint256 amount) external onlyRegistry {
+        if (amount > s_committedFunds[token]) {
+            revert AidraSmartWallet__InvalidCommitmentDecrease();
+        }
+        s_committedFunds[token] -= amount;
+        emit CommitmentDecreased(token, amount, s_committedFunds[token]);
     }
 
     /**
      * @notice Executes a single call from this account.
      *
      * @dev Can only be called by the EntryPoint or the owner of this account.
+     *  For ETH transfers, checks uncommitted funds. For token approvals/transfers,
+     *  commitment checking happens at intent execution level.
      *
      * @param target The address to call.
      * @param value  The value to send with the call.
@@ -259,8 +293,10 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         nonReentrant
         onlyEntryPointOrOwner
     {
-        _checkCommitment(value);
+        _checkCommitment(address(0), value);
+        bytes4 selector = data.length >= 4 ? bytes4(data[:4]) : bytes4(0);
         _call(target, value, data);
+        emit WalletAction(msg.sender, target, value, selector, true, "EXECUTE");
         emit Executed(target, value, data);
     }
 
@@ -277,10 +313,12 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
             totalValue += calls[i].value;
         }
 
-        _checkCommitment(totalValue);
+        _checkCommitment(address(0), totalValue);
 
         for (uint256 i; i < calls.length; i++) {
+            bytes4 selector = calls[i].data.length >= 4 ? bytes4(calls[i].data[:4]) : bytes4(0);
             _call(calls[i].target, calls[i].value, calls[i].data);
+            emit WalletAction(msg.sender, calls[i].target, calls[i].value, selector, true, "BATCH");
         }
         emit ExecutedBatch(calls.length, totalValue);
     }
@@ -288,27 +326,29 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /**
      * @notice Executes a batch of transfers as part of an Aidra intent.
      *
+     * @param token The token address (address(0) for ETH, token address for ERC20).
      * @param recipients The array of recipient addresses.
      * @param amounts The array of amounts corresponding to each recipient.
      * @param intentId The unique identifier for the intent being executed.
      * @param transactionCount The current transaction number within the intent.
      * @param revertOnFailure Whether to revert entire transaction on any failure (true) or skip failed transfers (false).
+     *
+     * @return failedAmount The total amount that failed to transfer (only in skip mode)
      */
     function executeBatchIntentTransfer(
+        address token,
         address[] calldata recipients,
         uint256[] calldata amounts,
         bytes32 intentId,
         uint256 transactionCount,
         bool revertOnFailure
-    ) external nonReentrant onlyRegistry {
-        if (address(intentRegistry) == address(0)) {
-            revert AidraSmartWallet__IntentRegistryNotSet();
-        }
-
+    ) external nonReentrant onlyRegistry returns (uint256 failedAmount) {
         if (recipients.length == 0 || recipients.length != amounts.length) {
             revert AidraSmartWallet__InvalidBatchInput();
         }
-        uint256 totalValue=0;
+
+        uint256 totalValue = 0;
+        uint256 totalFailed = 0;
 
         for (uint256 i; i < recipients.length; i++) {
             address recipient = recipients[i];
@@ -317,29 +357,57 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
             if (recipient == address(0) || amount == 0) {
                 revert AidraSmartWallet__InvalidBatchInput();
             }
-             totalValue += amount;
-            (bool success,) = recipient.call{value: amount}("");
+
+            totalValue += amount;
+
+            bool success;
+            if (token == address(0)) {
+                // ETH transfer
+                (success,) = recipient.call{value: amount}("");
+            } else {
+                // ERC20 token transfer
+                try IERC20(token).transfer(recipient, amount) returns (bool result) {
+                    success = result;
+                } catch {
+                    success = false;
+                }
+            }
 
             if (!success) {
-                emit TransferFailed(intentId, transactionCount, recipient, amount);
+                totalFailed += amount;
+                emit TransferFailed(intentId, transactionCount, recipient, token, amount);
 
                 if (revertOnFailure) {
                     // Atomic mode: revert entire transaction on any failure
-                    revert AidraSmartWallet__TransferFailed(recipient, amount);
+                    revert AidraSmartWallet__TransferFailed(recipient, token, amount);
                 }
                 // Skip mode: continue to next recipient
+            } else {
+                // Emit success event for tracking
+                emit IntentTransferSuccess(intentId, transactionCount, recipient, token, amount);
             }
         }
-        emit IntentBatchTransferExecuted(intentId, transactionCount, recipients.length, totalValue);
+
+        emit IntentBatchTransferExecuted(intentId, transactionCount, token, recipients.length, totalValue, totalFailed);
+
+        return totalFailed;
     }
 
     /**
-     * @notice Returns the available (uncommitted) balance.
+     * @notice Returns the available (uncommitted) balance for a specific token.
      *
-     * @return The available balance in wei.
+     * @param token The token address (address(0) for ETH, token address for ERC20).
+     *
+     * @return The available balance.
      */
-    function getAvailableBalance() external view returns (uint256) {
-        return address(this).balance - s_committedFunds;
+    function getAvailableBalance(address token) external view returns (uint256) {
+        if (token == address(0)) {
+            // ETH balance
+            return address(this).balance - s_committedFunds[address(0)];
+        } else {
+            // ERC20 token balance
+            return IERC20(token).balanceOf(address(this)) - s_committedFunds[token];
+        }
     }
 
     /**
@@ -372,13 +440,20 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Checks if a transfer value would exceed uncommitted funds.
+     * @notice Checks if a transfer value would exceed uncommitted funds for a specific token.
      *
+     * @param token The token address (address(0) for ETH).
      * @param value The value to check.
      */
-    function _checkCommitment(uint256 value) internal view {
+    function _checkCommitment(address token, uint256 value) internal view {
         if (value > 0) {
-            uint256 availableBalance = address(this).balance - s_committedFunds;
+            uint256 availableBalance;
+            if (token == address(0)) {
+                availableBalance = address(this).balance - s_committedFunds[address(0)];
+            } else {
+                availableBalance = IERC20(token).balanceOf(address(this)) - s_committedFunds[token];
+            }
+
             if (value > availableBalance) {
                 revert AidraSmartWallet__InsufficientUncommittedFunds();
             }

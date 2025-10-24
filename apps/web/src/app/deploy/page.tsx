@@ -1,24 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import { Label } from "@radix-ui/react-label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { usePrivy } from "@privy-io/react-auth";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useDeployWallet } from "@/hooks/useDeployWallet";
 
 function Page() {
   const [checked, setChecked] = useState(false);
-  const [activated, setActivated] = useState<string>("");
-  const [shouldNavigate, setShouldNavigate] = useState(false);
-  const [isActivating, setIsActivating] = useState(false); // Add isActivating state
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const { mutate: deployWallet, isPending } = useDeployWallet();
-  const { ready, authenticated, user } = usePrivy();
-
 
   return (
     <div>
@@ -28,9 +17,16 @@ function Page() {
           <div className=' text-3xl font-semibold text-center'>
             Deploy your Aidra Wallet
           </div>
-          <div className=''>
-            This is a secure smart wallet, unique to you, where your locked
-            funds are held safely.
+          <div className=' flex flex-col'>
+            <div className="">Aidra is a non-custodial ERC-4337 smart wallet.</div>
+            <div className=""> Demo mode allows one wallet per social login.</div>
+            <div className="">All transactions are gasless and run exclusively on base sepolia for this demo.</div>
+            
+            
+           
+            
+            
+
           </div>
           <Label className='hover:bg-muted/50 dark:hover:bg-muted/30 flex items-start gap-3 rounded-lg border p-3 has-[[aria-checked=true]]:border-black has-[[aria-checked=true]]:bg-muted dark:has-[[aria-checked=true]]:border-accent dark:has-[[aria-checked=true]]:bg-muted/50'>
             <Checkbox
@@ -51,17 +47,17 @@ function Page() {
               </p>
             </div>
           </Label>
-            <Button 
-              variant={"default"} 
-              className="w-full"
-              onClick={() => deployWallet()}
-              disabled={!checked || isPending}
-            >
-              {isPending ? "Deploying..." : "Deploy Wallet"}
-            </Button>
+          <Button
+            variant={"default"}
+            className="w-full"
+            onClick={() => deployWallet()}
+            disabled={!checked || isPending}
+          >
+            {isPending ? "Deploying..." : "Deploy Wallet"}
+          </Button>
 
         </div>
-        
+
       </div>
     </div>
   );

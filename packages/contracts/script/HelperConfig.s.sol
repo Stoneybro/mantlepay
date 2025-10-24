@@ -17,7 +17,7 @@ contract HelperConfig is Script {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     NetworkConfig public localNetwork;
-    uint256 constant BASE_SEPOLIA_CHAIN_ID = 84532;
+    uint256 constant ARB_SEPOLIA_CHAIN_ID = 421614;
     uint256 constant LOCAL_CHAIN_ID = 31337;
     address constant BURNER_WALLET = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     address constant SEPOLIA_WALLET = 0x0D96081998fd583334fd1757645B40fdD989B267;
@@ -48,15 +48,15 @@ contract HelperConfig is Script {
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {
         if (chainId == LOCAL_CHAIN_ID) {
             return getAnvilEthConfig();
-        } else if (chainId == BASE_SEPOLIA_CHAIN_ID) {
-            return getBaseSepoliaEthConfig();
+        } else if (chainId == ARB_SEPOLIA_CHAIN_ID) {
+            return getArbSepoliaEthConfig();
         } else {
             revert HelperConfig__UnsupportedNetwork();
         }
     }
 
-    function getBaseSepoliaEthConfig() public pure returns (NetworkConfig memory) {
-        return NetworkConfig({implementation: 0xE1A3dd302709Fb0f1E957D1F6A68870c50E2c68a, registry: 0x527B7442bE029b95f7648D300E68e5B74DB10842});
+    function getArbSepoliaEthConfig() public pure returns (NetworkConfig memory) {
+        return NetworkConfig({implementation: 0x43e0BC90661dAF20C6fFbae1079d6E07E88e403A, registry: 0x6A0C73162c20Bc56212D643112c339f654C45198});
     }
 
     function getAnvilEthConfig() public returns (NetworkConfig memory) {

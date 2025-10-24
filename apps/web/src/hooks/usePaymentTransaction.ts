@@ -2,7 +2,7 @@ import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
 import { useMutation } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/smartAccountProvider";
-import AidraIntentRegistryABI from "@aidra/contracts/AidraIntentRegistry";
+import AidraIntentRegistry from "@aidra/contracts/AidraIntentRegistry";
 import { AidraRegistryAddress } from "@/lib/CA";
 import { encodeFunctionData, parseEther } from "viem";
 
@@ -149,7 +149,7 @@ export function useRecurringPayment() {
         const amountsInWei = params.amounts.map(amount => parseEther(amount));
 
         const callData = encodeFunctionData({
-          abi: AidraIntentRegistryABI,
+          abi: AidraIntentRegistry,
           functionName: "createIntent",
           args: [
             params.name,

@@ -4,6 +4,10 @@ out = "out"
 libs = ["lib"]
 
 compiler_version = "0.8.19"
+via_ir = true
+optimizer = true
+optimizer_runs = 200
+
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/",

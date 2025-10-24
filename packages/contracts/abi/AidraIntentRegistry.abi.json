@@ -1,6 +1,19 @@
 [
   {
     "type": "function",
+    "name": "MAX_DURATION",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_RECIPIENTS",
     "inputs": [],
     "outputs": [
@@ -8,6 +21,32 @@
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MIN_INTERVAL",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "PYUSD",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -53,6 +92,11 @@
     "type": "function",
     "name": "createIntent",
     "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
       {
         "name": "name",
         "type": "string",
@@ -149,6 +193,11 @@
             "internalType": "address"
           },
           {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
             "name": "name",
             "type": "string",
             "internalType": "string"
@@ -202,6 +251,11 @@
             "name": "revertOnFailure",
             "type": "bool",
             "internalType": "bool"
+          },
+          {
+            "name": "failedAmount",
+            "type": "uint256",
+            "internalType": "uint256"
           }
         ]
       }
@@ -317,6 +371,11 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [
@@ -351,6 +410,11 @@
       },
       {
         "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
         "type": "address",
         "internalType": "address"
       },
@@ -398,6 +462,11 @@
         "name": "revertOnFailure",
         "type": "bool",
         "internalType": "bool"
+      },
+      {
+        "name": "failedAmount",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -419,7 +488,19 @@
         "internalType": "bytes32"
       },
       {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
         "name": "amountRefunded",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "failedAmountRecovered",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -442,6 +523,30 @@
         "type": "bytes32",
         "indexed": true,
         "internalType": "bytes32"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "totalCommitment",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "transactionStartTime",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "transactionEndTime",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -461,6 +566,31 @@
         "type": "bytes32",
         "indexed": true,
         "internalType": "bytes32"
+      },
+      {
+        "name": "transactionCount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "WalletRegistered",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -487,6 +617,11 @@
   },
   {
     "type": "error",
+    "name": "AidraIntentRegistry__IntentNotFound",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "AidraIntentRegistry__InvalidAmount",
     "inputs": []
   },
@@ -507,12 +642,22 @@
   },
   {
     "type": "error",
+    "name": "AidraIntentRegistry__InvalidToken",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "AidraIntentRegistry__InvalidTotalTransactionCount",
     "inputs": []
   },
   {
     "type": "error",
     "name": "AidraIntentRegistry__NoRecipients",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AidraIntentRegistry__StartTimeInPast",
     "inputs": []
   },
   {
