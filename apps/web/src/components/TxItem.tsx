@@ -1,8 +1,21 @@
 "use client";
 
 import { RiExternalLinkLine } from "react-icons/ri";
+import { ChevronDownIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import CopyText from "./ui/copy";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {  formatEth,  formatTimestamp, truncateAddress } from "@/utils/format";
 import { type AggregatedTransaction, type TransactionCategory } from "@/lib/blockscout/transactionAggregator";
+import { BsArrowRepeat } from "react-icons/bs";
+import { FaUsersGear } from "react-icons/fa6";
+import { FaUsers } from "react-icons/fa6";
+import { BsArrowUpRight } from "react-icons/bs";
+import { BsArrowDownLeft } from "react-icons/bs";
+import { MdOutlineNoteAdd } from "react-icons/md";
+import { MdDeleteOutline } from "react-icons/md";
+import { CiWallet } from "react-icons/ci";
+
 
 interface TransactionItemProps {
   tx: AggregatedTransaction;
@@ -35,21 +48,21 @@ const getTxTypeLabel = (category: TransactionCategory): string => {
 const getTxTypeIcon=(category: TransactionCategory): React.ReactNode => {
   switch (category) {
     case 'deposit':
-      return <RiExternalLinkLine />;
+      return <BsArrowDownLeft />;
     case 'execute_single':
-      return <RiExternalLinkLine />;
+      return <BsArrowUpRight />;
     case 'execute_batch':
-      return <RiExternalLinkLine />;
+      return <FaUsers />
     case 'intent_recurring_batch':
-      return <RiExternalLinkLine />;
+      return <FaUsersGear />;
     case 'intent_recurring_single':
-      return <RiExternalLinkLine />;
+      return <BsArrowRepeat />;
     case 'intent_created':
-      return <RiExternalLinkLine />;
+      return <MdOutlineNoteAdd />;
     case 'intent_cancelled':
-      return <RiExternalLinkLine />;
+      return <MdDeleteOutline />;
     case 'wallet_deployed':
-      return <RiExternalLinkLine />;
+      return <CiWallet />;
     default:
       return <RiExternalLinkLine />;
   }
@@ -58,17 +71,18 @@ const getTxTypeIcon=(category: TransactionCategory): React.ReactNode => {
 
 export default function TransactionItem({
   tx,
-  walletAddress,
 }: TransactionItemProps) {
   const valueEth = formatEth(tx.value);
   const gasEth = formatEth(tx.gasUsed ?? 0n);
   const label = getTxTypeLabel(tx.category);
+  const icon = getTxTypeIcon(tx.category);
   
   // Format timestamp
   const formattedDate = formatTimestamp(tx.timestamp);
-  const explorerUrl = `https://base-sepolia.blockscout.com/tx/${tx.hash}`;
+  const explorerUrl = `https://arbitrum-sepolia.blockscout.com/tx/${tx.hash}`;
 
-  // Render different content based on transaction type
+  const isCollapsible = tx.category === 'execute_batch' || tx.category === 'intent_recurring_batch';
+
   const renderDetails = () => {
     switch (tx.category) {
       case "intent_created":
@@ -76,8 +90,8 @@ export default function TransactionItem({
         return (
           <div className="space-y-1">
             {tx.intentId && (
-              <div className="font-medium text-xs">
-                Intent: {truncateAddress(tx.intentId)}
+              <div className="font-medium text-xs flex items-center gap-1">
+                Intent: <span>{truncateAddress(tx.intentId)}</span> <CopyText className="w-2!"   text={tx.intentId} />
               </div>
             )}
             {tx.description && (
@@ -89,7 +103,6 @@ export default function TransactionItem({
         );
 
       case "intent_recurring_single":
-      case "intent_recurring_batch":
         return (
           <div className="space-y-1">
             {tx.transactionCount !== undefined && (
@@ -98,37 +111,84 @@ export default function TransactionItem({
               </div>
             )}
             {tx.recipients && tx.recipients.length > 0 && (
-              <div className="text-xs text-muted-foreground">
-                To {tx.recipients.length} recipient(s)
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                To: <span>{truncateAddress(tx.recipients[0].address)}</span>  <CopyText  text={tx.recipients[0].address} />
               </div>
             )}
             {tx.value > 0n && (
               <div className="text-xs font-medium">
-                {valueEth} ETH
+                Value: {valueEth} ETH
               </div>
             )}
           </div>
         );
 
+      case "intent_recurring_batch":
+        return (
+          <div>
+            <div className="space-y-1">
+              {tx.transactionCount !== undefined && (
+                <div className="text-xs text-muted-foreground">
+                  Payment #{tx.transactionCount + 1}
+                </div>
+              )}
+              {tx.recipients && tx.recipients.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  To: {tx.recipients.length} recipient(s)
+                </div>
+              )}
+              {tx.value > 0n && (
+                <div className="text-xs font-medium">
+                  Value: {valueEth} ETH
+                </div>
+              )}
+            </div>
+            <CollapsibleContent>
+              <div className="space-y-1 rounded-md border px-2 py-1">
+                {tx.recipients?.map((recipient, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <div className="flex items-center gap-1">
+                      To: <span>{truncateAddress(recipient.address)}</span> <CopyText  text={recipient.address} />
+                    </div>
+                    <span>Value: {formatEth(recipient.amount ?? 0n)} ETH</span>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </div>
+        );
+
       case "execute_batch":
         return (
-          <div className="space-y-1">
-
+          <div>
+            <div className="space-y-1">
               <div className="text-xs text-muted-foreground">
                 Recipients: {tx.recipients?.length}
               </div>
-            <div className="text-xs text-muted-foreground">
-                Total value: {valueEth} ETH 
+              <div className="text-xs text-muted-foreground">
+                Total value: {valueEth} ETH
               </div>
-           
+            </div>
+            <CollapsibleContent>
+              <div className="space-y-1 rounded-md border px-2 py-1">
+                {tx.recipients?.map((recipient, index) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <div className="flex items-center gap-1">
+                      To: <span>{truncateAddress(recipient.address)}</span> <CopyText  text={recipient.address} />
+                    </div>
+                    <span>Value: {formatEth(recipient.amount || 0n)} ETH</span>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleContent>
           </div>
         );
 
       case "execute_single":
         return (
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">
-              To: {truncateAddress(tx.to)}
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              To: <span>{truncateAddress(tx.to)}</span> <CopyText  text={tx.to} />
             </div>
             {tx.value > 0n && (
               <div className="text-xs text-muted-foreground">
@@ -140,8 +200,8 @@ export default function TransactionItem({
 
       case "deposit":
         return (
-          <div className="text-xs text-muted-foreground">
-            From: {truncateAddress(tx.from)}
+          <div className="text-xs text-muted-foreground flex items-center gap-1">
+            From: <span>{truncateAddress(tx.from)}</span> <CopyText  text={tx.from} />
           </div>
         );
       
@@ -164,7 +224,7 @@ export default function TransactionItem({
     }
   };
 
-  return (
+  const content = (
     <div
       className={`
         hover:bg-sidebar-accent hover:text-sidebar-accent-foreground
@@ -174,16 +234,22 @@ export default function TransactionItem({
       <div className="flex justify-between items-start w-full gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="flex flex-col min-w-0 flex-1">
-            <span className={`font-semibold truncate`}>
-              {label}
-            </span>
+            <div className="flex items-center gap-1">
+              {icon}
+              <span className={`font-semibold truncate`}>
+                {label}
+              </span>
+            </div>
           </div>
         </div>
-        
-        {/* <div className="font-medium whitespace-nowrap text-right">
-          {tx.category === 'deposit' ? '+' : tx.category.startsWith('intent_') && !tx.category.includes('created') && !tx.category.includes('cancelled') ? '' : tx.value > 0n ? '-' : ''}
-          {tx.value !== 0n && ` ${valueEth} ETH`}
-        </div> */}
+        {isCollapsible && (
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="icon-sm">
+              <ChevronDownIcon className="h-4 w-4" />
+              <span className="sr-only">Toggle</span>
+            </Button>
+          </CollapsibleTrigger>
+        )}
       </div>
 
       {/* Details */}
@@ -196,7 +262,7 @@ export default function TransactionItem({
           href={explorerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-blue-500 hover:underline"
+          className="flex items-center gap-1 text-black underline"
         >
       
           <span>View</span>
@@ -212,4 +278,10 @@ export default function TransactionItem({
       
     </div>
   );
+
+  if (isCollapsible) {
+    return <Collapsible>{content}</Collapsible>;
+  }
+
+  return content;
 }

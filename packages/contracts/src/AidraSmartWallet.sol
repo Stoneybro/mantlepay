@@ -346,7 +346,6 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         if (recipients.length == 0 || recipients.length != amounts.length) {
             revert AidraSmartWallet__InvalidBatchInput();
         }
-
         uint256 totalValue = 0;
         uint256 totalFailed = 0;
 

@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import Cookies from "js-cookie";
 import AidraSmartWalletFactoryABI from "@aidra/contracts/AidraSmartWalletFactory";
 import { readContract } from "@/lib/server";
-import type { Abi } from "viem";
+import { Abi,zeroAddress } from "viem";
 import { AidraSmartWalletFactoryAddress } from "@/lib/CA";
 
-const ZERO = "0x0000000000000000000000000000000000000000";
+
 
 async function checkWalletDeployment(address: string): Promise<boolean> {
   let rawRes;
@@ -20,7 +20,7 @@ async function checkWalletDeployment(address: string): Promise<boolean> {
   } catch (e) {
     console.error("Chain read error:", e);
   }
-  if (typeof rawRes === "string" && rawRes.startsWith("0x") && rawRes != ZERO) {
+  if (typeof rawRes === "string" && rawRes.startsWith("0x") && rawRes != zeroAddress) {
     Cookies.set("wallet-deployed", rawRes.toString(), {
       expires: 7,
       sameSite: "strict",

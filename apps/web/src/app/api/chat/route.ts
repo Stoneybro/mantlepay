@@ -1,301 +1,638 @@
-import { google } from '@ai-sdk/google';
-import { convertToModelMessages, streamText, UIMessage } from 'ai';
-import { z } from 'zod';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { google } from "@ai-sdk/google";
+import { convertToModelMessages, streamText, UIMessage } from "ai";
+import { z } from "zod";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
-// Enhanced system prompt optimized for Gemini
-const SYSTEM_PROMPT = `You are Aidra, a payment execution assistant. 
+// System prompt with decision matrix
+const SYSTEM_PROMPT = `You are Aidra: an ERC-4337 interactive smart wallet agent and execution layer for on-chain payments.
 
-YOUR PRIMARY FUNCTION: Call the appropriate payment tool based on user requests.
+## PRIMARY GOAL
+Correctly interpret natural language payment instructions and select the correct payment tool based on your interpretation.
 
-TOOL SELECTION RULES:
+## CORE PRINCIPLES (CRITICAL - NEVER VIOLATE)
+1. NEVER guess, assume, or fabricate any parameter value
+2. ALWAYS ask for missing required parameters before tool call
+3. ALWAYS validate all parameters against tool schema before calling
+4. Ask ONE clarifying question at a time (never overwhelm user)
+5. Only call tool when ALL required parameters are validated and present
 
-1. executeSingleTransfer
-   - Use when: ONE recipient address
-   - Trigger words: "send to", "transfer to", "pay"
-   - Example: "send 0.1 ETH to 0x123..."
+## DECISION LOGIC FLOWCHART
 
-2. executeBatchTransfer
-   - Use when: MULTIPLE recipients, ONE-TIME payment
-   - Trigger words: "send to [address] and [address]", "multiple recipients"
-   - Example: "send 0.1 to 0x123 and 0.2 to 0x456"
+Step 1: Check for CANCEL keywords (cancel, stop, terminate, end, delete, remove)
+- IF present AND context is recurring payment → Use cancelRecurringPayment tool
+- ELSE continue to Step 2
 
-3. executeRecurringPayment
-   - Use when: REPEATED payments with time schedule
-   - Trigger words: "every", "recurring", "daily", "weekly", "schedule", "repeated"
-   - Example: "send 0.1 every 5 minutes for 30 minutes"
+Step 2: Check for SCHEDULING keywords (every, daily, weekly, monthly, schedule, recurring, repeat, automate, subscribe, "for X duration")
+- IF present → GO TO RECURRING TOOLS (Step 3)
+- IF absent → GO TO ONE-TIME TOOLS (Step 4)
 
-TIME CONVERSIONS (use these exact values):
-• 1 minute = 60 seconds
-• 5 minutes = 300 seconds
-• 30 minutes = 1800 seconds
-• 1 hour = 3600 seconds
-• 1 day = 86400 seconds
-• 1 week = 604800 seconds
-• 30 days = 2592000 seconds
+Step 3: RECURRING TOOLS - Check token type
+- IF token is PYUSD/USD/$/dollars → Use executeRecurringPyusdPayment
+- IF token is ETH/eth/ether OR no token specified → Use executeRecurringEthPayment
 
-IMPORTANT:
-- For transactionStartTime: Always use Math.floor(Date.now() / 1000)
-- For "0.0001 eth each": Use same amount for all recipients in amounts array
-- When user says "every X for Y": interval=X (in seconds), duration=Y (in seconds)
+Step 4: ONE-TIME TOOLS - Count recipients
+- IF exactly 1 recipient → GO TO SINGLE TRANSFER (Step 5)
+- IF 2 or more recipients → GO TO BATCH TRANSFER (Step 6)
 
-RESPONSE GUIDELINES:
-- After calling tool: "Please review the details above."
-- After success: "✅ Transaction successful! Hash: {hash}"
-- Keep responses minimal - the UI shows all details.`;
+Step 5: SINGLE TRANSFER - Check token type
+- IF token is PYUSD/USD/$/dollars → Use executeSinglePyusdTransfer
+- IF token is ETH/eth/ether OR no token specified → Use executeSingleEthTransfer
+
+Step 6: BATCH TRANSFER - Check token type
+- IF token is PYUSD/USD/$/dollars → Use executeBatchPyusdTransfer
+- IF token is ETH/eth/ether OR no token specified → Use executeBatchEthTransfer
+
+## TOKEN IDENTIFICATION RULES
+
+ETH TOKEN INDICATORS:
+- Keywords: "ETH", "eth", "ether", "ethereum", "Ξ"
+- DEFAULT: If no token is mentioned, assume ETH
+
+PYUSD TOKEN INDICATORS:
+- Keywords: "PYUSD", "pyusd", "PayPal USD"
+- USD keywords: "USD", "usd", "dollars", "$" (dollar sign)
+
+## TIME CONVERSION REFERENCE (for recurring payments)
+
+Convert natural language to seconds:
+- 30 seconds = 30
+- 1 minute = 60
+- 5 minutes = 300
+- 10 minutes = 600
+- 30 minutes = 1800
+- 1 hour = 3600
+- 1 day = 86400
+- 1 week = 604800
+- 1 month = 2592000 (assume 30 days)
+- 1 year = 31536000 (assume 365 days)
+
+CONSTRAINTS:
+- MINIMUM interval: 30 seconds
+- MAXIMUM duration: 31536000 seconds (1 year)
+- Duration must be >= interval
+
+## AMOUNT DISTRIBUTION PATTERNS
+
+When user says "EACH" (same amount to everyone):
+- Example: "send 0.5 ETH each to 0x1, 0x2, 0x3"
+- Action: Replicate the amount for all recipients → amounts = ["0.5", "0.5", "0.5"]
+
+When user says "SPLIT EQUALLY" (divide total):
+- Example: "split 1 ETH equally to 0x1, 0x2, 0x3, 0x4"
+- Action: Divide total by number of recipients → 1 / 4 = 0.25 each
+
+When amounts DON'T MATCH recipients:
+- If 3 recipients, 2 amounts → Ask for missing amount(s)
+- Never guess or auto-fill missing data
+
+## PRE-TOOL-CALL VALIDATION
+
+Before calling ANY tool, verify:
+1. Tool selection is correct based on decision flowchart
+2. ALL required parameters are present
+3. Address format: all addresses are 0x + 40 hex characters (42 total)
+4. Amounts: all amounts are positive numbers
+5. Array lengths: recipients.length == amounts.length
+6. For recurring: interval >= 30 and duration <= 31536000
+7. For recurring: duration >= interval
+
+ONLY call the tool if ALL checks pass.
+
+## RESPONSE GUIDELINES
+- Keep responses clear and concise
+- After calling tool: "Please review the transaction details above."
+- Don't repeat information already shown in the UI
+- Be helpful but direct`;
 
 export async function POST(req: Request) {
   try {
     const { messages }: { messages: UIMessage[] } = await req.json();
-
-    // Check if the last user message contains payment keywords
-    const lastMessage = messages[messages.length - 1];
-    
-    // UIMessage can have different structures, handle both text and parts
-    let messageText = '';
-    if (lastMessage) {
-      if ('parts' in lastMessage && Array.isArray(lastMessage.parts)) {
-        // Extract text from parts
-        messageText = lastMessage.parts
-          .filter((part: any) => part.type === 'text')
-          .map((part: any) => part.text)
-          .join(' ')
-          .toLowerCase();
-      } else if ('content' in lastMessage && typeof lastMessage.content === 'string') {
-        messageText = lastMessage.content.toLowerCase();
-      }
-    }
-    
-    const isPaymentRequest = 
-      messageText.includes('send') ||
-      messageText.includes('transfer') ||
-      messageText.includes('pay') ||
-      messageText.includes('recurring') ||
-      messageText.includes('every') ||
-      messageText.includes('0x');
-
-    console.log('💡 Payment request detected:', isPaymentRequest, 'Message:', messageText.substring(0, 100));
-
     const result = streamText({
-      model: google('gemini-2.0-flash-exp'), // Use Gemini 2.0 Flash
+      model: google("gemini-2.0-flash-exp"),
       system: SYSTEM_PROMPT,
       messages: convertToModelMessages(messages),
-      
-      // Gemini works better with lower temperature for tool calling
       temperature: 0.1,
-      
-      // Force tool calling for payment-related messages
-      toolChoice: isPaymentRequest ? 'required' : 'auto',
-      
+      toolChoice: "auto",
+
       tools: {
         // ============================================
-        // 1. SINGLE TRANSFER TOOL
+        // TOOL 1: SINGLE ETH TRANSFER
         // ============================================
-        executeSingleTransfer: {
-          description: `Execute a single ETH transfer to one recipient. 
-          
-Use this tool when:
-- User wants to send ETH to ONE address
-- User says "send", "transfer", "pay" to a single address
-- You have: recipient address + amount
-
-Examples that should trigger this tool:
-- "Send 0.1 ETH to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5"
-- "Transfer 1 ETH to that address"
-- "Pay 0.5 to Alice"
-
-ALWAYS use this tool for single-recipient payments.`,
-          
-          inputSchema: z.object({
-            to: z.string()
-              .min(1, 'Recipient address is required')
-              .describe('The recipient Ethereum address. Must start with 0x and be 42 characters. Example: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5'),
-            amount: z.string()
-              .min(1, 'Amount is required')
-              .describe('The amount of ETH to send as a string. Examples: "0.1", "1", "0.001". Do not include "ETH" suffix.'),
-          }),
-        },
-
-        // ============================================
-        // 2. BATCH TRANSFER TOOL
-        // ============================================
-        executeBatchTransfer: {
-          description: `Execute a batch ETH transfer to multiple recipients in ONE transaction.
-          
-Use this tool when:
-- User wants to send ETH to MULTIPLE addresses
-- User says "send to Alice and Bob", "transfer to these addresses"
-- You have: multiple recipient addresses + amounts
-
-Examples that should trigger this tool:
-- "Send 0.1 ETH to Alice and 0.2 to Bob"
-- "Transfer to these 3 addresses: ..."
-- "Pay 0.5 each to these wallets"
-
-ALWAYS use this tool for multi-recipient payments.`,
-          
-          inputSchema: z.object({
-            recipients: z.array(
-              z.string()
-                .min(1)
-                .describe('Ethereum address starting with 0x')
-            )
-              .min(2, 'Batch transfer requires at least 2 recipients')
-              .describe('Array of recipient Ethereum addresses. Example: ["0x123...", "0x456..."]'),
-            amounts: z.array(
-              z.string()
-                .min(1)
-                .describe('ETH amount as string')
-            )
-              .describe('Array of ETH amounts as strings, one for each recipient. Example: ["0.1", "0.2"]. Must match recipients length.'),
-          }).refine((data) => data.recipients.length === data.amounts.length, {
-            message: 'Number of recipients must match number of amounts',
-          }),
-        },
-
-        // ============================================
-        // 3. RECURRING PAYMENT TOOL
-        // ============================================
-        executeRecurringPayment: {
-          description: `CREATE A RECURRING PAYMENT SCHEDULE. This tool sets up automatic payments that execute repeatedly.
+        executeSingleEthTransfer: {
+          description: `Execute a one-time ETH transfer to exactly one recipient.
 
 WHEN TO USE THIS TOOL:
-- User says "every", "recurring", "schedule", "repeated"
-- User specifies a time interval (every 5 mins, daily, weekly)
-- User mentions duration (for 30 mins, for a week)
+- User wants to send/transfer/pay ETH
+- Exactly 1 recipient address mentioned
+- NO scheduling keywords present (no "every", "recurring", "daily", etc.)
+- Token is ETH or not specified
 
 EXAMPLES THAT TRIGGER THIS TOOL:
-"send 0.1 ETH every day for a week"
-"pay 0.0001 each to [addresses] every 5mins for 30mins"
-"recurring payment of 1 ETH daily"
-"schedule 0.5 ETH weekly"
+- "send 0.1 ETH to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+- "transfer 1.5 eth to Alice"
+- "pay 0.5 to 0x123..."
 
-YOU MUST CALL THIS TOOL when user wants repeated payments over time.`,
-          
+DO NOT USE IF:
+- Multiple recipients mentioned (use executeBatchEthTransfer)
+- Scheduling words present (use executeRecurringEthPayment)
+- Token is PYUSD/USD/$ (use executeSinglePyusdTransfer)`,
+
           inputSchema: z.object({
-            name: z.string()
-              .min(1)
-              .default('Recurring Payment')
-              .describe('Short name for this schedule. Examples: "Daily Payment", "Weekly Allowance". Default to "Recurring Payment" if not specified.'),
-            recipients: z.array(
-              z.string()
-                .min(42)
-                .max(42)
-                .describe('Ethereum address starting with 0x, exactly 42 characters')
-            )
-              .min(1)
-              .describe('Array of recipient Ethereum addresses. Can be 1 or more addresses.'),
-            amounts: z.array(
-              z.string()
-                .describe('ETH amount as string, e.g. "0.0001"')
-            )
-              .describe('Array of ETH amounts, one per recipient. If user says "0.0001 each", use same amount for all recipients.'),
-            interval: z.number()
-              .int()
-              .positive()
-              .describe('Seconds between each payment. CONVERSIONS: 5 mins=300, 30 mins=1800, 1 hour=3600, 1 day=86400, 1 week=604800'),
-            duration: z.number()
-              .int()
-              .positive()
-              .describe('Total schedule duration in seconds. CONVERSIONS: 30 mins=1800, 1 hour=3600, 1 day=86400, 1 week=604800, 30 days=2592000'),
-            transactionStartTime: z.number()
-              .int()
-              .nonnegative()
-              .default(Math.floor(Date.now() / 1000))
-              .describe('Unix timestamp (seconds) for first payment. Use Math.floor(Date.now()/1000) for immediate start.'),
-          }).refine((data) => data.recipients.length === data.amounts.length, {
-            message: 'Recipients and amounts must have same length',
-          }).refine((data) => data.duration >= data.interval, {
-            message: 'Duration must be at least one interval',
+            to: z
+              .string()
+              .min(42)
+              .max(42)
+              .regex(/^0x[a-fA-F0-9]{40}$/)
+              .describe(
+                "Ethereum address starting with 0x, exactly 42 characters. Example: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5"
+              ),
+            amount: z
+              .string()
+              .regex(/^\d+(\.\d+)?$/)
+              .describe(
+                'ETH amount as decimal string. Examples: "0.1", "1.5", "0.001". No "ETH" suffix.'
+              ),
+          }),
+        },
+
+        // ============================================
+        // TOOL 2: SINGLE PYUSD TRANSFER
+        // ============================================
+        executeSinglePyusdTransfer: {
+          description: `Execute a one-time PYUSD transfer to exactly one recipient.
+
+WHEN TO USE THIS TOOL:
+- User wants to send/transfer/pay in PYUSD/USD/dollars
+- Exactly 1 recipient address mentioned
+- NO scheduling keywords present
+- Token explicitly PYUSD or $ mentioned
+
+EXAMPLES THAT TRIGGER THIS TOOL:
+- "send $50 to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+- "transfer 100 PYUSD to Alice"
+- "pay 25 dollars to 0x123..."
+
+DO NOT USE IF:
+- Multiple recipients mentioned (use executeBatchPyusdTransfer)
+- Scheduling words present (use executeRecurringPyusdPayment)
+- Token is ETH (use executeSingleEthTransfer)`,
+
+          inputSchema: z.object({
+            to: z
+              .string()
+              .min(42)
+              .max(42)
+              .regex(/^0x[a-fA-F0-9]{40}$/)
+              .describe(
+                "Ethereum address starting with 0x, exactly 42 characters"
+              ),
+            amount: z
+              .string()
+              .regex(/^\d+(\.\d{1,6})?$/)
+              .describe(
+                'PYUSD amount as decimal string (up to 6 decimals). Examples: "10.50", "100", "5.25"'
+              ),
+          }),
+        },
+
+        // ============================================
+        // TOOL 3: BATCH ETH TRANSFER
+        // ============================================
+        executeBatchEthTransfer: {
+          description: `Execute one-time ETH transfers to multiple recipients in a single transaction.
+
+WHEN TO USE THIS TOOL:
+- User wants to send/transfer/pay ETH
+- 2 or more recipient addresses mentioned (minimum 2, maximum 10)
+- NO scheduling keywords present
+- Token is ETH or not specified
+
+EXAMPLES THAT TRIGGER THIS TOOL:
+- "send 0.1 ETH to Alice and 0.2 to Bob"
+- "transfer to 0x123 and 0x456"
+- "pay 0.5 each to these 3 wallets"
+- "send 0.1, 0.2, 0.3 to three addresses"
+
+AMOUNT PATTERNS:
+- "X each" → use same amount for all: ["0.5", "0.5", "0.5"]
+- "split X equally" → divide total by count: total=1, count=4 → ["0.25", "0.25", "0.25", "0.25"]
+- Different amounts → match in order given
+
+DO NOT USE IF:
+- Only 1 recipient (use executeSingleEthTransfer)
+- Scheduling words present (use executeRecurringEthPayment)
+- Token is PYUSD/USD/$ (use executeBatchPyusdTransfer)
+- More than 10 recipients (reject with error message)`,
+
+          inputSchema: z
+            .object({
+              recipients: z
+                .array(
+                  z
+                    .string()
+                    .min(42)
+                    .max(42)
+                    .regex(/^0x[a-fA-F0-9]{40}$/)
+                )
+                .min(2)
+                .max(10)
+                .describe(
+                  'Array of 2-10 Ethereum addresses. Example: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5", "0xAbc..."]'
+                ),
+              amounts: z
+                .array(z.string().regex(/^\d+(\.\d+)?$/))
+                .min(2)
+                .max(10)
+                .describe(
+                  'Array of ETH amounts as strings, one per recipient. Must match recipients length. Example: ["0.1", "0.2"]'
+                ),
+            })
+            .refine((data) => data.recipients.length === data.amounts.length, {
+              message:
+                "Number of recipients must exactly match number of amounts",
+            }),
+        },
+
+        // ============================================
+        // TOOL 4: BATCH PYUSD TRANSFER
+        // ============================================
+        executeBatchPyusdTransfer: {
+          description: `Execute one-time PYUSD transfers to multiple recipients in a single transaction.
+
+WHEN TO USE THIS TOOL:
+- User wants to send/transfer/pay in PYUSD/USD/dollars
+- 2 or more recipient addresses mentioned (minimum 2, maximum 10)
+- NO scheduling keywords present
+- Token explicitly PYUSD or $ mentioned
+
+EXAMPLES THAT TRIGGER THIS TOOL:
+- "send $10 to Alice and $20 to Bob"
+- "pay 50 PYUSD each to 3 addresses"
+- "transfer $100, $200, $300 to these wallets"
+
+AMOUNT PATTERNS:
+- "$X each" → replicate: ["15", "15", "15"]
+- "split $X equally" → divide: total=100, count=4 → ["25", "25", "25", "25"]
+
+DO NOT USE IF:
+- Only 1 recipient (use executeSinglePyusdTransfer)
+- Scheduling words present (use executeRecurringPyusdPayment)
+- Token is ETH (use executeBatchEthTransfer)
+- More than 10 recipients (reject)`,
+
+          inputSchema: z
+            .object({
+              recipients: z
+                .array(
+                  z
+                    .string()
+                    .min(42)
+                    .max(42)
+                    .regex(/^0x[a-fA-F0-9]{40}$/)
+                )
+                .min(2)
+                .max(10)
+                .describe("Array of 2-10 Ethereum addresses"),
+              amounts: z
+                .array(z.string().regex(/^\d+(\.\d{1,6})?$/))
+                .min(2)
+                .max(10)
+                .describe(
+                  "Array of PYUSD amounts (up to 6 decimals), one per recipient. Must match recipients length."
+                ),
+            })
+            .refine((data) => data.recipients.length === data.amounts.length, {
+              message:
+                "Number of recipients must exactly match number of amounts",
+            }),
+        },
+
+        // ============================================
+        // TOOL 5: RECURRING ETH PAYMENT
+        // ============================================
+        executeRecurringEthPayment: {
+          description: `Create automatic scheduled ETH payments that repeat over time.
+
+WHEN TO USE THIS TOOL:
+- User mentions ANY scheduling keyword: "every", "daily", "weekly", "monthly", "schedule", "recurring", "repeat", "automate", "subscribe", "for X duration"
+- Token is ETH or not specified
+- Can be single or multiple recipients
+
+EXAMPLES THAT TRIGGER THIS TOOL:
+- "send 0.1 ETH every day for 30 days"
+- "pay 0.0001 each to these addresses every 5 minutes for 30 minutes"
+- "recurring payment of 1 ETH daily"
+- "schedule 0.5 ETH weekly to 0x..."
+
+CRITICAL TIME CONVERSIONS:
+- User says "every 5 minutes" → interval = 300
+- User says "for 30 minutes" → duration = 1800
+- User says "daily" → interval = 86400
+- User says "for a week" → duration = 604800
+
+REQUIRED PARAMETERS TO EXTRACT:
+- Name: If not provided, generate from pattern like "ETH payment every [interval]"
+- Recipients: 1 or more addresses (max 10)
+- Amounts: One per recipient. If "X each", replicate amount
+- Interval: Time between payments in seconds (min 30)
+- Duration: Total schedule length in seconds (max 31536000)
+- transactionStartTime: Use 0 for immediate start
+- revertOnFailure: Default to true (recommended)
+
+DO NOT USE IF:
+- No scheduling keywords present (use one-time transfer tools)
+- Token is PYUSD/USD/$ (use executeRecurringPyusdPayment)`,
+
+          inputSchema: z
+            .object({
+              name: z
+                .string()
+                .min(1)
+                .default("Recurring ETH Payment")
+                .describe(
+                  'User-friendly name for this schedule. Examples: "Daily team payment", "Weekly allowance"'
+                ),
+              recipients: z
+                .array(
+                  z
+                    .string()
+                    .min(42)
+                    .max(42)
+                    .regex(/^0x[a-fA-F0-9]{40}$/)
+                )
+                .min(1)
+                .max(10)
+                .describe("Array of 1-10 Ethereum addresses"),
+              amounts: z
+                .array(z.string().regex(/^\d+(\.\d+)?$/))
+                .min(1)
+                .max(10)
+                .describe(
+                  'Array of ETH amounts as strings, one per recipient. If user says "X each", use same amount for all.'
+                ),
+              interval: z
+                .number()
+                .int()
+                .min(30)
+                .describe(
+                  "Seconds between each payment. MUST BE >= 30. Use time conversion reference."
+                ),
+              duration: z
+                .number()
+                .int()
+                .positive()
+                .max(31536000)
+                .describe(
+                  "Total schedule duration in seconds. MUST BE >= interval and <= 31536000 (1 year)."
+                ),
+              transactionStartTime: z
+                .number()
+                .int()
+                .nonnegative()
+                .default(0)
+                .describe(
+                  "Unix timestamp in seconds. Use 0 for immediate start. For future start, convert date to Unix timestamp."
+                ),
+              revertOnFailure: z
+                .boolean()
+                .default(true)
+                .optional()
+                .describe(
+                  "If true, stop all future payments on any failure. If false, skip failed payments and continue. Default true."
+                ),
+            })
+            .refine((data) => data.recipients.length === data.amounts.length, {
+              message: "Recipients and amounts arrays must have same length",
+            })
+            .refine((data) => data.duration >= data.interval, {
+              message: "Duration must be at least one interval period",
+            }),
+        },
+
+        // ============================================
+        // TOOL 6: RECURRING PYUSD PAYMENT
+        // ============================================
+        executeRecurringPyusdPayment: {
+          description: `Create automatic scheduled PYUSD payments that repeat over time.
+
+WHEN TO USE THIS TOOL:
+- User mentions ANY scheduling keyword: "every", "daily", "weekly", "schedule", "recurring", "repeat", "automate", "subscribe", "for X"
+- Token is explicitly PYUSD/USD/$/dollars
+- Can be single or multiple recipients
+
+EXAMPLES THAT TRIGGER THIS TOOL:
+- "pay $20 PYUSD every week for 8 weeks"
+- "schedule $5 daily to 0x..."
+- "recurring payment of $100 USD monthly"
+- "send $10 each to these addresses every day for 30 days"
+
+CRITICAL TIME CONVERSIONS:
+Same as ETH recurring tool
+
+REQUIRED PARAMETERS TO EXTRACT:
+- Name: If not provided, generate like "PYUSD payment every [interval]"
+- Recipients: 1 or more addresses (max 10)
+- Amounts: One per recipient in PYUSD (up to 6 decimals)
+- Interval: Seconds between payments (min 30)
+- Duration: Total duration in seconds (max 31536000)
+- transactionStartTime: Use 0 for immediate
+- revertOnFailure: Default true
+
+DO NOT USE IF:
+- No scheduling keywords present (use one-time PYUSD transfer)
+- Token is ETH (use executeRecurringEthPayment)`,
+
+          inputSchema: z
+            .object({
+              name: z
+                .string()
+                .min(1)
+                .default("Recurring PYUSD Payment")
+                .describe(
+                  'User-friendly name for this PYUSD schedule. Example: "Monthly subscription", "Weekly allowance"'
+                ),
+              recipients: z
+                .array(
+                  z
+                    .string()
+                    .min(42)
+                    .max(42)
+                    .regex(/^0x[a-fA-F0-9]{40}$/)
+                )
+                .min(1)
+                .max(10)
+                .describe("Array of 1-10 Ethereum addresses"),
+              amounts: z
+                .array(z.string().regex(/^\d+(\.\d{1,6})?$/))
+                .min(1)
+                .max(10)
+                .describe(
+                  'Array of PYUSD amounts as strings (up to 6 decimals), one per recipient. If "$X each", replicate amount.'
+                ),
+              interval: z
+                .number()
+                .int()
+                .min(30)
+                .describe("Seconds between payments. MUST BE >= 30."),
+              duration: z
+                .number()
+                .int()
+                .positive()
+                .max(31536000)
+                .describe(
+                  "Total duration in seconds. MUST BE >= interval and <= 31536000."
+                ),
+              transactionStartTime: z
+                .number()
+                .int()
+                .nonnegative()
+                .default(0)
+                .describe(
+                  "Unix timestamp in seconds. Use 0 for immediate start."
+                ),
+              revertOnFailure: z
+                .boolean()
+                .default(true)
+                .optional()
+                .describe(
+                  "Stop all on failure (true) or skip and continue (false). Default true."
+                ),
+            })
+            .refine((data) => data.recipients.length === data.amounts.length, {
+              message: "Recipients and amounts must have same length",
+            })
+            .refine((data) => data.duration >= data.interval, {
+              message: "Duration must be at least one interval",
+            }),
+        },
+
+        // ============================================
+        // TOOL 7: CANCEL RECURRING PAYMENT
+        // ============================================
+        cancelRecurringPayment: {
+          description: `Cancel an existing active recurring payment intent.
+
+WHEN TO USE THIS TOOL:
+- User says: "cancel", "stop", "terminate", "end", "delete", "remove"
+- Context clearly indicates they want to stop a recurring payment
+- NOT for one-time payments (those execute immediately and can't be cancelled)
+
+EXAMPLES THAT TRIGGER THIS TOOL:
+- "cancel my recurring payment"
+- "stop the weekly payment to Alice"
+- "terminate intent 0x123..."
+- "end all my recurring payments"
+
+REQUIRED PARAMETER:
+- intentId: A bytes32 hex string starting with 0x, 66 characters total (0x + 64 hex chars)
+
+IF USER DOESN'T PROVIDE intentId:
+- Ask: "Which recurring payment would you like to cancel? Please provide the intent ID (0x...), or I can list all your active recurring payments."
+- If they say "all", warn them and confirm before proceeding
+
+DO NOT USE IF:
+- User wants to cancel a one-time payment (explain it executes immediately)
+- User wants to modify (suggest cancel + create new)`,
+
+          inputSchema: z.object({
+            intentId: z
+              .string()
+              .length(66)
+              .regex(/^0x[a-fA-F0-9]{64}$/)
+              .describe(
+                "Intent ID as bytes32 hex string, must be exactly 66 characters starting with 0x. Example: 0x1234567890abcdef..."
+              ),
           }),
         },
       },
-      
-      // Debug callback to see what's happening at each step
+
       onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
-        console.log('🔍 Step finished:', {
+        console.log("🔍 Step finished:", {
           text: text?.substring(0, 100),
           toolCallsCount: toolCalls.length,
           toolResultsCount: toolResults.length,
           finishReason,
-          toolNames: toolCalls.map(tc => tc.toolName),
+          toolNames: toolCalls.map((tc) => tc.toolName),
         });
       },
     });
 
     return result.toUIMessageStreamResponse({
       onError: (error) => {
-        console.error('❌ Stream error:', error);
-        
-        // Handle specific AI SDK errors
-        if (error?.constructor?.name === 'NoSuchToolError') {
-          console.error('NoSuchToolError: Model tried to call unknown tool');
-          return 'The AI tried to call an unknown tool. Please try rephrasing your request.';
+        console.error("❌ Stream error:", error);
+
+        if (error?.constructor?.name === "NoSuchToolError") {
+          console.error("NoSuchToolError: Model tried to call unknown tool");
+          return "The AI tried to call an unknown tool. Please try rephrasing your request.";
         }
-        
-        if (error?.constructor?.name === 'InvalidToolInputError') {
-          console.error('InvalidToolInputError: Model provided invalid tool inputs');
-          return 'The AI provided invalid parameters. Please try rephrasing your request.';
+
+        if (error?.constructor?.name === "InvalidToolInputError") {
+          console.error(
+            "InvalidToolInputError: Model provided invalid tool inputs"
+          );
+          return "The AI provided invalid parameters. Please try rephrasing your request.";
         }
-        
-        // Provide user-friendly error messages
+
         if (error instanceof Error) {
-          // API/Auth errors
-          if (error.message.includes('API key') || error.message.includes('401')) {
-            return 'Authentication error. Please check API configuration.';
+          if (
+            error.message.includes("API key") ||
+            error.message.includes("401")
+          ) {
+            return "Authentication error. Please check API configuration.";
           }
-          // Rate limit errors
-          if (error.message.includes('rate limit') || error.message.includes('429')) {
-            return 'Too many requests. Please wait a moment.';
+          if (
+            error.message.includes("rate limit") ||
+            error.message.includes("429")
+          ) {
+            return "Too many requests. Please wait a moment.";
           }
-          // Timeout errors
-          if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
-            return 'Request timed out. Please try again.';
+          if (
+            error.message.includes("timeout") ||
+            error.message.includes("ETIMEDOUT")
+          ) {
+            return "Request timed out. Please try again.";
           }
-          // Model errors
-          if (error.message.includes('model')) {
-            return 'Model error. The AI service is temporarily unavailable.';
+          if (error.message.includes("model")) {
+            return "Model error. The AI service is temporarily unavailable.";
           }
-          
-          // Return the actual error for other cases
+
           return `Error: ${error.message}`;
         }
-        
-        return 'An unexpected error occurred. Please try again.';
+
+        return "An unexpected error occurred. Please try again.";
       },
     });
   } catch (error) {
-    console.error('❌ POST handler error:', error);
-    
-    // Return a proper error response
+    console.error("❌ POST handler error:", error);
+
     return new Response(
-      JSON.stringify({ 
-        error: 'Failed to process request',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+      JSON.stringify({
+        error: "Failed to process request",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
       }),
-      { 
+      {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       }
     );
   }
 }
 
-// Health check endpoint
 export async function GET() {
   return new Response(
-    JSON.stringify({ 
-      status: 'ok',
-      service: 'Aidra Payment Assistant API',
-      version: '1.0.0',
-      timestamp: new Date().toISOString()
+    JSON.stringify({
+      status: "ok",
+      service: "Aidra Payment Assistant API",
+      version: "2.0.0",
+      timestamp: new Date().toISOString(),
     }),
-    { 
+    {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { "Content-Type": "application/json" },
     }
   );
 }
