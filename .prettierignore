@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+dist
+build
+coverage
+.turbo
+.pnpm-store
+pnpm-lock.yaml
+*.log
+.DS_Store
+cache
+artifacts
+broadcast

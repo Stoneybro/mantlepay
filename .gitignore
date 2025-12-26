@@ -1,0 +1,152 @@
+# ===========================
+# Dependencies
+# ===========================
+node_modules/
+.pnp
+.pnp.js
+.pnpm-store/
+.yarn/
+
+# ===========================
+# Package Manager Locks
+# ===========================
+# Uncomment the one you want to track
+# pnpm-lock.yaml
+# yarn.lock
+# package-lock.json
+
+# ===========================
+# Next.js
+# ===========================
+.next/
+out/
+build/
+dist/
+*.next/
+
+# Next.js cache
+.next-cache/
+
+# Production build
+/build
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+next-env.d.ts
+*.d.ts.map
+
+# ===========================
+# Testing
+# ===========================
+coverage/
+*.lcov
+.nyc_output/
+junit.xml
+
+# ===========================
+# Foundry
+# ===========================
+# Foundry output
+cache/
+out/
+broadcast/
+artifacts/
+
+# Foundry cache and build
+cache_forge/
+cache_hardhat/
+
+# Foundry dependencies (lib/ is typically tracked via git submodules)
+lib/
+
+# Foundry documentation
+docs/
+
+# ===========================
+# Environment Variables
+# ===========================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env*.local
+
+# ===========================
+# Logs
+# ===========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.pem
+
+# ===========================
+# IDEs and Editors
+# ===========================
+# VSCode
+.vscode/
+!.vscode/settings.json.example
+!.vscode/extensions.json.example
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+.vimsettings
+
+# Emacs
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ===========================
+# Deployment
+# ===========================
+.vercel
+.netlify
+
+# ===========================
+# Misc
+# ===========================
+.turbo
+.cache/
+.temp/
+tmp/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
