@@ -2,10 +2,10 @@
 pragma solidity ^0.8.19;
 
 /**
- * @title IAidraSmartWallet
- * @notice Interface for Aidra Smart Wallet that the Intent Registry interacts with
+ * @title IMneeSmartWallet
+ * @notice Interface for Mnee Smart Wallet that the Intent Registry interacts with
  */
-interface IAidraSmartWallet {
+interface IMneeSmartWallet {
     /**
      * @notice Increases the committed funds for intents.
      * @param token The token address (address(0) for ETH).
@@ -21,7 +21,7 @@ interface IAidraSmartWallet {
     function decreaseCommitment(address token, uint256 amount) external;
 
     /**
-     * @notice Executes a batch of transfers as part of an Aidra intent.
+     * @notice Executes a batch of transfers as part of an Mnee intent.
      * @param token The token address (address(0) for ETH, token address for ERC20).
      * @param recipients The array of recipient addresses.
      * @param amounts The array of amounts corresponding to each recipient.

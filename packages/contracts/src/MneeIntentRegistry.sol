@@ -3,17 +3,17 @@ pragma solidity ^0.8.19;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
-import {IAidraSmartWallet} from "./IAidraSmartWallet.sol";
+import {IMneeSmartWallet} from "./IMneeSmartWallet.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title Aidra Intent Registry
+ * @title Mnee Intent Registry
  * @author Zion Livingstone
- * @notice Central registry for managing automated payment intents across all Aidra wallets.
+ * @notice Central registry for managing automated payment intents across all Mnee wallets.
  * @dev Integrates with Chainlink Automation for decentralized intent execution. Supports ETH and ERC20 tokens.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
+contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -82,7 +82,6 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /// @notice Maximum intent duration (1 year in seconds)
     uint256 public constant MAX_DURATION = 365 days;
 
-
     /*//////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -103,11 +102,7 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
     /// @notice The event emitted when an intent is executed
     event IntentExecuted(
-        address indexed wallet,
-        bytes32 indexed intentId,
-        string name,
-        uint256 transactionCount,
-        uint256 totalAmount
+        address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount
     );
 
     /// @notice The event emitted when an intent is cancelled
@@ -128,49 +123,49 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Thrown when no recipients are provided
-    error AidraIntentRegistry__NoRecipients();
+    error MneeIntentRegistry__NoRecipients();
 
     /// @notice Thrown when a recipient address is zero
-    error AidraIntentRegistry__InvalidRecipient();
+    error MneeIntentRegistry__InvalidRecipient();
 
     /// @notice Thrown when recipients and amounts arrays have different lengths
-    error AidraIntentRegistry__ArrayLengthMismatch();
+    error MneeIntentRegistry__ArrayLengthMismatch();
 
     /// @notice Thrown when number of recipients exceeds maximum allowed
-    error AidraIntentRegistry__TooManyRecipients();
+    error MneeIntentRegistry__TooManyRecipients();
 
     /// @notice Thrown when duration is zero or exceeds maximum
-    error AidraIntentRegistry__InvalidDuration();
+    error MneeIntentRegistry__InvalidDuration();
 
     /// @notice Thrown when interval is below minimum
-    error AidraIntentRegistry__InvalidInterval();
+    error MneeIntentRegistry__InvalidInterval();
 
     /// @notice Thrown when an amount is zero or negative
-    error AidraIntentRegistry__InvalidAmount();
+    error MneeIntentRegistry__InvalidAmount();
 
     /// @notice Thrown when total transaction count is zero
-    error AidraIntentRegistry__InvalidTotalTransactionCount();
+    error MneeIntentRegistry__InvalidTotalTransactionCount();
 
     /// @notice Thrown when wallet has insufficient funds
-    error AidraIntentRegistry__InsufficientFunds();
+    error MneeIntentRegistry__InsufficientFunds();
 
     /// @notice Thrown when trying to execute an inactive intent
-    error AidraIntentRegistry__IntentNotActive();
+    error MneeIntentRegistry__IntentNotActive();
 
     /// @notice Thrown when intent conditions are not met for execution
-    error AidraIntentRegistry__IntentNotExecutable();
+    error MneeIntentRegistry__IntentNotExecutable();
 
     /// @notice Thrown when the caller is not the wallet owner
-    error AidraIntentRegistry__Unauthorized();
+    error MneeIntentRegistry__Unauthorized();
 
     /// @notice Thrown when token address is invalid
-    error AidraIntentRegistry__InvalidToken();
+    error MneeIntentRegistry__InvalidToken();
 
     /// @notice Thrown when transaction start time is in the past
-    error AidraIntentRegistry__StartTimeInPast();
+    error MneeIntentRegistry__StartTimeInPast();
 
     /// @notice Thrown when intent not found for wallet
-    error AidraIntentRegistry__IntentNotFound();
+    error MneeIntentRegistry__IntentNotFound();
 
     /*//////////////////////////////////////////////////////////////
                               FUNCTIONS
@@ -212,42 +207,42 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Validate token address (address(0) for ETH is valid)
         if (token != address(0)) {
             ///@dev Basic check: token must be a contract
-            if (token.code.length == 0) revert AidraIntentRegistry__InvalidToken();
+            if (token.code.length == 0) revert MneeIntentRegistry__InvalidToken();
         }
 
         ///@notice Validate recipients and amounts arrays
-        if (recipients.length == 0) revert AidraIntentRegistry__NoRecipients();
-        if (recipients.length != amounts.length) revert AidraIntentRegistry__ArrayLengthMismatch();
-        if (recipients.length > MAX_RECIPIENTS) revert AidraIntentRegistry__TooManyRecipients();
+        if (recipients.length == 0) revert MneeIntentRegistry__NoRecipients();
+        if (recipients.length != amounts.length) revert MneeIntentRegistry__ArrayLengthMismatch();
+        if (recipients.length > MAX_RECIPIENTS) revert MneeIntentRegistry__TooManyRecipients();
 
         ///@notice Validate timing parameters
-        if (duration == 0 || duration > MAX_DURATION) revert AidraIntentRegistry__InvalidDuration();
-        if (interval < MIN_INTERVAL) revert AidraIntentRegistry__InvalidInterval();
+        if (duration == 0 || duration > MAX_DURATION) revert MneeIntentRegistry__InvalidDuration();
+        if (interval < MIN_INTERVAL) revert MneeIntentRegistry__InvalidInterval();
 
         ///@notice Validate start time is not in the past (unless it's 0 for immediate start)
         if (transactionStartTime != 0 && transactionStartTime < block.timestamp) {
-            revert AidraIntentRegistry__StartTimeInPast();
+            revert MneeIntentRegistry__StartTimeInPast();
         }
 
         ///@notice Calculate total amount per execution and validate each recipient/amount
         uint256 totalAmountPerExecution = 0;
         for (uint256 i = 0; i < recipients.length; i++) {
-            if (recipients[i] == address(0)) revert AidraIntentRegistry__InvalidRecipient();
-            if (amounts[i] == 0) revert AidraIntentRegistry__InvalidAmount();
+            if (recipients[i] == address(0)) revert MneeIntentRegistry__InvalidRecipient();
+            if (amounts[i] == 0) revert MneeIntentRegistry__InvalidAmount();
             totalAmountPerExecution += amounts[i];
         }
 
         ///@notice Calculate projected final transaction count
         uint256 totalTransactionCount = duration / interval;
-        if (totalTransactionCount == 0) revert AidraIntentRegistry__InvalidTotalTransactionCount();
+        if (totalTransactionCount == 0) revert MneeIntentRegistry__InvalidTotalTransactionCount();
 
         ///@notice Calculate total commitment across all executions
         uint256 totalCommitment = totalAmountPerExecution * totalTransactionCount;
 
         ///@notice Check if the wallet has enough available funds to cover the intent
-        uint256 availableBalance = IAidraSmartWallet(wallet).getAvailableBalance(token);
+        uint256 availableBalance = IMneeSmartWallet(wallet).getAvailableBalance(token);
         if (availableBalance < totalCommitment) {
-            revert AidraIntentRegistry__InsufficientFunds();
+            revert MneeIntentRegistry__InsufficientFunds();
         }
 
         ///@notice Generate a unique intent id using abi.encode to prevent collision
@@ -278,12 +273,23 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Update the wallet's committed funds for this token
         walletCommittedFunds[wallet][token] += totalCommitment;
-        IAidraSmartWallet(wallet).increaseCommitment(token, totalCommitment);
+        IMneeSmartWallet(wallet).increaseCommitment(token, totalCommitment);
 
         ///@notice Add the intent id to the wallet's active intent ids
         walletActiveIntentIds[wallet].push(intentId);
 
-        emit IntentCreated(wallet, intentId, token, name, totalCommitment, totalTransactionCount, interval, duration, actualStartTime, actualEndTime);
+        emit IntentCreated(
+            wallet,
+            intentId,
+            token,
+            name,
+            totalCommitment,
+            totalTransactionCount,
+            interval,
+            duration,
+            actualStartTime,
+            actualEndTime
+        );
         return intentId;
     }
 
@@ -294,7 +300,9 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
      * @return upkeepNeeded True if an intent needs execution
      * @return performData Encoded wallet address and intent id to execute
      */
-    function checkUpkeep(bytes calldata /* checkData */ )
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
         external
         view
         override
@@ -383,14 +391,14 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Verify the intent exists and belongs to this wallet
         if (intent.id != intentId || intent.wallet != wallet) {
-            revert AidraIntentRegistry__IntentNotFound();
+            revert MneeIntentRegistry__IntentNotFound();
         }
 
         ///@notice Verify the intent is active
-        if (!intent.active) revert AidraIntentRegistry__IntentNotActive();
+        if (!intent.active) revert MneeIntentRegistry__IntentNotActive();
 
         ///@notice Verify the intent should be executed
-        if (!shouldExecuteIntent(intent)) revert AidraIntentRegistry__IntentNotExecutable();
+        if (!shouldExecuteIntent(intent)) revert MneeIntentRegistry__IntentNotExecutable();
 
         ///@notice Store current transaction count before incrementing
         uint256 currentTransactionCount = intent.transactionCount;
@@ -413,12 +421,18 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Update the wallet's committed funds for this token
         walletCommittedFunds[wallet][intent.token] -= totalAmount;
-        IAidraSmartWallet(wallet).decreaseCommitment(intent.token, totalAmount);
+        IMneeSmartWallet(wallet).decreaseCommitment(intent.token, totalAmount);
 
         ///@notice Execute the batch intent transfer with token, intentId and transaction count
-        uint256 failedAmount = IAidraSmartWallet(wallet).executeBatchIntentTransfer(
-            intent.token, intent.recipients, intent.amounts, intentId, currentTransactionCount, intent.revertOnFailure
-        );
+        uint256 failedAmount = IMneeSmartWallet(wallet)
+            .executeBatchIntentTransfer(
+                intent.token,
+                intent.recipients,
+                intent.amounts,
+                intentId,
+                currentTransactionCount,
+                intent.revertOnFailure
+            );
 
         ///@notice Track failed amounts for recovery
         if (failedAmount > 0) {
@@ -466,10 +480,10 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Verify the intent exists and belongs to this wallet
         if (intent.id != intentId || intent.wallet != wallet) {
-            revert AidraIntentRegistry__IntentNotFound();
+            revert MneeIntentRegistry__IntentNotFound();
         }
 
-        if (!intent.active) revert AidraIntentRegistry__IntentNotActive();
+        if (!intent.active) revert MneeIntentRegistry__IntentNotActive();
 
         ///@notice Calculate remaining amount
         uint256 totalAmount = 0;
@@ -490,7 +504,7 @@ contract AidraIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Unlock funds when the intent is cancelled (only if there are remaining transactions)
         if (amountRemaining > 0) {
             walletCommittedFunds[wallet][intent.token] -= amountRemaining;
-            IAidraSmartWallet(wallet).decreaseCommitment(intent.token, amountRemaining);
+            IMneeSmartWallet(wallet).decreaseCommitment(intent.token, amountRemaining);
         }
 
         intent.active = false;

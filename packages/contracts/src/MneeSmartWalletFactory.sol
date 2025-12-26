@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {AidraSmartWallet} from "./AidraSmartWallet.sol";
+import {MneeSmartWallet} from "./MneeSmartWallet.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 /**
- * @title Aidra Smart Wallet Factory
+ * @title Mnee Smart Wallet Factory
  * @author Zion Livingstone
- * @notice Factory for deploying ERC-1167 minimal proxy clones of Aidra Smart Wallet.
+ * @notice Factory for deploying ERC-1167 minimal proxy clones of Mnee Smart Wallet.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract AidraSmartWalletFactory {
+contract MneeSmartWalletFactory {
     /*//////////////////////////////////////////////////////////////
                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -38,18 +38,18 @@ contract AidraSmartWalletFactory {
     /**
      * @notice Thrown when trying to construct with an implementation that is not deployed.
      */
-    error AidraSmartWalletFactory__ImplementationUndeployed();
+    error MneeSmartWalletFactory__ImplementationUndeployed();
 
     /*CONSTRUCTOR*/
     /**
      * @notice Factory constructor used to initialize the implementation address to use for future
-     *   AidraSmartWallet deployments.
+     *   MneeSmartWallet deployments.
      *
-     * @param _implementation The address of the AidraSmartWallet implementation which new accounts will proxy to.
+     * @param _implementation The address of the MneeSmartWallet implementation which new accounts will proxy to.
      */
     constructor(address _implementation) {
         if (_implementation.code.length == 0) {
-            revert AidraSmartWalletFactory__ImplementationUndeployed();
+            revert MneeSmartWalletFactory__ImplementationUndeployed();
         }
         implementation = _implementation;
     }
@@ -59,7 +59,7 @@ contract AidraSmartWalletFactory {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Deploys and initializes a deterministic AidraSmartWallet for a specific owner, or returns
+     * @notice Deploys and initializes a deterministic MneeSmartWallet for a specific owner, or returns
      *         the existing account if already deployed.
      *
      * @dev Deployed as an ERC-1167 minimal proxy whose implementation is `this.implementation`.
@@ -84,7 +84,7 @@ contract AidraSmartWalletFactory {
         account = Clones.cloneDeterministic(implementation, salt);
 
         // Initialize with specified owner
-        AidraSmartWallet(payable(account)).initialize(owner);
+        MneeSmartWallet(payable(account)).initialize(owner);
 
         // Record mapping and emit after successful initialize
         userClones[owner] = account;

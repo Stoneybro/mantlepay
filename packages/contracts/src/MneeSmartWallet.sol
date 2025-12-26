@@ -7,18 +7,18 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {_packValidationData} from "@account-abstraction/contracts/core/Helpers.sol";
-import {IAidraSmartWallet} from "./IAidraSmartWallet.sol";
+import {IMneeSmartWallet} from "./IMneeSmartWallet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title Aidra Smart Wallet
+ * @title Mnee Smart Wallet
  * @author Zion Livingstone
  * @notice ERC-4337-compatible smart account supporting ETH and ERC20 token intents.
- * @dev Integrates with AidraIntentRegistry for  intent execution.
+ * @dev Integrates with MneeIntentRegistry for intent execution.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
+contract MneeSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -40,7 +40,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /// @notice Account owner address. Signer of UserOperations.
     address public s_owner;
 
-    /// @notice Aidra intent registry authorized to trigger scheduled transfers.
+    /// @notice Mnee intent registry authorized to trigger scheduled transfers.
     address public immutable intentRegistry;
 
     /// @notice Amount of funds committed to intents per token (locked)
@@ -109,31 +109,31 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Thrown when caller is not the EntryPoint.
-    error AidraSmartWallet__NotFromEntryPoint();
+    error MneeSmartWallet__NotFromEntryPoint();
 
     /// @notice Thrown when caller is neither EntryPoint nor owner.
-    error AidraSmartWallet__Unauthorized();
+    error MneeSmartWallet__Unauthorized();
 
     /// @notice Thrown when owner is zero address.
-    error AidraSmartWallet__OwnerIsZeroAddress();
+    error MneeSmartWallet__OwnerIsZeroAddress();
 
     /// @notice Thrown when registry address is zero.
-    error AidraSmartWallet__IntentRegistryZeroAddress();
+    error MneeSmartWallet__IntentRegistryZeroAddress();
 
     /// @notice Thrown when batch inputs are invalid.
-    error AidraSmartWallet__InvalidBatchInput();
+    error MneeSmartWallet__InvalidBatchInput();
 
     /// @notice Thrown when a transfer fails.
-    error AidraSmartWallet__TransferFailed(address recipient, address token, uint256 amount);
+    error MneeSmartWallet__TransferFailed(address recipient, address token, uint256 amount);
 
     /// @notice Thrown when there are insufficient uncommitted funds.
-    error AidraSmartWallet__InsufficientUncommittedFunds();
+    error MneeSmartWallet__InsufficientUncommittedFunds();
 
     /// @notice Thrown when caller is not the registry.
-    error AidraSmartWallet__NotFromRegistry();
+    error MneeSmartWallet__NotFromRegistry();
 
     /// @notice commitment decrease is more than commited balance
-    error AidraSmartWallet__InvalidCommitmentDecrease();
+    error MneeSmartWallet__InvalidCommitmentDecrease();
 
     /*//////////////////////////////////////////////////////////////
                               MODIFIERS
@@ -142,7 +142,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /// @notice Reverts if the caller is not the EntryPoint.
     modifier onlyEntryPoint() {
         if (msg.sender != entryPoint()) {
-            revert AidraSmartWallet__NotFromEntryPoint();
+            revert MneeSmartWallet__NotFromEntryPoint();
         }
         _;
     }
@@ -150,7 +150,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /// @notice Reverts if the caller is neither the EntryPoint nor the owner.
     modifier onlyEntryPointOrOwner() {
         if (msg.sender != entryPoint() && msg.sender != s_owner) {
-            revert AidraSmartWallet__Unauthorized();
+            revert MneeSmartWallet__Unauthorized();
         }
         _;
     }
@@ -158,7 +158,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /// @notice Reverts if the caller is not the registry.
     modifier onlyRegistry() {
         if (msg.sender != intentRegistry) {
-            revert AidraSmartWallet__NotFromRegistry();
+            revert MneeSmartWallet__NotFromRegistry();
         }
         _;
     }
@@ -191,7 +191,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
 
     /// @notice Constructor prevents initialization of implementation contract.
     constructor(address registry) {
-        if (registry == address(0)) revert AidraSmartWallet__IntentRegistryZeroAddress();
+        if (registry == address(0)) revert MneeSmartWallet__IntentRegistryZeroAddress();
         intentRegistry = registry;
         _disableInitializers();
     }
@@ -204,7 +204,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
      * @param _owner Address that will own this account and sign UserOperations.
      */
     function initialize(address _owner) external initializer {
-        if (_owner == address(0)) revert AidraSmartWallet__OwnerIsZeroAddress();
+        if (_owner == address(0)) revert MneeSmartWallet__OwnerIsZeroAddress();
         s_owner = _owner;
     }
 
@@ -270,7 +270,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
      */
     function decreaseCommitment(address token, uint256 amount) external onlyRegistry {
         if (amount > s_committedFunds[token]) {
-            revert AidraSmartWallet__InvalidCommitmentDecrease();
+            revert MneeSmartWallet__InvalidCommitmentDecrease();
         }
         s_committedFunds[token] -= amount;
         emit CommitmentDecreased(token, amount, s_committedFunds[token]);
@@ -324,7 +324,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Executes a batch of transfers as part of an Aidra intent.
+     * @notice Executes a batch of transfers as part of an Mnee intent.
      *
      * @param token The token address (address(0) for ETH, token address for ERC20).
      * @param recipients The array of recipient addresses.
@@ -344,7 +344,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
         bool revertOnFailure
     ) external nonReentrant onlyRegistry returns (uint256 failedAmount) {
         if (recipients.length == 0 || recipients.length != amounts.length) {
-            revert AidraSmartWallet__InvalidBatchInput();
+            revert MneeSmartWallet__InvalidBatchInput();
         }
         uint256 totalValue = 0;
         uint256 totalFailed = 0;
@@ -354,7 +354,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
             uint256 amount = amounts[i];
 
             if (recipient == address(0) || amount == 0) {
-                revert AidraSmartWallet__InvalidBatchInput();
+                revert MneeSmartWallet__InvalidBatchInput();
             }
 
             totalValue += amount;
@@ -378,7 +378,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
 
                 if (revertOnFailure) {
                     // Atomic mode: revert entire transaction on any failure
-                    revert AidraSmartWallet__TransferFailed(recipient, token, amount);
+                    revert MneeSmartWallet__TransferFailed(recipient, token, amount);
                 }
                 // Skip mode: continue to next recipient
             } else {
@@ -454,7 +454,7 @@ contract AidraSmartWallet is IAccount, ReentrancyGuard, Initializable {
             }
 
             if (value > availableBalance) {
-                revert AidraSmartWallet__InsufficientUncommittedFunds();
+                revert MneeSmartWallet__InsufficientUncommittedFunds();
             }
         }
     }
