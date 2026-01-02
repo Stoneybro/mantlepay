@@ -24,7 +24,6 @@ import { ChatInput } from "./ChatInput";
 function Chat(walletAddress: { walletAddress: string }) {
   const [showOverlay, setShowOverlay] = useState(true);
   const [input, setInput] = useState("");
-
   const { data: wallet } = useQuery({
     queryKey: ["walletBalance", walletAddress],
     queryFn: () => fetchWalletBalance(walletAddress.walletAddress as `0x${string}`),

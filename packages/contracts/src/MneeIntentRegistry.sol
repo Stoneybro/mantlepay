@@ -13,7 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @dev Integrates with Chainlink Automation for decentralized intent execution. Supports ETH and ERC20 tokens.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
+contract MneeIntentRegistry is  ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -25,8 +25,6 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         address wallet;
         /// @notice The token address (address(0) for ETH, token address for ERC20)
         address token;
-        /// @notice The name of the intent
-        string name;
         /// @notice The recipients of the intent
         address[] recipients;
         /// @notice The amounts per recipient per transaction
@@ -91,7 +89,6 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         address indexed wallet,
         bytes32 indexed intentId,
         address indexed token,
-        string name,
         uint256 totalCommitment,
         uint256 totalTransactionCount,
         uint256 interval,
@@ -102,7 +99,7 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
     /// @notice The event emitted when an intent is executed
     event IntentExecuted(
-        address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount
+        address indexed wallet, bytes32 indexed intentId, uint256 transactionCount, uint256 totalAmount
     );
 
     /// @notice The event emitted when an intent is cancelled
@@ -110,10 +107,11 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         address indexed wallet,
         bytes32 indexed intentId,
         address indexed token,
-        string name,
         uint256 amountRefunded,
         uint256 failedAmountRecovered
     );
+
+    event ScheduleNextExecution(bytes32 indexed intentId, address indexed wallet, uint256 executeAfter);
 
     /// @notice The event emitted when a wallet is registered
     event WalletRegistered(address indexed wallet);
@@ -175,7 +173,6 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
      * @notice Creates a new multi-recipient intent for the sender/wallet
      *
      * @param token The token address (address(0) for ETH, PYUSD address for PYUSD, other ERC20 addresses supported)
-     * @param name The name of the intent
      * @param recipients The array of recipient addresses
      * @param amounts The array of amounts corresponding to each recipient
      * @param duration The total duration of the intent in seconds
@@ -187,7 +184,6 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
      */
     function createIntent(
         address token,
-        string memory name,
         address[] memory recipients,
         uint256[] memory amounts,
         uint256 duration,
@@ -257,7 +253,6 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             id: intentId,
             wallet: wallet,
             token: token,
-            name: name,
             recipients: recipients,
             amounts: amounts,
             transactionCount: 0,
@@ -282,7 +277,6 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             wallet,
             intentId,
             token,
-            name,
             totalCommitment,
             totalTransactionCount,
             interval,
@@ -290,54 +284,10 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             actualStartTime,
             actualEndTime
         );
+        emit ScheduleNextExecution(intentId, wallet, actualStartTime);
         return intentId;
     }
 
-    /**
-     * @notice Chainlink Automation calls this to check if any intents need execution
-     *
-     *
-     * @return upkeepNeeded True if an intent needs execution
-     * @return performData Encoded wallet address and intent id to execute
-     */
-    function checkUpkeep(
-        bytes calldata /* checkData */
-    )
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
-        ///@notice Check if there are any registered wallets
-        if (registeredWallets.length == 0) return (false, bytes(""));
-
-        ///@notice Iterate through registered wallets and their active intents
-        for (uint256 i = 0; i < registeredWallets.length; i++) {
-            address wallet = registeredWallets[i];
-            bytes32[] memory activeIntents = walletActiveIntentIds[wallet];
-
-            for (uint256 j = 0; j < activeIntents.length; j++) {
-                bytes32 intentId = activeIntents[j];
-                Intent storage intent = walletIntents[wallet][intentId];
-
-                if (shouldExecuteIntent(intent)) {
-                    return (true, abi.encode(wallet, intentId));
-                }
-            }
-        }
-
-        return (false, bytes(""));
-    }
-
-    /**
-     * @notice Chainlink Automation calls this to execute an intent
-     *
-     * @param performData Encoded wallet address and intent id
-     */
-    function performUpkeep(bytes calldata performData) external override {
-        (address wallet, bytes32 intentId) = abi.decode(performData, (address, bytes32));
-        executeIntent(wallet, intentId);
-    }
 
     /**
      * @notice Checks if an intent should be executed based on its conditions
@@ -410,7 +360,6 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Deactivate the intent if it has reached the total transaction count
         if (intent.transactionCount >= intent.totalTransactionCount) {
             intent.active = false;
-            _removeFromActiveIntents(wallet, intentId);
         }
 
         ///@notice Calculate total amount for this execution
@@ -439,34 +388,8 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             intent.failedAmount += failedAmount;
         }
 
-        emit IntentExecuted(wallet, intentId, intent.name, currentTransactionCount, totalAmount);
-    }
-
-    /**
-     * @notice Removes an intent from the wallet's active intent ids array
-     *
-     * @param wallet The wallet address
-     * @param intentId The intent id to remove
-     */
-    function _removeFromActiveIntents(address wallet, bytes32 intentId) internal {
-        bytes32[] storage activeIntents = walletActiveIntentIds[wallet];
-        bool found = false;
-
-        for (uint256 i = 0; i < activeIntents.length; i++) {
-            if (activeIntents[i] == intentId) {
-                activeIntents[i] = activeIntents[activeIntents.length - 1];
-                activeIntents.pop();
-                found = true;
-                break;
-            }
-        }
-
-        ///@notice This should always find the intent, but we don't revert to avoid DoS
-        ///@dev If not found, it means the intent was already removed or never added
-        if (!found) {
-            // Intent not in active list - could be already removed or invalid state
-            // We don't revert here to allow cleanup to proceed
-        }
+        emit IntentExecuted(wallet, intentId, currentTransactionCount, totalAmount);
+        emit ScheduleNextExecution(intentId, wallet, block.timestamp + intent.interval);
     }
 
     /**
@@ -509,10 +432,9 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         intent.active = false;
         intent.failedAmount = 0; // Clear failed amount as we're emitting it
-        _removeFromActiveIntents(wallet, intentId);
 
         ///@notice Emit event
-        emit IntentCancelled(wallet, intentId, intent.token, intent.name, amountRemaining, failedAmountToRecover);
+        emit IntentCancelled(wallet, intentId, intent.token, amountRemaining, failedAmountToRecover);
     }
 
     /**
