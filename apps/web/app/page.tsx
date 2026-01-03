@@ -1,65 +1,109 @@
-import Image from "next/image";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 
 export default function Home() {
+  const techStack = [
+    'Next.js', 'Viem', 'Permissionless (Pimlico)', 'Privy', 'Vercel AI SDK',
+    'TanStack Query', 'Shadcn', 'Blockscout', 'Chainlink', 'Account Abstraction'
+  ]
+
+  const links = [
+    { name: 'Live Demo', url: 'https://Mnee.vercel.app' },
+    { name: 'GitHub', url: 'https://github.com/stoneybro/Mnee' },
+
+  ]
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="container mx-auto px-4 py-16 md:py-24">
+        {/* Hero Section */}
+        <section className="mx-auto max-w-4xl text-center">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            Mnee Interactive ERC-4337 Smart Wallet
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-6 max-w-2xl text-xl text-muted-foreground">
+            Smart wallet that turns natural language into batch, single, and scheduled payments.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+          
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button asChild size="lg">
+              <Link href="/login">Get Started</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="#features">Learn More</Link>
+            </Button>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="mt-20 lg:px-16">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="border-none bg-background shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">Natural Language Processing</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Mnee converts plain text into executable ERC-4337 UserOperations.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none bg-background shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">Gas-Sponsored Transactions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Uses a paymaster-bundler stack for automated, gas-sponsored transactions.</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none bg-background shadow-sm md:col-span-2 lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="text-xl">Versatile Use Cases</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Ideal for payrolls, subscriptions, and both automatic and manual disbursements.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        {/* Tech Stack Section */}
+        <section className="mt-20">
+          <h2 className="mb-6 text-center text-2xl font-semibold">Tech Stack</h2>
+          <div className="flex flex-wrap justify-center gap-2">
+            {techStack.map((tech) => (
+              <span key={tech} className="rounded-full bg-muted px-4 py-2 text-sm font-medium">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        {/* Links Section */}
+        <section className="mt-20">
+          <div className="flex flex-wrap justify-center gap-6">
+            {links.map((link) => (
+              <a
+                key={link.name}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium underline underline-offset-4 hover:text-primary"
+              >
+                {link.name}
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-20 text-center text-sm text-muted-foreground">
+          <Separator className="mx-auto mb-6 max-w-md" />
+          <p>Built for ETHGlobal — by zion livingstone</p>
+        </footer>
+      </div>
+    </main>
+  )
 }

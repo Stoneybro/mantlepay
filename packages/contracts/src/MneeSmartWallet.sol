@@ -11,13 +11,7 @@ import {IMneeSmartWallet} from "./IMneeSmartWallet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/**
- * @title Mnee Smart Wallet
- * @author Zion Livingstone
- * @notice ERC-4337-compatible smart account supporting ETH and ERC20 token intents.
- * @dev Integrates with MneeIntentRegistry for intent execution.
- * @custom:security-contact stoneybrocrypto@gmail.com
- */
+
 contract MneeSmartWallet is IAccount, ReentrancyGuard, Initializable {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
