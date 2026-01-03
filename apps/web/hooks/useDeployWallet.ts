@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
-
+import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 
 export function useDeployWallet() {
@@ -58,11 +58,11 @@ export function useDeployWallet() {
         return;
       }
 
-      // Cookies.set("wallet-deployed", address, {
-      //   expires: 7,
-      //   sameSite: "strict",
-      //   secure: process.env.NODE_ENV === "production",
-      // });
+      Cookies.set("wallet-deployed", address, {
+        expires: 7,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+      });
 
       queryClient.invalidateQueries({ queryKey: ["deploymentStatus", owner?.address] });
       router.push("/wallet");

@@ -7,6 +7,7 @@ import { PrivyProvider } from "@privy-io/react-auth";
 import { privyConfig } from "@/lib/privyConfig";
 import { Toaster } from "sonner";
 
+
 import { SmartAccountProvider } from "@/lib/SmartAccountProvider";
 
 interface ProviderProps {
@@ -26,11 +27,11 @@ export function Provider({ children }: ProviderProps) {
 
         <QueryClientProvider client={queryClient}>
           <SmartAccountProvider>
-          <Toaster position='top-center' />
-          {children}
+            <Toaster position='top-center' />
+            {children}
           </SmartAccountProvider>
         </QueryClientProvider>
       </PrivyProvider>
-      </>
+    </>
   );
 }

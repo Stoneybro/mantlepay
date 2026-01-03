@@ -7,9 +7,16 @@ import {
 } from "@/components/ui/sidebar";
 import Chat from "@/components/chat/chat";
 import { zeroAddress } from "viem";
+import useWalletDeployment from "@/hooks/useWalletDeployment";
 
 export default async function Page() {
-  const walletAddress =zeroAddress
+  const walletAddress = (await cookies()).get("wallet-deployed")
+    ?.value as `0x${string}`;
+  // const { isLoading } = useWalletDeployment();
+  // if (isLoading) {
+  //   return <div>Loading...</div>;
+  // }
+
   return (
     <SidebarProvider
       style={
@@ -18,7 +25,7 @@ export default async function Page() {
         } as React.CSSProperties
       }
     >
-      <AppSidebar walletAddress={walletAddress}/>
+      <AppSidebar walletAddress={walletAddress} />
       <SidebarInset>
         <header className='bg-background sticky top-0 flex shrink-0 items-center gap-2  p-4'>
           {/* <SidebarTrigger className="-ml-1" />

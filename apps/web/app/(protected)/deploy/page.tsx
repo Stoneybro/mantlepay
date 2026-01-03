@@ -4,11 +4,15 @@ import { Label } from "@radix-ui/react-label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useDeployWallet } from "@/hooks/useDeployWallet";
+import useWalletDeployment from "@/hooks/useWalletDeployment";
 
 function Page() {
   const [checked, setChecked] = useState(false);
   const { mutate: deployWallet, isPending } = useDeployWallet();
-
+  const { isLoading } = useWalletDeployment();
+if (isLoading) {
+  return <div>Loading...</div>;
+}
   return (
     <div>
       <div className='bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10'>
