@@ -10,38 +10,40 @@ import { formatNumber } from "./format";
  * - totalBalance: total ETH in smart account
  */
 
-export async function fetchWalletBalance(smartAccountAddress: `0x${string}`,address: `0x${string}`) {
+export async function fetchWalletBalance(smartAccountAddress: `0x${string}`) {
   const [availableEthBalance, committedEthBalance, availablePyusdBalance, committedPyuBalance] = await Promise.all([
     readContract({
       address: smartAccountAddress,
-      abi:  MneeSmartWalletABI,
+      abi: MneeSmartWalletABI,
       functionName: "getAvailableBalance",
       args: [zeroAddress],
     }),
     readContract({
       address: smartAccountAddress,
-      abi:  MneeSmartWalletABI,
+      abi: MneeSmartWalletABI,
       functionName: "s_committedFunds",
       args: [zeroAddress],
     }),
     readContract({
       address: smartAccountAddress,
-      abi:  MneeSmartWalletABI,
+      abi: MneeSmartWalletABI,
       functionName: "getAvailableBalance",
-      args: [address],
+      args: [MneeAddress],
     }),
     readContract({
       address: smartAccountAddress,
-      abi:  MneeSmartWalletABI,
+      abi: MneeSmartWalletABI,
       functionName: "s_committedFunds",
-      args: [address],
+      args: [MneeAddress],
     }),
   ]);
 
   return {
     availableEthBalance: formatNumber(availableEthBalance as bigint),
     committedEthBalance: formatNumber(committedEthBalance as bigint),
-    availablePyusdBalance: formatUnits(availablePyusdBalance as bigint,6),
-    committedPyusdBalance: formatUnits(committedPyuBalance as bigint,6),
+    availableMneeBalance: formatUnits(availablePyusdBalance as bigint, 6),
+    committedMneeBalance: formatUnits(committedPyuBalance as bigint, 6),
   };
 }
+
+export const MneeAddress = zeroAddress

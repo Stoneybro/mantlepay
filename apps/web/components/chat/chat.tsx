@@ -16,10 +16,11 @@ import {
 import { BsArrowRepeat, BsArrowUpRight } from "react-icons/bs";
 import { FaUsers, FaUsersGear } from "react-icons/fa6";
 import { Card, CardAction, CardFooter, CardHeader } from "../ui/card";
-import { fetchWalletBalance } from "@/utils/helpers";
+import { fetchWalletBalance } from "@/utils/helper";
 import { useQuery } from "@tanstack/react-query";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
+import { zeroAddress } from "viem";
 
 function Chat(walletAddress: { walletAddress: string }) {
   const [showOverlay, setShowOverlay] = useState(true);
@@ -41,20 +42,20 @@ function Chat(walletAddress: { walletAddress: string }) {
 
   // Transaction hooks
   const singleEthTransfer = useSingleTransfer(wallet?.availableEthBalance);
-  const singlePyusdTransfer = useSingleTokenTransfer(wallet?.availablePyusdBalance);
+  const singleMneeTransfer = useSingleTokenTransfer(wallet?.availableMneeBalance);
   const batchEthTransfer = useBatchTransfer(wallet?.availableEthBalance);
-  const batchPyusdTransfer = useBatchTokenTransfer(wallet?.availablePyusdBalance);
+  const batchMneeTransfer = useBatchTokenTransfer(wallet?.availableMneeBalance);
   const recurringEthPayment = useRecurringPayment(wallet?.availableEthBalance);
-  const recurringPyusdPayment = useRecurringTokenPayment(wallet?.availablePyusdBalance);
+  const recurringMneePayment = useRecurringTokenPayment(wallet?.availableMneeBalance);
   const cancelIntent = useCancelIntent();
 
   const hooks = {
     singleEthTransfer,
-    singlePyusdTransfer,
+    singleMneeTransfer,
     batchEthTransfer,
-    batchPyusdTransfer,
+    batchMneeTransfer,
     recurringEthPayment,
-    recurringPyusdPayment,
+    recurringMneePayment,
     cancelIntent,
   };
 
@@ -70,11 +71,11 @@ function Chat(walletAddress: { walletAddress: string }) {
   // Check if any transaction is pending
   const isTransactionPending =
     singleEthTransfer.isPending ||
-    singlePyusdTransfer.isPending ||
+    singleMneeTransfer.isPending ||
     batchEthTransfer.isPending ||
-    batchPyusdTransfer.isPending ||
+    batchMneeTransfer.isPending ||
     recurringEthPayment.isPending ||
-    recurringPyusdPayment.isPending ||
+    recurringMneePayment.isPending ||
     cancelIntent.isPending;
 
   const isLoading = status === 'submitted' || status === 'streaming';

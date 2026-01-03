@@ -2,12 +2,12 @@ import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
-import { encodeFunctionData, parseUnits, erc20Abi } from "viem";
-import { PYUSDAddress } from "@/utils/helpers";
+import { encodeFunctionData, parseUnits, erc20Abi, zeroAddress } from "viem";
+
 import { SingleTokenTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
-export function useSingleTokenTransfer(availablePyusdBalance?: string) {
+export function useSingleTokenTransfer(availableMneeBalance?: string) {
     const { getClient } = useSmartAccountContext();
     const { wallets } = useWallets();
     const owner = wallets?.find((wallet) => wallet.walletClientType === "privy");
@@ -17,11 +17,11 @@ export function useSingleTokenTransfer(availablePyusdBalance?: string) {
         mutationFn: async (params: SingleTokenTransferParams) => {
             try {
                 // Balance check
-                if (availablePyusdBalance) {
+                if (availableMneeBalance) {
                     const balanceCheck = checkSufficientBalance({
-                        availableBalance: availablePyusdBalance,
+                        availableBalance: availableMneeBalance,
                         requiredAmount: params.amount,
-                        token: "PYUSD"
+                        token: "MNEE"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -37,7 +37,7 @@ export function useSingleTokenTransfer(availablePyusdBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = PYUSDAddress;
+                const token = zeroAddress
                 const decimals = 6;
                 const amountInUnits = parseUnits(params.amount, decimals);
 
@@ -62,10 +62,10 @@ export function useSingleTokenTransfer(availablePyusdBalance?: string) {
                     hash,
                 });
 
-                toast.success("PYUSD transfer sent successfully!");
+                toast.success("MNEE transfer sent successfully!");
                 return receipt;
             } catch (error) {
-                console.error("Error sending PYUSD transfer:", error);
+                console.error("Error sending MNEE transfer:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to send token transfer";
                 toast.error(errorMessage);
                 throw error;

@@ -6,11 +6,10 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import Chat from "@/components/chat/chat";
-
+import { zeroAddress } from "viem";
 
 export default async function Page() {
-  const walletAddress = (await cookies()).get("wallet-deployed")
-    ?.value as `0x${string}`;
+  const walletAddress =zeroAddress
   return (
     <SidebarProvider
       style={

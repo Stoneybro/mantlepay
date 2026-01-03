@@ -15,7 +15,7 @@ interface BatchTransferToolProps {
     addToolResult: (result: any) => void;
     isTransactionPending: boolean;
     mutation: any;
-    type: 'ETH' | 'PYUSD';
+    type: 'ETH' | 'MNEE';
 }
 
 export function BatchTransferTool({
@@ -26,7 +26,7 @@ export function BatchTransferTool({
     mutation,
     type
 }: BatchTransferToolProps) {
-    const toolName = type === 'ETH' ? 'executeBatchEthTransfer' : 'executeBatchPyusdTransfer';
+    const toolName = type === 'ETH' ? 'executeBatchEthTransfer' : 'executeBatchMneeTransfer';
     const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
 
     if ('state' in part) {
@@ -54,10 +54,10 @@ export function BatchTransferTool({
 
                         <div className="text-sm space-y-1 mb-4">
                             <p><strong>Recipients:</strong> {batchInput.recipients.length}</p>
-                            <p><strong>Total:</strong> {type === 'PYUSD' ? '$' : ''}{totalAmount} {type}</p>
+                            <p><strong>Total:</strong> {type === 'MNEE' ? '$' : ''}{totalAmount} {type}</p>
                             <div className="mt-2 space-y-1 pl-2 max-h-40 overflow-y-auto">
                                 {batchInput.recipients.map((addr: string, idx: number) => (
-                                    <p key={idx} className="text-xs">• {addr}: {type === 'PYUSD' ? '$' : ''}{batchInput.amounts[idx]} {type}</p>
+                                    <p key={idx} className="text-xs">• {addr}: {type === 'MNEE' ? '$' : ''}{batchInput.amounts[idx]} {type}</p>
                                 ))}
                             </div>
                         </div>

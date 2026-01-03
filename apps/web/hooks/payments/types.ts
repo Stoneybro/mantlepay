@@ -1,7 +1,7 @@
 export type BalanceCheckParams = {
     availableBalance: string;
     requiredAmount: string;
-    token: "ETH" | "PYUSD";
+    token: "ETH" | "MNEE";
 };
 
 export type SingleTransferParams = {

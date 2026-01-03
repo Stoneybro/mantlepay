@@ -12,11 +12,11 @@ interface ToolRendererProps {
     isTransactionPending: boolean;
     hooks: {
         singleEthTransfer: any;
-        singlePyusdTransfer: any;
+        singleMneeTransfer: any;
         batchEthTransfer: any;
-        batchPyusdTransfer: any;
+        batchMneeTransfer: any;
         recurringEthPayment: any;
-        recurringPyusdPayment: any;
+        recurringMneePayment: any;
         cancelIntent: any;
     };
 }
@@ -42,15 +42,15 @@ export function ToolRenderer({
         );
     }
 
-    if (part.type === "tool-executeSinglePyusdTransfer") {
+    if (part.type === "tool-executeSingleMneeTransfer") {
         return (
             <SingleTransferTool
                 part={part}
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.singlePyusdTransfer}
-                type="PYUSD"
+                mutation={hooks.singleMneeTransfer}
+                type="MNEE"
             />
         );
     }
@@ -68,15 +68,15 @@ export function ToolRenderer({
         );
     }
 
-    if (part.type === "tool-executeBatchPyusdTransfer") {
+    if (part.type === "tool-executeBatchMneeTransfer") {
         return (
             <BatchTransferTool
                 part={part}
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.batchPyusdTransfer}
-                type="PYUSD"
+                mutation={hooks.batchMneeTransfer}
+                type="MNEE"
             />
         );
     }
@@ -94,15 +94,15 @@ export function ToolRenderer({
         );
     }
 
-    if (part.type === "tool-executeRecurringPyusdPayment") {
+    if (part.type === "tool-executeRecurringMneePayment") {
         return (
             <RecurringPaymentTool
                 part={part}
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.recurringPyusdPayment}
-                type="PYUSD"
+                mutation={hooks.recurringMneePayment}
+                type="MNEE"
             />
         );
     }

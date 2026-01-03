@@ -12,11 +12,11 @@ interface ChatMessagesProps {
     isLoading: boolean;
     hooks: {
         singleEthTransfer: any;
-        singlePyusdTransfer: any;
+        singleMneeTransfer: any;
         batchEthTransfer: any;
-        batchPyusdTransfer: any;
+        batchMneeTransfer: any;
         recurringEthPayment: any;
-        recurringPyusdPayment: any;
+        recurringMneePayment: any;
         cancelIntent: any;
     };
 }

@@ -13,7 +13,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @dev Integrates with Chainlink Automation for decentralized intent execution. Supports ETH and ERC20 tokens.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract MneeIntentRegistry is  ReentrancyGuard {
+contract MneeIntentRegistry is ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -172,7 +172,7 @@ contract MneeIntentRegistry is  ReentrancyGuard {
     /**
      * @notice Creates a new multi-recipient intent for the sender/wallet
      *
-     * @param token The token address (address(0) for ETH, PYUSD address for PYUSD, other ERC20 addresses supported)
+     * @param token The token address (address(0) for ETH, MNEE address for MNEE, other ERC20 addresses supported)
      * @param recipients The array of recipient addresses
      * @param amounts The array of amounts corresponding to each recipient
      * @param duration The total duration of the intent in seconds
@@ -287,7 +287,6 @@ contract MneeIntentRegistry is  ReentrancyGuard {
         emit ScheduleNextExecution(intentId, wallet, actualStartTime);
         return intentId;
     }
-
 
     /**
      * @notice Checks if an intent should be executed based on its conditions

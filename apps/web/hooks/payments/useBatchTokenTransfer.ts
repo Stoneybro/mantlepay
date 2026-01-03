@@ -2,12 +2,12 @@ import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
-import { encodeFunctionData, parseUnits, erc20Abi } from "viem";
-import { PYUSDAddress } from "@/utils/helpers";
+import { encodeFunctionData, parseUnits, erc20Abi, zeroAddress } from "viem";
+
 import { BatchTokenTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
-export function useBatchTokenTransfer(availablePyusdBalance?: string) {
+export function useBatchTokenTransfer(availableMneeBalance?: string) {
     const { getClient } = useSmartAccountContext();
     const { wallets } = useWallets();
     const owner = wallets?.find((wallet) => wallet.walletClientType === "privy");
@@ -20,11 +20,11 @@ export function useBatchTokenTransfer(availablePyusdBalance?: string) {
                 const totalAmount = params.amounts.reduce((sum, amount) => sum + parseFloat(amount), 0).toString();
 
                 // Balance check
-                if (availablePyusdBalance) {
+                if (availableMneeBalance) {
                     const balanceCheck = checkSufficientBalance({
-                        availableBalance: availablePyusdBalance,
+                        availableBalance: availableMneeBalance,
                         requiredAmount: totalAmount,
-                        token: "PYUSD"
+                        token: "MNEE"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -40,7 +40,7 @@ export function useBatchTokenTransfer(availablePyusdBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = PYUSDAddress;
+                const token = zeroAddress;
                 const decimals = 6;
                 const amountsInUnits = params.amounts.map((amount) =>
                     parseUnits(amount, decimals)
@@ -70,11 +70,11 @@ export function useBatchTokenTransfer(availablePyusdBalance?: string) {
                 });
 
                 toast.success(
-                    `Batch PYUSD transfer completed! Sent to ${params.recipients.length} recipients.`
+                    `Batch MNEE transfer completed! Sent to ${params.recipients.length} recipients.`
                 );
                 return receipt;
             } catch (error) {
-                console.error("Error sending batch PYUSD transfer:", error);
+                console.error("Error sending batch MNEE transfer:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to send batch token transfer";
                 toast.error(errorMessage);
                 throw error;

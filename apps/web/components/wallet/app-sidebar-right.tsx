@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { truncateAddress } from "@/utils/format";
 import CopyText from "../ui/copy";
-import { fetchWalletBalance} from "@/utils/helper";
+import { fetchWalletBalance } from "@/utils/helper";
 import { useQuery } from "@tanstack/react-query";
 import { WalletQR } from "./qrcode";
 import { Skeleton } from "../ui/skeleton";
@@ -30,13 +30,13 @@ export function AppSidebarRight({
 }: AppSidebarRightProps & React.ComponentProps<typeof Sidebar>) {
   const { data: wallet, isLoading: walletIsLoading } = useQuery({
     queryKey: ["walletBalance", walletAddress],
-    queryFn: () => fetchWalletBalance(walletAddress, zeroAddress),
+    queryFn: () => fetchWalletBalance(walletAddress),
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     staleTime: Infinity,
   });
 
-  
+
 
   const { setOpen } = useSidebar();
   const [isClaimed, setIsClaimed] = useState(false);
@@ -108,16 +108,16 @@ export function AppSidebarRight({
                         alt='pyusd logo image'
                       />
                     </div>
-                    <div className=''>PYUSD</div>
+                    <div className=''>MNEE</div>
                   </div>
                   <div className='flex flex-col justify-center items-end '>
                     <div className='text-xs'>
                       {walletIsLoading ? (
                         <Skeleton className='w-6' />
                       ) : (
-                        wallet?.availablePyusdBalance
+                        wallet?.availableMneeBalance
                       )}{" "}
-                      PYUSD
+                      MNEE
                     </div>
                   </div>
                 </div>
@@ -159,16 +159,16 @@ export function AppSidebarRight({
                         alt='pyusd logo image'
                       />
                     </div>
-                    <div className=''>PYUSD</div>
+                    <div className=''>MNEE</div>
                   </div>
                   <div className='flex flex-col justify-center items-end '>
                     <div className='text-xs'>
                       {walletIsLoading ? (
                         <Skeleton className='w-6' />
                       ) : (
-                        wallet?.committedPyusdBalance
+                        wallet?.committedMneeBalance
                       )}{" "}
-                      PYUSD
+                      MNEE
                     </div>
                   </div>
                 </div>

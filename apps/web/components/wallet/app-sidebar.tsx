@@ -21,7 +21,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-import TransactionItem from "./TxItem";
+// import TransactionItem from "./TxItem";
 
 
 type AppSidebarProps = {

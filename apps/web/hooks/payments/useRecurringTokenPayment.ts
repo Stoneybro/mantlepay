@@ -2,14 +2,14 @@ import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
-import { encodeFunctionData, parseUnits } from "viem";
-import { AidraIntentRegistry } from "@/lib/abi/AidraIntentRegistry";
-import { AidraRegistryAddress } from "@/lib/CA";
-import { PYUSDAddress } from "@/utils/helpers";
+import { encodeFunctionData, parseUnits, zeroAddress } from "viem";
+import { MneeIntentRegistryABI } from "@/lib/abi/MneeIntentRegistry";
+import { MneeRegistryAddress } from "@/lib/CA";
+import { MneeAddress } from "@/utils/helper";
 import { RecurringTokenPaymentParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
-export function useRecurringTokenPayment(availablePyusdBalance?: string) {
+export function useRecurringTokenPayment(availableMneeBalance?: string) {
     const { getClient } = useSmartAccountContext();
     const { wallets } = useWallets();
     const owner = wallets?.find((wallet) => wallet.walletClientType === "privy");
@@ -24,11 +24,11 @@ export function useRecurringTokenPayment(availablePyusdBalance?: string) {
                 const totalCommitment = (amountPerPayment * totalPayments).toString();
 
                 // Balance check
-                if (availablePyusdBalance) {
+                if (availableMneeBalance) {
                     const balanceCheck = checkSufficientBalance({
-                        availableBalance: availablePyusdBalance,
+                        availableBalance: availableMneeBalance,
                         requiredAmount: totalCommitment,
-                        token: "PYUSD"
+                        token: "MNEE"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -44,14 +44,14 @@ export function useRecurringTokenPayment(availablePyusdBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = PYUSDAddress;
+                const token = zeroAddress;
                 const decimals = 6;
                 const amountsInUnits = params.amounts.map((amount) =>
                     parseUnits(amount, decimals)
                 );
 
                 const callData = encodeFunctionData({
-                    abi: AidraIntentRegistry,
+                    abi: MneeIntentRegistryABI,
                     functionName: "createIntent",
                     args: [
                         token,
@@ -69,7 +69,7 @@ export function useRecurringTokenPayment(availablePyusdBalance?: string) {
                     account: smartAccountClient.account,
                     calls: [
                         {
-                            to: AidraRegistryAddress,
+                            to: MneeRegistryAddress,
                             data: callData,
                             value: 0n,
                         },
@@ -80,10 +80,10 @@ export function useRecurringTokenPayment(availablePyusdBalance?: string) {
                     hash,
                 });
 
-                toast.success("Recurring PYUSD payment intent created successfully!");
+                toast.success("Recurring MNEE payment intent created successfully!");
                 return receipt;
             } catch (error) {
-                console.error("Error creating recurring PYUSD payment intent:", error);
+                console.error("Error creating recurring MNEE payment intent:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to create recurring token payment intent";
                 toast.error(errorMessage);
                 throw error;

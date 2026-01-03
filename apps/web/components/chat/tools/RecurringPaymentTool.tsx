@@ -22,7 +22,7 @@ interface RecurringPaymentToolProps {
     addToolResult: (result: any) => void;
     isTransactionPending: boolean;
     mutation: any;
-    type: 'ETH' | 'PYUSD';
+    type: 'ETH' | 'MNEE';
 }
 
 export function RecurringPaymentTool({
@@ -33,7 +33,7 @@ export function RecurringPaymentTool({
     mutation,
     type
 }: RecurringPaymentToolProps) {
-    const toolName = type === 'ETH' ? 'executeRecurringEthPayment' : 'executeRecurringPyusdPayment';
+    const toolName = type === 'ETH' ? 'executeRecurringEthPayment' : 'executeRecurringMneePayment';
     const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
 
     if ('state' in part) {
@@ -64,11 +64,11 @@ export function RecurringPaymentTool({
                         <div className="text-sm space-y-1 mb-4">
                             <p><strong>Name:</strong> {recurringInput.name}</p>
                             <p><strong>Recipients:</strong> {recurringInput.recipients.length}</p>
-                            <p><strong>Amount per payment:</strong> {type === 'PYUSD' ? '$' : ''}{amountPerPayment.toFixed(type === 'ETH' ? 4 : 2)} {type}</p>
+                            <p><strong>Amount per payment:</strong> {type === 'MNEE' ? '$' : ''}{amountPerPayment.toFixed(type === 'ETH' ? 4 : 2)} {type}</p>
                             <p><strong>Frequency:</strong> Every {formatInterval(recurringInput.interval)}</p>
                             <p><strong>Duration:</strong> {formatInterval(recurringInput.duration)}</p>
                             <p><strong>Total payments:</strong> {totalPayments}</p>
-                            <p><strong>Total commitment:</strong> {type === 'PYUSD' ? '$' : ''}{grandTotal} {type}</p>
+                            <p><strong>Total commitment:</strong> {type === 'MNEE' ? '$' : ''}{grandTotal} {type}</p>
                             <p><strong>Starts:</strong> {formatStartTime(recurringInput.transactionStartTime)}</p>
                             <p><strong>Failure handling:</strong> {recurringInput.revertOnFailure ? "Stop on failure" : "Skip failures"}</p>
                         </div>

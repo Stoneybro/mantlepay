@@ -30,7 +30,7 @@ Step 2: Check for SCHEDULING keywords (every, daily, weekly, monthly, schedule, 
 - IF absent → GO TO ONE-TIME TOOLS (Step 4)
 
 Step 3: RECURRING TOOLS - Check token type
-- IF token is PYUSD/USD/$/dollars → Use executeRecurringPyusdPayment
+- IF token is MNEE/$/dollars → Use executeRecurringMneePayment
 - IF token is ETH/eth/ether OR no token specified → Use executeRecurringEthPayment
 
 Step 4: ONE-TIME TOOLS - Count recipients
@@ -38,11 +38,11 @@ Step 4: ONE-TIME TOOLS - Count recipients
 - IF 2 or more recipients → GO TO BATCH TRANSFER (Step 6)
 
 Step 5: SINGLE TRANSFER - Check token type
-- IF token is PYUSD/USD/$/dollars → Use executeSinglePyusdTransfer
+- IF token is MNEE/USD/$/dollars → Use executeSingleMneeTransfer
 - IF token is ETH/eth/ether OR no token specified → Use executeSingleEthTransfer
 
 Step 6: BATCH TRANSFER - Check token type
-- IF token is PYUSD/USD/$/dollars → Use executeBatchPyusdTransfer
+- IF token is MNEE/USD/$/dollars → Use executeBatchMneeTransfer
 - IF token is ETH/eth/ether OR no token specified → Use executeBatchEthTransfer
 
 ## TOKEN IDENTIFICATION RULES
@@ -51,9 +51,9 @@ ETH TOKEN INDICATORS:
 - Keywords: "ETH", "eth", "ether", "ethereum", "Ξ"
 - DEFAULT: If no token is mentioned, assume ETH
 
-PYUSD TOKEN INDICATORS:
-- Keywords: "PYUSD", "pyusd", "PayPal USD"
-- USD keywords: "USD", "usd", "dollars", "$" (dollar sign)
+MNEE TOKEN INDICATORS:
+- Keywords: "MNEE", "mnee"
+- USD keywords: "USD", "usd", "dollars", "$" (dollar sign) (Implicitly MNEE)
 
 ## TIME CONVERSION REFERENCE (for recurring payments)
 
@@ -137,7 +137,7 @@ EXAMPLES THAT TRIGGER THIS TOOL:
 DO NOT USE IF:
 - Multiple recipients mentioned (use executeBatchEthTransfer)
 - Scheduling words present (use executeRecurringEthPayment)
-- Token is PYUSD/USD/$ (use executeSinglePyusdTransfer)`,
+- Token is MNEE/USD/$ (use executeSingleMneeTransfer)`,
 
           inputSchema: z.object({
             to: z
@@ -160,23 +160,23 @@ DO NOT USE IF:
         // ============================================
         // TOOL 2: SINGLE PYUSD TRANSFER
         // ============================================
-        executeSinglePyusdTransfer: {
-          description: `Execute a one-time PYUSD transfer to exactly one recipient.
+        executeSingleMneeTransfer: {
+          description: `Execute a one-time MNEE transfer to exactly one recipient.
 
 WHEN TO USE THIS TOOL:
-- User wants to send/transfer/pay in PYUSD/USD/dollars
+- User wants to send/transfer/pay in MNEE/USD/dollars
 - Exactly 1 recipient address mentioned
 - NO scheduling keywords present
-- Token explicitly PYUSD or $ mentioned
+- Token explicitly MNEE or $ mentioned
 
 EXAMPLES THAT TRIGGER THIS TOOL:
 - "send $50 to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-- "transfer 100 PYUSD to Alice"
+- "transfer 100 MNEE to Alice"
 - "pay 25 dollars to 0x123..."
 
 DO NOT USE IF:
-- Multiple recipients mentioned (use executeBatchPyusdTransfer)
-- Scheduling words present (use executeRecurringPyusdPayment)
+- Multiple recipients mentioned (use executeBatchMneeTransfer)
+- Scheduling words present (use executeRecurringMneePayment)
 - Token is ETH (use executeSingleEthTransfer)`,
 
           inputSchema: z.object({
@@ -192,7 +192,7 @@ DO NOT USE IF:
               .string()
               .regex(/^\d+(\.\d{1,6})?$/)
               .describe(
-                'PYUSD amount as decimal string (up to 6 decimals). Examples: "10.50", "100", "5.25"'
+                'MNEE amount as decimal string (up to 6 decimals). Examples: "10.50", "100", "5.25"'
               ),
           }),
         },
@@ -223,7 +223,7 @@ AMOUNT PATTERNS:
 DO NOT USE IF:
 - Only 1 recipient (use executeSingleEthTransfer)
 - Scheduling words present (use executeRecurringEthPayment)
-- Token is PYUSD/USD/$ (use executeBatchPyusdTransfer)
+- Token is MNEE/USD/$ (use executeBatchMneeTransfer)
 - More than 10 recipients (reject with error message)`,
 
           inputSchema: z
@@ -258,18 +258,18 @@ DO NOT USE IF:
         // ============================================
         // TOOL 4: BATCH PYUSD TRANSFER
         // ============================================
-        executeBatchPyusdTransfer: {
-          description: `Execute one-time PYUSD transfers to multiple recipients in a single transaction.
+        executeBatchMneeTransfer: {
+          description: `Execute one-time MNEE transfers to multiple recipients in a single transaction.
 
 WHEN TO USE THIS TOOL:
-- User wants to send/transfer/pay in PYUSD/USD/dollars
+- User wants to send/transfer/pay in MNEE/USD/dollars
 - 2 or more recipient addresses mentioned (minimum 2, maximum 10)
 - NO scheduling keywords present
-- Token explicitly PYUSD or $ mentioned
+- Token explicitly MNEE or $ mentioned
 
 EXAMPLES THAT TRIGGER THIS TOOL:
 - "send $10 to Alice and $20 to Bob"
-- "pay 50 PYUSD each to 3 addresses"
+- "pay 50 MNEE each to 3 addresses"
 - "transfer $100, $200, $300 to these wallets"
 
 AMOUNT PATTERNS:
@@ -278,7 +278,7 @@ AMOUNT PATTERNS:
 
 DO NOT USE IF:
 - Only 1 recipient (use executeSinglePyusdTransfer)
-- Scheduling words present (use executeRecurringPyusdPayment)
+- Scheduling words present (use executeRecurringMneePayment)
 - Token is ETH (use executeBatchEthTransfer)
 - More than 10 recipients (reject)`,
 
@@ -300,7 +300,7 @@ DO NOT USE IF:
                 .min(2)
                 .max(10)
                 .describe(
-                  "Array of PYUSD amounts (up to 6 decimals), one per recipient. Must match recipients length."
+                  "Array of MNEE amounts (up to 6 decimals), one per recipient. Must match recipients length."
                 ),
             })
             .refine((data) => data.recipients.length === data.amounts.length, {
@@ -343,7 +343,7 @@ REQUIRED PARAMETERS TO EXTRACT:
 
 DO NOT USE IF:
 - No scheduling keywords present (use one-time transfer tools)
-- Token is PYUSD/USD/$ (use executeRecurringPyusdPayment)`,
+- Token is MNEE/USD/$ (use executeRecurringMneePayment)`,
 
           inputSchema: z
             .object({
@@ -414,16 +414,16 @@ DO NOT USE IF:
         // ============================================
         // TOOL 6: RECURRING PYUSD PAYMENT
         // ============================================
-        executeRecurringPyusdPayment: {
-          description: `Create automatic scheduled PYUSD payments that repeat over time.
+        executeRecurringMneePayment: {
+          description: `Create automatic scheduled MNEE payments that repeat over time.
 
 WHEN TO USE THIS TOOL:
 - User mentions ANY scheduling keyword: "every", "daily", "weekly", "schedule", "recurring", "repeat", "automate", "subscribe", "for X"
-- Token is explicitly PYUSD/USD/$/dollars
+- Token is explicitly MNEE/USD/$/dollars
 - Can be single or multiple recipients
 
 EXAMPLES THAT TRIGGER THIS TOOL:
-- "pay $20 PYUSD every week for 8 weeks"
+- "pay $20 MNEE every week for 8 weeks"
 - "schedule $5 daily to 0x..."
 - "recurring payment of $100 USD monthly"
 - "send $10 each to these addresses every day for 30 days"
@@ -432,16 +432,16 @@ CRITICAL TIME CONVERSIONS:
 Same as ETH recurring tool
 
 REQUIRED PARAMETERS TO EXTRACT:
-- Name: If not provided, generate like "PYUSD payment every [interval]"
+- Name: If not provided, generate like "MNEE payment every [interval]"
 - Recipients: 1 or more addresses (max 10)
-- Amounts: One per recipient in PYUSD (up to 6 decimals)
+- Amounts: One per recipient in MNEE (up to 6 decimals)
 - Interval: Seconds between payments (min 30)
 - Duration: Total duration in seconds (max 31536000)
 - transactionStartTime: Use 0 for immediate
 - revertOnFailure: Default true
 
 DO NOT USE IF:
-- No scheduling keywords present (use one-time PYUSD transfer)
+- No scheduling keywords present (use one-time MNEE transfer)
 - Token is ETH (use executeRecurringEthPayment)`,
 
           inputSchema: z
@@ -451,7 +451,7 @@ DO NOT USE IF:
                 .min(1)
                 .default("Recurring PYUSD Payment")
                 .describe(
-                  'User-friendly name for this PYUSD schedule. Example: "Monthly subscription", "Weekly allowance"'
+                  'User-friendly name for this MNEE schedule. Example: "Monthly subscription", "Weekly allowance"'
                 ),
               recipients: z
                 .array(
@@ -469,7 +469,7 @@ DO NOT USE IF:
                 .min(1)
                 .max(10)
                 .describe(
-                  'Array of PYUSD amounts as strings (up to 6 decimals), one per recipient. If "$X each", replicate amount.'
+                  'Array of MNEE amounts as strings (up to 6 decimals), one per recipient. If "$X each", replicate amount.'
                 ),
               interval: z
                 .number()
