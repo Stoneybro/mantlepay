@@ -44,7 +44,7 @@ export function useRecurringTokenPayment(availableMneeBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = zeroAddress;
+                const token = MneeAddress;
                 const decimals = 6;
                 const amountsInUnits = params.amounts.map((amount) =>
                     parseUnits(amount, decimals)
@@ -55,7 +55,6 @@ export function useRecurringTokenPayment(availableMneeBalance?: string) {
                     functionName: "createIntent",
                     args: [
                         token,
-                        params.name,
                         params.recipients,
                         amountsInUnits,
                         BigInt(params.duration),

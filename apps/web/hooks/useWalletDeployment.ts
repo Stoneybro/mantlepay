@@ -36,7 +36,7 @@ async function checkWalletDeployment(address: string): Promise<boolean> {
 function useWalletDeployment() {
   const { user, authenticated, ready } = usePrivy();
   const address = user?.wallet?.address;
-  return useQuery({
+  const query = useQuery({
     queryKey: ["deploymentStatus", address],
     queryFn: () => checkWalletDeployment(address!),
     enabled: ready && authenticated && !!address,
@@ -47,6 +47,11 @@ function useWalletDeployment() {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+
+  return {
+    ...query,
+    isLoading: !ready || query.isLoading,
+  };
 }
 
 export default useWalletDeployment;

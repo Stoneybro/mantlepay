@@ -78,12 +78,12 @@ export function AppSidebarRight({
                 <div className=' flex items-center justify-between w-full'>
                   <div className='flex items-center '>
                     <div className=''>
-                      <Image
+                      {/* <Image
                         src={"/Ethereum.svg"}
                         height={30}
                         width={30}
                         alt='ethereum logo image'
-                      />
+                      /> */}
                     </div>
                     <div className=''>ETH</div>
                   </div>
@@ -101,12 +101,12 @@ export function AppSidebarRight({
                 <div className=' flex items-center justify-between w-full'>
                   <div className='flex items-center '>
                     <div className=''>
-                      <Image
+                      {/* <Image
                         src={"/Pyusd.svg"}
                         height={30}
                         width={30}
                         alt='pyusd logo image'
-                      />
+                      /> */}
                     </div>
                     <div className=''>MNEE</div>
                   </div>
@@ -129,12 +129,12 @@ export function AppSidebarRight({
                 <div className=' flex items-center justify-between w-full'>
                   <div className='flex items-center '>
                     <div className=''>
-                      <Image
+                      {/* <Image
                         src={"/ethereum.svg"}
                         height={30}
                         width={30}
                         alt='ethereum logo image'
-                      />
+                      /> */}
                     </div>
                     <div className=''>ETH</div>
                   </div>
@@ -152,12 +152,12 @@ export function AppSidebarRight({
                 <div className=' flex items-center justify-between w-full'>
                   <div className='flex items-center '>
                     <div className=''>
-                      <Image
+                      {/* <Image
                         src={"/pyusd.svg"}
                         height={30}
                         width={30}
                         alt='pyusd logo image'
-                      />
+                      /> */}
                     </div>
                     <div className=''>MNEE</div>
                   </div>

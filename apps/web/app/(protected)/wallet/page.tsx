@@ -12,10 +12,7 @@ import useWalletDeployment from "@/hooks/useWalletDeployment";
 export default async function Page() {
   const walletAddress = (await cookies()).get("wallet-deployed")
     ?.value as `0x${string}`;
-  // const { isLoading } = useWalletDeployment();
-  // if (isLoading) {
-  //   return <div>Loading...</div>;
-  // }
+
 
   return (
     <SidebarProvider
