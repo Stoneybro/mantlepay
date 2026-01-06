@@ -1,0 +1,2 @@
+export const MneeRegistryAddress="0x06aedf4fF6F0D1c1dB641C62533D8B8fBE6ef6b4"
+export const MneeSmartWalletFactoryAddress="0x0770240697A3A9C3432Fd4eb8D856EB5C35b07ce"

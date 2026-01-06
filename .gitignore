@@ -59,7 +59,7 @@ cache_forge/
 cache_hardhat/
 
 # Foundry dependencies (lib/ is typically tracked via git submodules)
-lib/
+/lib/
 
 # Foundry documentation
 docs/

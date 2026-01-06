@@ -1,3 +1,33 @@
+
+type WalletTransaction {
+  id: ID!
+  walletAddress: String!
+  txHash: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionType: String!
+  token: String
+  value: BigInt
+  toAddress: String
+  recipientCount: Int
+  intentId: String
+  intentName: String
+  status: String!
+}
+
+type Intent {
+  id: ID!
+  intentId: String!
+  walletAddress: String!
+  name: String
+  token: String!
+  totalCount: Int!
+  executedCount: Int!
+  status: String!
+  createdAt: BigInt!
+  lastExecutedAt: BigInt
+}
+
 type MneeSmartWallet_Executed {
   id: ID!
   target: String!

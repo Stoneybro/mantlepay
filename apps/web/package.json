@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-   "@ai-sdk/google": "^2.0.23",
+    "@ai-sdk/google": "^2.0.23",
     "@ai-sdk/groq": "^3.0.2",
     "@ai-sdk/openai": "^3.0.2",
     "@ai-sdk/react": "^3.0.6",
@@ -29,6 +29,8 @@
     "ai": "^5.0.75",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "graphql": "^16.12.0",
+    "graphql-request": "^7.4.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",

@@ -1,4 +1,5 @@
-"use client";
+
+import { TransactionList } from "./TransactionList";
 
 import * as React from "react";
 
@@ -69,8 +70,8 @@ export function AppSidebar({
         style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
       >
         <SidebarGroup className='px-0'>
-          <SidebarGroupContent>
-
+          <SidebarGroupContent className="h-full">
+            <TransactionList walletAddress={walletAddress} />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
