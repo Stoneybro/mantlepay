@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: indexer
+networks:
+- id: 11155111
+  start_block: 0
+  contracts:
+  - name: MneeSmartWallet
+    address:
+    - 0xFBbcb4F85549245d464688336D76329c398F9962
+    handler: src/EventHandlers.ts
+    events:
+    - event: Executed(address indexed target, uint256 value, bytes data)
+    - event: ExecutedBatch(uint256 indexed batchSize, uint256 totalValue)
+    - event: Initialized(uint64 version)
+    - event: IntentBatchTransferExecuted(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed token, uint256 recipientCount, uint256 totalValue, uint256 failedAmount)
+    - event: IntentTransferSuccess(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
+    - event: TransferFailed(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
+  - name: MneeSmartWalletFactory
+    address:
+    - 0x0770240697A3A9C3432Fd4eb8D856EB5C35b07ce
+    handler: src/EventHandlers.ts
+    events:
+    - event: AccountCreated(address indexed account, address indexed owner)
+unordered_multichain_mode: true
+preload_handlers: true

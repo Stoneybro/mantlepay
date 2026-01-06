@@ -1,0 +1,52 @@
+type MneeSmartWallet_Executed {
+  id: ID!
+  target: String!
+  value: BigInt!
+  data: String!
+}
+
+type MneeSmartWallet_ExecutedBatch {
+  id: ID!
+  batchSize: BigInt!
+  totalValue: BigInt!
+}
+
+type MneeSmartWallet_Initialized {
+  id: ID!
+  version: BigInt!
+}
+
+type MneeSmartWallet_IntentBatchTransferExecuted {
+  id: ID!
+  intentId: String!
+  transactionCount: BigInt!
+  token: String!
+  recipientCount: BigInt!
+  totalValue: BigInt!
+  failedAmount: BigInt!
+}
+
+type MneeSmartWallet_IntentTransferSuccess {
+  id: ID!
+  intentId: String!
+  transactionCount: BigInt!
+  recipient: String!
+  token: String!
+  amount: BigInt!
+}
+
+type MneeSmartWallet_TransferFailed {
+  id: ID!
+  intentId: String!
+  transactionCount: BigInt!
+  recipient: String!
+  token: String!
+  amount: BigInt!
+}
+
+type MneeSmartWalletFactory_AccountCreated {
+  id: ID!
+  account: String!
+  owner: String!
+}
+
