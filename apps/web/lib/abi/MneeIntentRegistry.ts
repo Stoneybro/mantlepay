@@ -53,55 +53,8 @@ export const MneeIntentRegistryABI=[
   },
   {
     "type": "function",
-    "name": "checkLog",
+    "name": "checkUpkeep",
     "inputs": [
-      {
-        "name": "log",
-        "type": "tuple",
-        "internalType": "struct Log",
-        "components": [
-          {
-            "name": "index",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "timestamp",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "txHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "blockNumber",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "blockHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "source",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "topics",
-            "type": "bytes32[]",
-            "internalType": "bytes32[]"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      },
       {
         "name": "",
         "type": "bytes",
@@ -130,6 +83,11 @@ export const MneeIntentRegistryABI=[
         "name": "token",
         "type": "address",
         "internalType": "address"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
       },
       {
         "name": "recipients",
@@ -225,6 +183,11 @@ export const MneeIntentRegistryABI=[
             "name": "token",
             "type": "address",
             "internalType": "address"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "internalType": "string"
           },
           {
             "name": "recipients",
@@ -443,6 +406,11 @@ export const MneeIntentRegistryABI=[
         "internalType": "address"
       },
       {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
         "name": "transactionCount",
         "type": "uint256",
         "internalType": "uint256"
@@ -513,6 +481,12 @@ export const MneeIntentRegistryABI=[
         "internalType": "address"
       },
       {
+        "name": "name",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
         "name": "amountRefunded",
         "type": "uint256",
         "indexed": false,
@@ -548,6 +522,12 @@ export const MneeIntentRegistryABI=[
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       },
       {
         "name": "totalCommitment",
@@ -605,6 +585,12 @@ export const MneeIntentRegistryABI=[
         "internalType": "bytes32"
       },
       {
+        "name": "name",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
         "name": "transactionCount",
         "type": "uint256",
         "indexed": false,
@@ -612,31 +598,6 @@ export const MneeIntentRegistryABI=[
       },
       {
         "name": "totalAmount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "ScheduleNextExecution",
-    "inputs": [
-      {
-        "name": "intentId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "wallet",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "executeAfter",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
