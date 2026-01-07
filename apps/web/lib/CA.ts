@@ -1,2 +1,2 @@
-export const MneeRegistryAddress="0xd246B6a0658Bc78BA19258995D6508FdF2DBC9eD"
-export const MneeSmartWalletFactoryAddress="0x789747B1709a9bb8081d26D0A6fF1fab022B8F45"
+export const MneeRegistryAddress=" 0x799fD0C5fE10C2eD92F497488Db22606Ac170Fdb"
+export const MneeSmartWalletFactoryAddress="0xD02CF60D2D6e4c9d378793657E676055C5b686E7"

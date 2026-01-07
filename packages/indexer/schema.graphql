@@ -1,307 +1,49 @@
-# ============================================
-# CORE ENTITIES (The "Source of Truth")
-# ============================================
-
-"""
-A deployed smart wallet instance
-"""
-type Wallet @entity {
-  id: ID!  # wallet address (lowercase)
-  owner: String!
-  deployedAt: BigInt!
-  deployedBlock: BigInt!
-  deployedTx: String!
-  
-  # Real-time aggregates (updated as events come in)
-  totalActivityCount: Int!  # All activity types
-  totalValueTransferred: BigInt!  # Cumulative ETH + token value (normalized)
-  
-  # Relationships
-  activity: [Activity!]! @derivedFrom(field: "wallet")
-  intents: [Intent!]! @derivedFrom(field: "wallet")
-}
-
-"""
-Universal activity log - EVERY action is an Activity
-This is your transaction history
-"""
-type Activity @entity {
-  id: ID!  # txHash-logIndex-type
-  wallet: Wallet!
-  
-  # What happened?
-  activityType: ActivityType!  # Enum: WALLET_CREATED, EXECUTE, EXECUTE_BATCH, INTENT_CREATED, INTENT_EXECUTED, INTENT_CANCELLED
-  
-  # When/Where?
+type Transaction @entity {
+  id: ID!
+  wallet_id: String!
+  transactionType: TransactionType!
   timestamp: BigInt!
   blockNumber: BigInt!
   txHash: String!
   logIndex: Int!
   
-  # Who initiated?
-  initiator: String!  # Address of the entity that triggered this
+  # Title for display
+  title: String!
   
-  # Financial impact
-  primaryToken: String  # Main token involved (address(0) for ETH, null if not applicable)
-  primaryAmount: BigInt  # Main amount (null if not applicable)
-  
-  # Relationships to detailed data
-  executeDetails: ExecuteDetails
-  batchDetails: BatchDetails
-  intentCreatedDetails: IntentCreatedDetails
-  intentExecutionDetails: IntentExecutionDetails
-  intentCancellationDetails: IntentCancellationDetails
-  
-  # Search/filter helpers
-  involvedAddresses: [String!]!  # All addresses involved (for filtering)
-  tags: [String!]!  # Searchable tags like ["transfer", "payment", "failed"]
+  # Store complete details as JSON string (matches your frontend template exactly)
+  details: String!
 }
 
-enum ActivityType {
+enum TransactionType {
   WALLET_CREATED
   EXECUTE
   EXECUTE_BATCH
   INTENT_CREATED
-  INTENT_EXECUTED
+  INTENT_EXECUTION
   INTENT_CANCELLED
   TRANSFER_FAILED
 }
 
-# ============================================
-# ACTIVITY DETAIL ENTITIES
-# (1-to-1 relationships with Activity)
-# ============================================
-
-"""
-Details for single execute operations
-"""
-type ExecuteDetails @entity {
-  id: ID!  # Same as Activity ID
-  activity: Activity!
-  
-  target: String!
-  value: BigInt!
-  calldata: String  # Truncated to first 1000 chars
-  functionSelector: String!
-  decodedFunction: String  # Human-readable like "transfer", "approve"
-  
-  # If it's a token transfer, extract details
-  isTokenTransfer: Boolean!
-  tokenTransferRecipient: String
-  tokenTransferAmount: BigInt
+# Keep Wallet entity for aggregates
+type Wallet @entity {
+  id: ID!
+  owner: String!
+  deployedAt: BigInt!
+  deployedBlock: BigInt!
+  deployedTx: String!
+  totalTransactionCount: Int!
+  transactions: [Transaction!]! @derivedFrom(field: "wallet_id")
 }
 
-"""
-Details for batch operations
-"""
-type BatchDetails @entity {
-  id: ID!  # Same as Activity ID
-  activity: Activity!
-  
-  callCount: Int!
-  totalValue: BigInt!
-  
-  # Individual calls in the batch
-  calls: [BatchCall!]! @derivedFrom(field: "batch")
-}
-
-type BatchCall @entity {
-  id: ID!  # batchId-index
-  batch: BatchDetails!
-  
-  index: Int!
-  target: String!
-  value: BigInt!
-  functionSelector: String!
-  decodedFunction: String
-}
-
-"""
-Details for intent creation
-"""
-type IntentCreatedDetails @entity {
-  id: ID!  # Same as Activity ID
-  activity: Activity!
-  intent: Intent!  # Reference to the actual intent
-  
-  # Summary for display in activity feed
-  recipientCount: Int!
-  totalCommitment: BigInt!
-  scheduleDescription: String!  # "Every 7 days for 6 months"
-}
-
-"""
-Details for intent execution
-"""
-type IntentExecutionDetails @entity {
-  id: ID!  # Same as Activity ID
-  activity: Activity!
-  intent: Intent!
-  execution: IntentExecution!  # Reference to execution record
-  
-  # Summary for display
-  executionNumber: Int!  # "Execution 3 of 12"
-  totalExecutions: Int!
-  successCount: Int!
-  failureCount: Int!
-}
-
-"""
-Details for intent cancellation
-"""
-type IntentCancellationDetails @entity {
-  id: ID!  # Same as Activity ID
-  activity: Activity!
-  intent: Intent!
-  
-  # What was recovered
-  refundedAmount: BigInt!
-  recoveredFailedAmount: BigInt!
-  executionsCompleted: Int!
-  executionsRemaining: Int!
-}
-
-# ============================================
-# INTENT SUBSYSTEM
-# (Complete intent lifecycle tracking)
-# ============================================
-
-"""
-A scheduled payment intent
-"""
+# Helper entity to store Intent state for lookup during execution
 type Intent @entity {
-  id: ID!  # intentId from contract
-  wallet: Wallet!
-  
-  # Identity
-  displayName: String!  # Generated or user-set
-  
-  # Configuration
+  id: ID!
+  wallet: String!
   token: String!
-  recipients: [String!]!  # Stored as array for easy access
-  amountPerRecipient: [BigInt!]!  # Parallel array
-  
-  # Schedule
-  startTime: BigInt!
-  endTime: BigInt!
-  intervalSeconds: BigInt!
-  totalPlannedExecutions: Int!
-  
-  # Financial tracking
-  totalCommitted: BigInt!
-  totalTransferred: BigInt!
-  totalFailed: BigInt!
-  
-  # Status
-  status: IntentStatus!  # ACTIVE, COMPLETED, CANCELLED, FAILED
-  
-  # Lifecycle timestamps
-  createdAt: BigInt!
-  createdTx: String!
-  lastExecutedAt: BigInt
-  completedAt: BigInt
-  cancelledAt: BigInt
-  cancelledTx: String
-  
-  # Execution history
-  executions: [IntentExecution!]! @derivedFrom(field: "intent")
-  executionCount: Int!  # Denormalized for quick access
-  
-  # Progress tracking
-  progressPercent: Int!  # 0-100, calculated on updates
-  nextExecutionDue: BigInt  # When next execution should happen
-}
-
-enum IntentStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
-  FAILED
-}
-
-"""
-A single execution of an intent
-"""
-type IntentExecution @entity {
-  id: ID!  # intentId-executionNumber
-  intent: Intent!
-  
-  executionNumber: Int!  # 0-indexed
-  
-  # When it happened
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  txHash: String!
-  
-  # What happened
-  attemptedAmount: BigInt!
-  successfulAmount: BigInt!
-  failedAmount: BigInt!
-  
-  # Individual transfers
-  transfers: [IntentTransfer!]! @derivedFrom(field: "execution")
-  successCount: Int!
-  failureCount: Int!
-}
-
-"""
-Individual transfer within an intent execution
-"""
-type IntentTransfer @entity {
-  id: ID!  # intentId-executionNumber-recipientIndex
-  execution: IntentExecution!
-  
-  recipientIndex: Int!  # Which recipient in the array
-  recipient: String!
-  token: String!
-  amount: BigInt!
-  success: Boolean!
-  
-  # When it happened
-  timestamp: BigInt!
-  txHash: String!
-  logIndex: Int!
-}
-
-# ============================================
-# QUERY OPTIMIZATION ENTITIES
-# (Denormalized data for fast queries)
-# ============================================
-
-"""
-Daily activity summary per wallet
-Enables fast "activity over time" charts
-"""
-type DailyWalletActivity @entity {
-  id: ID!  # walletAddress-YYYY-MM-DD
-  wallet: Wallet!
-  date: String!  # YYYY-MM-DD
-  
-  totalActivities: Int!
-  totalValueTransferred: BigInt!
-  executionCount: Int!
-  intentExecutionCount: Int!
-  
-  # Activity breakdown
-  activityTypes: [String!]!  # ["EXECUTE", "INTENT_EXECUTED"]
-  activityCounts: [Int!]!  # Parallel array
-}
-
-"""
-Token balance tracking per wallet
-Enables quick balance history queries
-"""
-type WalletTokenBalance @entity {
-  id: ID!  # walletAddress-tokenAddress
-  wallet: Wallet!
-  token: String!
-  
-  # Current state
-  balance: BigInt!  # Updated whenever we see transfers
-  lastUpdated: BigInt!
-  
-  # Activity
-  totalReceived: BigInt!
-  totalSent: BigInt!
-  transactionCount: Int!
+  name: String!
+  totalTransactionCount: BigInt!
+  recipients: [String!]!
+  amounts: [BigInt!]!
+  interval: BigInt!
+  duration: BigInt!
 }

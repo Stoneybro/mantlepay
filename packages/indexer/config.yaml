@@ -4,6 +4,8 @@ description: Indexer for MNEE Payment Hub
 field_selection:
   transaction_fields:
     - hash
+    - from
+    - input
 
 networks:
 - id: 11155111
@@ -11,7 +13,7 @@ networks:
   contracts:
   - name: MneeSmartWallet
     address:
-    - 0x94f209c23b3ca280e91c14de587c522128d3a7c2
+    - 0x253CF05cd0106861f3E53636365d21dF832D804d
     handler: src/EventHandlers.ts
     events:
     - event: Executed(address indexed target, uint256 value, bytes data)
@@ -23,17 +25,15 @@ networks:
     - event: WalletAction(address indexed initiator, address indexed target, uint256 value, bytes4 indexed selector, bool success, bytes32 actionType)
   - name: MneeSmartWalletFactory
     address:
-    - 0x789747b1709a9bb8081d26d0a6ff1fab022b8f45
+    - 0xD02CF60D2D6e4c9d378793657E676055C5b686E7
     handler: src/EventHandlers.ts
     events:
     - event: AccountCreated(address indexed account, address indexed owner)
   - name: MneeIntentRegistry
     address:
-    - 0xd246b6a0658bc78ba19258995d6508fdf2dbc9ed
+    - 0x799fD0C5fE10C2eD92F497488Db22606Ac170Fdb
     handler: src/EventHandlers.ts
     events:
-    - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime)
+    - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime, address[] recipients, uint256[] amounts)
     - event: IntentExecuted(address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount)
     - event: IntentCancelled(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 amountRefunded, uint256 failedAmountRecovered)
-unordered_multichain_mode: false
-preload_handlers: true

@@ -97,7 +97,9 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         uint256 interval,
         uint256 duration,
         uint256 transactionStartTime,
-        uint256 transactionEndTime
+        uint256 transactionEndTime,
+        address[] recipients,
+        uint256[] amounts
     );
 
     /// @notice The event emitted when an intent is executed
@@ -288,7 +290,9 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             interval,
             duration,
             actualStartTime,
-            actualEndTime
+            actualEndTime,
+            recipients,
+            amounts
         );
         return intentId;
     }
