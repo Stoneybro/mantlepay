@@ -11,7 +11,7 @@ networks:
   contracts:
   - name: MneeSmartWallet
     address:
-    - 0xFBbcb4F85549245d464688336D76329c398F9962
+    - 0x94f209c23b3ca280e91c14de587c522128d3a7c2
     handler: src/EventHandlers.ts
     events:
     - event: Executed(address indexed target, uint256 value, bytes data)
@@ -20,15 +20,16 @@ networks:
     - event: IntentBatchTransferExecuted(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed token, uint256 recipientCount, uint256 totalValue, uint256 failedAmount)
     - event: IntentTransferSuccess(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
     - event: TransferFailed(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
+    - event: WalletAction(address indexed initiator, address indexed target, uint256 value, bytes4 indexed selector, bool success, bytes32 actionType)
   - name: MneeSmartWalletFactory
     address:
-    - 0x0770240697A3A9C3432Fd4eb8D856EB5C35b07ce
+    - 0x789747b1709a9bb8081d26d0a6ff1fab022b8f45
     handler: src/EventHandlers.ts
     events:
     - event: AccountCreated(address indexed account, address indexed owner)
   - name: MneeIntentRegistry
     address:
-    - 0x06aedf4fF6F0D1c1dB641C62533D8B8fBE6ef6b4
+    - 0xd246b6a0658bc78ba19258995d6508fdf2dbc9ed
     handler: src/EventHandlers.ts
     events:
     - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime)
