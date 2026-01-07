@@ -1,5 +1,10 @@
-# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
-name: indexer
+name: mneepaymenthub-indexer
+description: Indexer for MNEE Payment Hub
+
+field_selection:
+  transaction_fields:
+    - hash
+
 networks:
 - id: 11155111
   start_block: 0
@@ -21,5 +26,13 @@ networks:
     handler: src/EventHandlers.ts
     events:
     - event: AccountCreated(address indexed account, address indexed owner)
-unordered_multichain_mode: true
+  - name: MneeIntentRegistry
+    address:
+    - 0x06aedf4fF6F0D1c1dB641C62533D8B8fBE6ef6b4
+    handler: src/EventHandlers.ts
+    events:
+    - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime)
+    - event: IntentExecuted(address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount)
+    - event: IntentCancelled(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 amountRefunded, uint256 failedAmountRecovered)
+unordered_multichain_mode: false
 preload_handlers: true

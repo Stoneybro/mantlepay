@@ -1,5 +1,5 @@
 
-import { TransactionList } from "./TransactionList";
+import { TransactionList } from "@/components/transaction-history/TransactionList";
 
 import * as React from "react";
 
