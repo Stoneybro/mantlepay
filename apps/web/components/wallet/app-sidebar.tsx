@@ -25,44 +25,34 @@ import {
 // import TransactionItem from "./TxItem";
 
 
-type AppSidebarProps = {
-  walletAddress: `0x${string}`;
+type Chat = {
+  id: string;
+  title: string | null;
+  createdAt: Date;
+  userId: string | null;
 };
 
-
+type AppSidebarProps = {
+  walletAddress: `0x${string}`;
+  chats?: Chat[];
+};
 
 export function AppSidebar({
   walletAddress,
+  chats,
   ...props
 }: AppSidebarProps & React.ComponentProps<typeof Sidebar>) {
-
-
-
-
   return (
     <Sidebar className='w-[calc(var(--sidebar-width))] border-r'>
       <SidebarHeader className='gap-3.5 border-b p-4'>
         <div className='flex w-full items-center justify-between'>
           <div className='relative text-foreground text-base font-medium'>
-            Transactions
+            Chats
           </div>
 
-          {/* Filter Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant={"ghost"} aria-label='Open menu' size='icon-sm'>
-                <MoreHorizontalIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className='w-56'>
-              <DropdownMenuGroup>
-
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* New Chat Button or Filter */}
+          <a href="/wallet" className="text-sm text-muted-foreground hover:text-foreground">New Chat</a>
         </div>
-
-        {/* Stats */}
       </SidebarHeader>
 
       <SidebarContent
@@ -71,7 +61,26 @@ export function AppSidebar({
       >
         <SidebarGroup className='px-0'>
           <SidebarGroupContent className="h-full">
-            <TransactionList walletAddress={walletAddress} />
+            <div className="flex flex-col gap-1 p-2">
+              {chats?.map((chat) => (
+                <a
+                  key={chat.id}
+                  href={`/wallet?chatId=${chat.id}`}
+                  className="block p-2 text-sm rounded hover:bg-muted truncate"
+                >
+                  {chat.title || "Untitled Chat"}
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(chat.createdAt).toLocaleDateString()}
+                  </div>
+                </a>
+              ))}
+              {(!chats || chats.length === 0) && (
+                <div className="p-4 text-sm text-muted-foreground text-center">
+                  No chat history
+                </div>
+              )}
+            </div>
+            {/* <TransactionList walletAddress={walletAddress} /> */}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

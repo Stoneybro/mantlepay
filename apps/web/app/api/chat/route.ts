@@ -2,6 +2,7 @@
 import { google } from "@ai-sdk/google";
 import { convertToModelMessages, streamText, UIMessage } from "ai";
 import { z } from "zod";
+import { saveChat } from "@/lib/chat-store";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -108,11 +109,19 @@ ONLY call the tool if ALL checks pass.
 
 export async function POST(req: Request) {
   try {
-    const { messages }: { messages: UIMessage[] } = await req.json();
+    const json = await req.json();
+    const { messages } = json;
+    console.log("DEBUG: messages type:", typeof messages);
+    console.log("DEBUG: isArray:", Array.isArray(messages));
+    console.log("DEBUG: messages value:", messages);
+    const url = new URL(req.url);
+    const chatId = json.chatId || url.searchParams.get("chatId");
+    const userId = url.searchParams.get("userId");
+
     const result = streamText({
       model: google("gemini-2.5-flash-lite"),
       system: SYSTEM_PROMPT,
-      messages: convertToModelMessages(messages),
+      messages: await convertToModelMessages(messages),
       temperature: 0.1,
       toolChoice: "auto",
 
@@ -560,6 +569,15 @@ DO NOT USE IF:
     });
 
     return result.toUIMessageStreamResponse({
+      onFinish: async ({ messages: threadMessages }) => {
+        if (chatId) {
+          try {
+            await saveChat({ chatId, messages: threadMessages, userId: userId || undefined });
+          } catch (error) {
+            console.error("❌ Failed to save chat:", error);
+          }
+        }
+      },
       onError: (error) => {
         console.error("❌ Stream error:", error);
 

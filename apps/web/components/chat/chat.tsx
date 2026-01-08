@@ -2,6 +2,7 @@
 "use client";
 import React, { useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import { UIMessage, DefaultChatTransport } from "ai";
 import Image from "next/image";
 import {
     useSingleTransfer,
@@ -21,12 +22,18 @@ import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 import { zeroAddress } from "viem";
 
-function Chat(walletAddress: { walletAddress: string }) {
-    const [showOverlay, setShowOverlay] = useState(true);
+interface ChatProps {
+    walletAddress: string;
+    id?: string;
+    initialMessages?: UIMessage[];
+}
+
+function Chat({ walletAddress, id, initialMessages }: ChatProps) {
+    const [showOverlay, setShowOverlay] = useState(!initialMessages || initialMessages.length === 0);
     const [input, setInput] = useState("");
     const { data: wallet } = useQuery({
         queryKey: ["walletBalance", walletAddress],
-        queryFn: () => fetchWalletBalance(walletAddress.walletAddress as `0x${string}`),
+        queryFn: () => fetchWalletBalance(walletAddress as `0x${string}`),
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         staleTime: Infinity,
@@ -35,7 +42,13 @@ function Chat(walletAddress: { walletAddress: string }) {
 
 
     // AI SDK hook
-    const { messages, sendMessage, addToolResult, status, error } = useChat();
+    const { messages, sendMessage, addToolResult, status, error } = useChat({
+        id,
+        messages: initialMessages,
+        transport: new DefaultChatTransport({
+            api: `/api/chat?chatId=${id}&userId=${walletAddress}`,
+        }),
+    });
 
     // Transaction hooks
     const singleEthTransfer = useSingleTransfer(wallet?.availableEthBalance);
