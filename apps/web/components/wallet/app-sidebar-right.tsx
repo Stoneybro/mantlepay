@@ -19,6 +19,7 @@ import { WalletQR } from "./qrcode";
 import { Skeleton } from "../ui/skeleton";
 import { useEffect, useState } from "react";
 import { zeroAddress } from "viem";
+import { TransactionList } from "@/components/transaction-history/TransactionList";
 
 type AppSidebarRightProps = {
   walletAddress: `0x${string}`;
@@ -177,6 +178,11 @@ export function AppSidebarRight({
           </div>
 
           <WalletQR walletAddress={walletAddress} />
+        </SidebarGroup>
+
+        <SidebarGroup className='px-4 gap-4 mt-4'>
+          <h3 className="text-sm font-semibold text-gray-400 px-2">Recent Activity</h3>
+          <TransactionList walletAddress={walletAddress} />
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

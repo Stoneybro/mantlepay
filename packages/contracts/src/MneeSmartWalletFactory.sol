@@ -6,7 +6,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 /**
  * @title Mnee Smart Wallet Factory
- * @author Zion Livingstone
+ * @author stoneybro
  * @notice Factory for deploying ERC-1167 minimal proxy clones of Mnee Smart Wallet.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
@@ -40,7 +40,9 @@ contract MneeSmartWalletFactory {
      */
     error MneeSmartWalletFactory__ImplementationUndeployed();
 
-    /*CONSTRUCTOR*/
+    /*//////////////////////////////////////////////////////////////
+                               CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
     /**
      * @notice Factory constructor used to initialize the implementation address to use for future
      *   MneeSmartWallet deployments.

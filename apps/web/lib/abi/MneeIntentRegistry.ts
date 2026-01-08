@@ -1,4 +1,4 @@
-[
+export const MneeIntentRegistryABI=[
   {
     "type": "function",
     "name": "MAX_DURATION",
@@ -710,4 +710,4 @@
     "name": "ReentrancyGuardReentrantCall",
     "inputs": []
   }
-]
+] as const

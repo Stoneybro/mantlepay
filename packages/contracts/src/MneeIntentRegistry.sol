@@ -2,18 +2,18 @@
 pragma solidity ^0.8.19;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ILogAutomation, Log} from "@chainlink/contracts/src/v0.8/automation/interfaces/ILogAutomation.sol";
+import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 import {IMneeSmartWallet} from "./IMneeSmartWallet.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Mnee Intent Registry
- * @author Zion Livingstone
+ * @author stoneybro
  * @notice Central registry for managing automated payment intents across all Mnee wallets.
  * @dev Integrates with Chainlink Automation for decentralized intent execution. Supports ETH and ERC20 tokens.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
+contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -25,6 +25,8 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
         address wallet;
         /// @notice The token address (address(0) for ETH, token address for ERC20)
         address token;
+        /// @notice The name of the intent
+        string name;
         /// @notice The recipients of the intent
         address[] recipients;
         /// @notice The amounts per recipient per transaction
@@ -89,17 +91,20 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
         address indexed wallet,
         bytes32 indexed intentId,
         address indexed token,
+        string name,
         uint256 totalCommitment,
         uint256 totalTransactionCount,
         uint256 interval,
         uint256 duration,
         uint256 transactionStartTime,
-        uint256 transactionEndTime
+        uint256 transactionEndTime,
+        address[] recipients,
+        uint256[] amounts
     );
 
     /// @notice The event emitted when an intent is executed
     event IntentExecuted(
-        address indexed wallet, bytes32 indexed intentId, uint256 transactionCount, uint256 totalAmount
+        address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount
     );
 
     /// @notice The event emitted when an intent is cancelled
@@ -107,11 +112,10 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
         address indexed wallet,
         bytes32 indexed intentId,
         address indexed token,
+        string name,
         uint256 amountRefunded,
         uint256 failedAmountRecovered
     );
-
-    event ScheduleNextExecution(bytes32 indexed intentId, address indexed wallet, uint256 executeAfter);
 
     /// @notice The event emitted when a wallet is registered
     event WalletRegistered(address indexed wallet);
@@ -172,7 +176,8 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
     /**
      * @notice Creates a new multi-recipient intent for the sender/wallet
      *
-     * @param token The token address (address(0) for ETH, MNEE address for MNEE, other ERC20 addresses supported)
+     * @param token The token address (address(0) for ETH, PYUSD address for PYUSD, other ERC20 addresses supported)
+     * @param name The name of the intent
      * @param recipients The array of recipient addresses
      * @param amounts The array of amounts corresponding to each recipient
      * @param duration The total duration of the intent in seconds
@@ -184,6 +189,7 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
      */
     function createIntent(
         address token,
+        string memory name,
         address[] memory recipients,
         uint256[] memory amounts,
         uint256 duration,
@@ -193,34 +199,34 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
     ) external returns (bytes32) {
         address wallet = msg.sender;
 
-        // When a wallet tries to create an intent for the first time, it is registered
+        ///@notice When a wallet tries to create an intent for the first time, it is registered
         if (!isWalletRegistered[wallet]) {
             registeredWallets.push(wallet);
             isWalletRegistered[wallet] = true;
             emit WalletRegistered(wallet);
         }
 
-        // Validate token address (address(0) for ETH is valid)
+        ///@notice Validate token address (address(0) for ETH is valid)
         if (token != address(0)) {
-            // Basic check: token must be a contract
+            ///@dev Basic check: token must be a contract
             if (token.code.length == 0) revert MneeIntentRegistry__InvalidToken();
         }
 
-        // Validate recipients and amounts arrays
+        ///@notice Validate recipients and amounts arrays
         if (recipients.length == 0) revert MneeIntentRegistry__NoRecipients();
         if (recipients.length != amounts.length) revert MneeIntentRegistry__ArrayLengthMismatch();
         if (recipients.length > MAX_RECIPIENTS) revert MneeIntentRegistry__TooManyRecipients();
 
-        // Validate timing parameters
+        ///@notice Validate timing parameters
         if (duration == 0 || duration > MAX_DURATION) revert MneeIntentRegistry__InvalidDuration();
         if (interval < MIN_INTERVAL) revert MneeIntentRegistry__InvalidInterval();
 
-        // Validate start time is not in the past (unless it's 0 for immediate start)
+        ///@notice Validate start time is not in the past (unless it's 0 for immediate start)
         if (transactionStartTime != 0 && transactionStartTime < block.timestamp) {
             revert MneeIntentRegistry__StartTimeInPast();
         }
 
-        // Calculate total amount per execution and validate each recipient/amount
+        ///@notice Calculate total amount per execution and validate each recipient/amount
         uint256 totalAmountPerExecution = 0;
         for (uint256 i = 0; i < recipients.length; i++) {
             if (recipients[i] == address(0)) revert MneeIntentRegistry__InvalidRecipient();
@@ -228,31 +234,32 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
             totalAmountPerExecution += amounts[i];
         }
 
-        // Calculate projected final transaction count
+        ///@notice Calculate projected final transaction count
         uint256 totalTransactionCount = duration / interval;
         if (totalTransactionCount == 0) revert MneeIntentRegistry__InvalidTotalTransactionCount();
 
-        // Calculate total commitment across all executions
+        ///@notice Calculate total commitment across all executions
         uint256 totalCommitment = totalAmountPerExecution * totalTransactionCount;
 
-        // Check if the wallet has enough available funds to cover the intent
+        ///@notice Check if the wallet has enough available funds to cover the intent
         uint256 availableBalance = IMneeSmartWallet(wallet).getAvailableBalance(token);
         if (availableBalance < totalCommitment) {
             revert MneeIntentRegistry__InsufficientFunds();
         }
 
-        // Generate a unique intent id using abi.encode to prevent collision
+        ///@notice Generate a unique intent id using abi.encode to prevent collision
         bytes32 intentId = keccak256(abi.encode(wallet, token, recipients, amounts, block.timestamp, intentCounter++));
 
-        // Calculate actual start and end times
+        ///@notice Calculate actual start and end times
         uint256 actualStartTime = transactionStartTime == 0 ? block.timestamp : transactionStartTime;
         uint256 actualEndTime = actualStartTime + duration;
 
-        // Store the intent
+        ///@notice Store the intent
         walletIntents[wallet][intentId] = Intent({
             id: intentId,
             wallet: wallet,
             token: token,
+            name: name,
             recipients: recipients,
             amounts: amounts,
             transactionCount: 0,
@@ -266,46 +273,71 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
             failedAmount: 0
         });
 
-        // Update the wallet's committed funds for this token
+        ///@notice Update the wallet's committed funds for this token
         walletCommittedFunds[wallet][token] += totalCommitment;
         IMneeSmartWallet(wallet).increaseCommitment(token, totalCommitment);
 
-        // Add the intent id to the wallet's active intent ids
+        ///@notice Add the intent id to the wallet's active intent ids
         walletActiveIntentIds[wallet].push(intentId);
 
         emit IntentCreated(
             wallet,
             intentId,
             token,
+            name,
             totalCommitment,
             totalTransactionCount,
             interval,
             duration,
             actualStartTime,
-            actualEndTime
+            actualEndTime,
+            recipients,
+            amounts
         );
-        emit ScheduleNextExecution(intentId, wallet, actualStartTime);
         return intentId;
     }
 
-    function checkLog(Log calldata log, bytes memory)
+    /**
+     * @notice Chainlink Automation calls this to check if any intents need execution
+     * @dev Note: For production, this should use a priority queue or keeper network pattern
+     *      to handle 1000+ wallets. Current implementation suitable for MVP/demo with <100 wallets.5
+     * @return upkeepNeeded True if an intent needs execution
+     * @return performData Encoded wallet address and intent id to execute
+     */
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
         external
         view
+        override
         returns (bool upkeepNeeded, bytes memory performData)
     {
-        bytes32 intentId = log.topics[1];
-        address wallet = address(uint160(uint256(log.topics[2])));
-        uint256 executeAfter = abi.decode(log.data, (uint256));
+        ///@notice Check if there are any registered wallets
+        if (registeredWallets.length == 0) return (false, bytes(""));
 
-        if (block.timestamp >= executeAfter) {
-            Intent storage intent = walletIntents[wallet][intentId];
-            if (shouldExecuteIntent(intent)) {
-                return (true, abi.encode(wallet, intentId));
+        ///@notice Iterate through registered wallets and their active intents
+        for (uint256 i = 0; i < registeredWallets.length; i++) {
+            address wallet = registeredWallets[i];
+            bytes32[] memory activeIntents = walletActiveIntentIds[wallet];
+
+            for (uint256 j = 0; j < activeIntents.length; j++) {
+                bytes32 intentId = activeIntents[j];
+                Intent storage intent = walletIntents[wallet][intentId];
+
+                if (shouldExecuteIntent(intent)) {
+                    return (true, abi.encode(wallet, intentId));
+                }
             }
         }
-        return (false, "");
+
+        return (false, bytes(""));
     }
 
+    /**
+     * @notice Chainlink Automation calls this to execute an intent
+     *
+     * @param performData Encoded wallet address and intent id
+     */
     function performUpkeep(bytes calldata performData) external override {
         (address wallet, bytes32 intentId) = abi.decode(performData, (address, bytes32));
         executeIntent(wallet, intentId);
@@ -319,27 +351,27 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
      * @return bool True if the intent should be executed
      */
     function shouldExecuteIntent(Intent storage intent) internal view returns (bool) {
-        // Check if the intent is active
+        ///@notice Check if the intent is active
         if (!intent.active) return false;
 
-        // Check if the intent is within the start time
+        ///@notice Check if the intent is within the start time
         if (block.timestamp < intent.transactionStartTime) return false;
 
-        // Check if the intent has reached the total transaction count
+        ///@notice Check if the intent has reached the total transaction count
         if (intent.transactionCount >= intent.totalTransactionCount) return false;
 
-        // Check if the interval has elapsed since last execution
+        ///@notice Check if the interval has elapsed since last execution
         if (intent.latestTransactionTime != 0 && block.timestamp < intent.latestTransactionTime + intent.interval) {
             return false;
         }
 
-        // Calculate total amount needed for this execution
+        ///@notice Calculate total amount needed for this execution
         uint256 totalAmount = 0;
         for (uint256 i = 0; i < intent.amounts.length; i++) {
             totalAmount += intent.amounts[i];
         }
 
-        // Check if the wallet has enough funds to cover the execution
+        ///@notice Check if the wallet has enough funds to cover the execution
         uint256 balance;
         if (intent.token == address(0)) {
             balance = intent.wallet.balance;
@@ -361,40 +393,41 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
     function executeIntent(address wallet, bytes32 intentId) internal nonReentrant {
         Intent storage intent = walletIntents[wallet][intentId];
 
-        // Verify the intent exists and belongs to this wallet
+        ///@notice Verify the intent exists and belongs to this wallet
         if (intent.id != intentId || intent.wallet != wallet) {
             revert MneeIntentRegistry__IntentNotFound();
         }
 
-        // Verify the intent is active
+        ///@notice Verify the intent is active
         if (!intent.active) revert MneeIntentRegistry__IntentNotActive();
 
-        // Verify the intent should be executed
+        ///@notice Verify the intent should be executed
         if (!shouldExecuteIntent(intent)) revert MneeIntentRegistry__IntentNotExecutable();
 
-        // Store current transaction count before incrementing
+        ///@notice Store current transaction count before incrementing
         uint256 currentTransactionCount = intent.transactionCount;
 
-        // Update intent state before external calls (checks-effects-interactions pattern)
+        ///@notice Update intent state before external calls (checks-effects-interactions pattern)
         intent.transactionCount++;
         intent.latestTransactionTime = block.timestamp;
 
-        // Deactivate the intent if it has reached the total transaction count
+        ///@notice Deactivate the intent if it has reached the total transaction count
         if (intent.transactionCount >= intent.totalTransactionCount) {
             intent.active = false;
+            _removeFromActiveIntents(wallet, intentId);
         }
 
-        // Calculate total amount for this execution
+        ///@notice Calculate total amount for this execution
         uint256 totalAmount = 0;
         for (uint256 i = 0; i < intent.amounts.length; i++) {
             totalAmount += intent.amounts[i];
         }
 
-        // Update the wallet's committed funds for this token
+        ///@notice Update the wallet's committed funds for this token
         walletCommittedFunds[wallet][intent.token] -= totalAmount;
         IMneeSmartWallet(wallet).decreaseCommitment(intent.token, totalAmount);
 
-        // Execute the batch intent transfer with token, intentId and transaction count
+        ///@notice Execute the batch intent transfer with token, intentId and transaction count
         uint256 failedAmount = IMneeSmartWallet(wallet)
             .executeBatchIntentTransfer(
                 intent.token,
@@ -405,13 +438,39 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
                 intent.revertOnFailure
             );
 
-        // Track failed amounts for recovery
+        ///@notice Track failed amounts for recovery
         if (failedAmount > 0) {
             intent.failedAmount += failedAmount;
         }
 
-        emit IntentExecuted(wallet, intentId, currentTransactionCount, totalAmount);
-        emit ScheduleNextExecution(intentId, wallet, block.timestamp + intent.interval);
+        emit IntentExecuted(wallet, intentId, intent.name, currentTransactionCount, totalAmount);
+    }
+
+    /**
+     * @notice Removes an intent from the wallet's active intent ids array
+     *
+     * @param wallet The wallet address
+     * @param intentId The intent id to remove
+     */
+    function _removeFromActiveIntents(address wallet, bytes32 intentId) internal {
+        bytes32[] storage activeIntents = walletActiveIntentIds[wallet];
+        bool found = false;
+
+        for (uint256 i = 0; i < activeIntents.length; i++) {
+            if (activeIntents[i] == intentId) {
+                activeIntents[i] = activeIntents[activeIntents.length - 1];
+                activeIntents.pop();
+                found = true;
+                break;
+            }
+        }
+
+        ///@notice This should always find the intent, but we don't revert to avoid DoS
+        ///@dev If not found, it means the intent was already removed or never added
+        if (!found) {
+            // Intent not in active list - could be already removed or invalid state
+            // We don't revert here to allow cleanup to proceed
+        }
     }
 
     /**
@@ -423,30 +482,30 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
         address wallet = msg.sender;
         Intent storage intent = walletIntents[wallet][intentId];
 
-        // Verify the intent exists and belongs to this wallet
+        ///@notice Verify the intent exists and belongs to this wallet
         if (intent.id != intentId || intent.wallet != wallet) {
             revert MneeIntentRegistry__IntentNotFound();
         }
 
         if (!intent.active) revert MneeIntentRegistry__IntentNotActive();
 
-        // Calculate remaining amount
+        ///@notice Calculate remaining amount
         uint256 totalAmount = 0;
         for (uint256 i = 0; i < intent.amounts.length; i++) {
             totalAmount += intent.amounts[i];
         }
 
-        // Handle case where intent is already completed
+        ///@notice Handle case where intent is already completed
         uint256 amountRemaining = 0;
         if (intent.transactionCount < intent.totalTransactionCount) {
             uint256 remainingTransactions = intent.totalTransactionCount - intent.transactionCount;
             amountRemaining = remainingTransactions * totalAmount;
         }
 
-        // Store failed amount before deactivating
+        ///@notice Store failed amount before deactivating
         uint256 failedAmountToRecover = intent.failedAmount;
 
-        // Unlock funds when the intent is cancelled (only if there are remaining transactions)
+        ///@notice Unlock funds when the intent is cancelled (only if there are remaining transactions)
         if (amountRemaining > 0) {
             walletCommittedFunds[wallet][intent.token] -= amountRemaining;
             IMneeSmartWallet(wallet).decreaseCommitment(intent.token, amountRemaining);
@@ -454,9 +513,10 @@ contract MneeIntentRegistry is ReentrancyGuard, ILogAutomation {
 
         intent.active = false;
         intent.failedAmount = 0; // Clear failed amount as we're emitting it
+        _removeFromActiveIntents(wallet, intentId);
 
-        // Emit event
-        emit IntentCancelled(wallet, intentId, intent.token, amountRemaining, failedAmountToRecover);
+        ///@notice Emit event
+        emit IntentCancelled(wallet, intentId, intent.token, intent.name, amountRemaining, failedAmountToRecover);
     }
 
     /**

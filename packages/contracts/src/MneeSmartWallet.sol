@@ -11,8 +11,14 @@ import {IMneeSmartWallet} from "./IMneeSmartWallet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-
-contract MneeSmartWallet is IAccount, ReentrancyGuard, Initializable {
+/**
+ * @title Mnee Smart Wallet
+ * @author stoneybro
+ * @notice A smart contract wallet implementation compliant with ERC-4337.
+ * @dev Implements IAccount from account-abstraction. Supports Mnee Intent Registry for automated payments.
+ * @custom:security-contact stoneybrocrypto@gmail.com
+ */
+contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initializable {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -70,7 +76,7 @@ contract MneeSmartWallet is IAccount, ReentrancyGuard, Initializable {
     event ExecutedBatch(uint256 indexed batchSize, uint256 totalValue);
 
     /// @notice The event emitted when a wallet action is performed
-    event WalletAction( // "EXECUTE" or "BATCH" for context
+    event WalletAction( 
         address indexed initiator,
         address indexed target,
         uint256 value,

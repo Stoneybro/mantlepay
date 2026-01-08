@@ -1,12 +1,17 @@
-# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
-name: indexer
+name: mneepaymenthub-indexer
+description: Indexer for MNEE Payment Hub
+
+field_selection:
+  transaction_fields:
+    - hash
+    - from
+    - input
+
 networks:
 - id: 11155111
   start_block: 0
   contracts:
   - name: MneeSmartWallet
-    address:
-    - 0xFBbcb4F85549245d464688336D76329c398F9962
     handler: src/EventHandlers.ts
     events:
     - event: Executed(address indexed target, uint256 value, bytes data)
@@ -15,11 +20,18 @@ networks:
     - event: IntentBatchTransferExecuted(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed token, uint256 recipientCount, uint256 totalValue, uint256 failedAmount)
     - event: IntentTransferSuccess(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
     - event: TransferFailed(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
+    - event: WalletAction(address indexed initiator, address indexed target, uint256 value, bytes4 indexed selector, bool success, bytes32 actionType)
   - name: MneeSmartWalletFactory
     address:
-    - 0x0770240697A3A9C3432Fd4eb8D856EB5C35b07ce
+    - 0xD02CF60D2D6e4c9d378793657E676055C5b686E7
     handler: src/EventHandlers.ts
     events:
     - event: AccountCreated(address indexed account, address indexed owner)
-unordered_multichain_mode: true
-preload_handlers: true
+  - name: MneeIntentRegistry
+    address:
+    - 0x799fD0C5fE10C2eD92F497488Db22606Ac170Fdb
+    handler: src/EventHandlers.ts
+    events:
+    - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime, address[] recipients, uint256[] amounts)
+    - event: IntentExecuted(address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount)
+    - event: IntentCancelled(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 amountRefunded, uint256 failedAmountRecovered)

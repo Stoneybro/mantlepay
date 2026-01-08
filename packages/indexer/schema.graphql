@@ -1,52 +1,49 @@
-type MneeSmartWallet_Executed {
+type Transaction @entity {
   id: ID!
-  target: String!
-  value: BigInt!
-  data: String!
+  wallet_id: String!
+  transactionType: TransactionType!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: String!
+  logIndex: Int!
+  
+  # Title for display
+  title: String!
+  
+  # Store complete details as JSON string (matches your frontend template exactly)
+  details: String!
 }
 
-type MneeSmartWallet_ExecutedBatch {
-  id: ID!
-  batchSize: BigInt!
-  totalValue: BigInt!
+enum TransactionType {
+  WALLET_CREATED
+  EXECUTE
+  EXECUTE_BATCH
+  INTENT_CREATED
+  INTENT_EXECUTION
+  INTENT_CANCELLED
+  TRANSFER_FAILED
 }
 
-type MneeSmartWallet_Initialized {
+# Keep Wallet entity for aggregates
+type Wallet @entity {
   id: ID!
-  version: BigInt!
-}
-
-type MneeSmartWallet_IntentBatchTransferExecuted {
-  id: ID!
-  intentId: String!
-  transactionCount: BigInt!
-  token: String!
-  recipientCount: BigInt!
-  totalValue: BigInt!
-  failedAmount: BigInt!
-}
-
-type MneeSmartWallet_IntentTransferSuccess {
-  id: ID!
-  intentId: String!
-  transactionCount: BigInt!
-  recipient: String!
-  token: String!
-  amount: BigInt!
-}
-
-type MneeSmartWallet_TransferFailed {
-  id: ID!
-  intentId: String!
-  transactionCount: BigInt!
-  recipient: String!
-  token: String!
-  amount: BigInt!
-}
-
-type MneeSmartWalletFactory_AccountCreated {
-  id: ID!
-  account: String!
   owner: String!
+  deployedAt: BigInt!
+  deployedBlock: BigInt!
+  deployedTx: String!
+  totalTransactionCount: Int!
+  transactions: [Transaction!]! @derivedFrom(field: "wallet_id")
 }
 
+# Helper entity to store Intent state for lookup during execution
+type Intent @entity {
+  id: ID!
+  wallet: String!
+  token: String!
+  name: String!
+  totalTransactionCount: BigInt!
+  recipients: [String!]!
+  amounts: [BigInt!]!
+  interval: BigInt!
+  duration: BigInt!
+}

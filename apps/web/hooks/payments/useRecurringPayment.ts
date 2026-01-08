@@ -50,6 +50,7 @@ export function useRecurringPayment(availableEthBalance?: string) {
                     functionName: "createIntent",
                     args: [
                         zeroAddress, // ETH
+                        params.name,
                         params.recipients,
                         amountsInWei,
                         BigInt(params.duration),

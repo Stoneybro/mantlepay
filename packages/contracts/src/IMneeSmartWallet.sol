@@ -3,9 +3,15 @@ pragma solidity ^0.8.19;
 
 /**
  * @title IMneeSmartWallet
+ * @author stoneybro
  * @notice Interface for Mnee Smart Wallet that the Intent Registry interacts with
+ * @custom:security-contact stoneybrocrypto@gmail.com
  */
 interface IMneeSmartWallet {
+    /*//////////////////////////////////////////////////////////////
+                                FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /**
      * @notice Increases the committed funds for intents.
      * @param token The token address (address(0) for ETH).

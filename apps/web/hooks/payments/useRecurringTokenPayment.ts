@@ -55,6 +55,7 @@ export function useRecurringTokenPayment(availableMneeBalance?: string) {
                     functionName: "createIntent",
                     args: [
                         token,
+                        params.name,
                         params.recipients,
                         amountsInUnits,
                         BigInt(params.duration),
