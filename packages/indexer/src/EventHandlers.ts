@@ -32,18 +32,23 @@ function getExecuteType(selector: string, value: bigint): string {
   return "Contract Call";
 }
 
-// GLOBAL STORE for WalletActions in the same block/tx
-// Note: In a real production indexer with concurrency, this reliance on global state might be risky if events aren't processed sequentially per context.
-// However, Envio processes events sequentially. We can also use a DB-based approach but that requires more schema entities.
-// For now, we will assume standard sequential processing.
+// GLOBAL STORE for Batch Calls in the same block/tx
+// Map<txHash, Array<CallDetails>>
+let batchCallsCache: Map<string, any[]> = new Map();
+
 let currentWalletAction: {
   selector: string;
   actionType: string;
   txHash: string;
 } | null = null;
 
+MneeSmartWalletFactory.AccountCreated.contractRegister(async ({ event, context }) => {
+  const walletId = event.params.account.toString().toLowerCase();
+  context.addMneeSmartWallet(walletId);
+});
+
 MneeSmartWalletFactory.AccountCreated.handler(async ({ event, context }) => {
-  const walletId = event.params.account.toString();
+  const walletId = event.params.account.toString().toLowerCase();
 
   // Create Wallet entity
   const wallet: Wallet = {
@@ -82,27 +87,60 @@ MneeSmartWallet.WalletAction.handler(async ({ event }) => {
   // We only really need the selector and type for the title/details logic
   currentWalletAction = {
     selector: event.params.selector,
-    actionType: event.params.actionType, // "EXECUTE" or "BATCH" - though bytes32 needs decoding if it was string
+    actionType: event.params.actionType,
     txHash: event.transaction.hash
   };
+
+  // Aggregate for Batch Calls
+  if (!batchCallsCache.has(event.transaction.hash)) {
+    batchCallsCache.set(event.transaction.hash, []);
+  }
+
+  const actions = batchCallsCache.get(event.transaction.hash);
+  if (actions) {
+    actions.push({
+      target: event.params.target.toString(),
+      value: event.params.value.toString(),
+      selector: event.params.selector,
+      actionType: event.params.actionType
+    });
+  }
 });
 
 MneeSmartWallet.Executed.handler(async ({ event, context }) => {
-  const walletId = event.srcAddress.toString();
+  const walletId = event.srcAddress.toString().toLowerCase();
   const wallet = await context.Wallet.get(walletId);
 
   if (wallet) {
     const selector = event.params.data.slice(0, 10); // 0x + 8 chars
-    const executeType = getExecuteType(selector, event.params.value);
-
-    // Construct details
-    const details = JSON.stringify({
+    let title = "Contract Call";
+    let detailsObj: any = {
       target: event.params.target.toString(),
       value: event.params.value.toString(), // Wei amount
       functionCall: SELECTORS[selector] || "custom",
       selector: selector,
       data: event.params.data.length > 66 ? event.params.data.slice(0, 66) + "..." : event.params.data
-    });
+    };
+
+    // Transaction Classification Logic
+    if (event.params.data === "0x" && event.params.value > 0n) {
+      title = "ETH Transfer";
+      detailsObj.functionCall = "ETH Transfer";
+    } else if (selector === "0xa9059cbb" && event.params.data.length >= 138) { // 10 chars selector + 64 chars address + 64 chars amount
+      // ERC20 Transfer
+      title = "Token Transfer";
+      detailsObj.functionCall = "Token Transfer";
+
+      // Decode params: transfer(address recipient, uint256 amount)
+      // Data layout: Selector (4 bytes) + Recipient (32 bytes) + Amount (32 bytes)
+      // 0x + 8 chars + 64 chars + 64 chars
+      // Recipient is in bytes 4-36 (chars 10-74). Address is last 20 bytes (last 40 chars of that segment)
+      const recipientHex = "0x" + event.params.data.slice(34, 74);
+      const amountHex = "0x" + event.params.data.slice(74, 138);
+
+      detailsObj.recipient = recipientHex;
+      detailsObj.amount = BigInt(amountHex).toString();
+    }
 
     const transaction: Transaction = {
       id: `${event.transaction.hash}-${event.logIndex}`,
@@ -112,8 +150,8 @@ MneeSmartWallet.Executed.handler(async ({ event, context }) => {
       blockNumber: BigInt(event.block.number),
       txHash: event.transaction.hash,
       logIndex: event.logIndex,
-      title: executeType === "ETH Transfer" || executeType === "Token Transfer" ? "Direct Transfer" : "Contract Call",
-      details: details
+      title: title,
+      details: JSON.stringify(detailsObj)
     };
 
     context.Transaction.set(transaction);
@@ -127,7 +165,7 @@ MneeSmartWallet.Executed.handler(async ({ event, context }) => {
 });
 
 MneeSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
-  const walletId = event.srcAddress.toString();
+  const walletId = event.srcAddress.toString().toLowerCase();
   const wallet = await context.Wallet.get(walletId);
 
   if (wallet) {
@@ -143,11 +181,16 @@ MneeSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
     // NOTE: To get full call details, we would need to decode the transaction input `executeBatch(Call[] calls)`.
     // Envio provides `event.transaction.input`.
 
+    // Retrieve aggregated calls for this transaction
+    const calls = batchCallsCache.get(event.transaction.hash) || [];
+
+    // Clean up cache to prevent memory leak
+    batchCallsCache.delete(event.transaction.hash);
+
     const details = JSON.stringify({
       batchSize: Number(event.params.batchSize),
       totalValue: event.params.totalValue.toString(),
-      // In a full implementation we would decode event.transaction.input here to get the calls
-      calls: [] // Placeholder as decoding complex struct arrays from calldata manualy is hard without library support here
+      calls: calls
     });
 
     const transaction: Transaction = {
@@ -172,7 +215,7 @@ MneeSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
 });
 
 MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
-  const walletId = event.params.wallet.toString();
+  const walletId = event.params.wallet.toString().toLowerCase();
   const intentId = event.params.intentId.toString();
 
   // Create Intent helper entity
@@ -182,7 +225,7 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
     token: event.params.token.toString(),
     name: event.params.name,
     totalTransactionCount: event.params.totalTransactionCount,
-    recipients: event.params.recipients.map(r => r.toString()),
+    recipients: event.params.recipients.map(r => r.toString().toLowerCase()),
     amounts: event.params.amounts, // Already bigint[]
     interval: event.params.interval,
     duration: event.params.duration
@@ -221,7 +264,7 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
 });
 
 MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
-  const walletId = event.params.wallet.toString();
+  const walletId = event.params.wallet.toString().toLowerCase();
   const intentId = event.params.intentId.toString();
 
   const intent = await context.Intent.get(intentId);
@@ -268,7 +311,7 @@ MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
 });
 
 MneeIntentRegistry.IntentCancelled.handler(async ({ event, context }) => {
-  const walletId = event.params.wallet.toString();
+  const walletId = event.params.wallet.toString().toLowerCase();
   const intentId = event.params.intentId.toString();
   const intent = await context.Intent.get(intentId);
 
@@ -314,7 +357,7 @@ MneeSmartWallet.TransferFailed.handler(async ({ event, context }) => {
 
   const transaction: Transaction = {
     id: `${event.transaction.hash}-${event.logIndex}`,
-    wallet_id: event.srcAddress.toString(),
+    wallet_id: event.srcAddress.toString().toLowerCase(),
     transactionType: "TRANSFER_FAILED",
     timestamp: BigInt(event.block.timestamp),
     blockNumber: BigInt(event.block.number),

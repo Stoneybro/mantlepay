@@ -15,134 +15,38 @@ export enum ActivityType {
   TRANSFER_FAILED = "TRANSFER_FAILED"
 }
 
-export interface WalletActivity {
+export interface Transaction {
   id: string;
-  activityType: ActivityType;
+  transactionType: ActivityType;
   timestamp: string;
   txHash: string;
-  primaryToken?: string;
-  primaryAmount?: string;
-  tags: string[];
-
-  executeDetails?: {
-    target: string;
-    value: string;
-    decodedFunction?: string;
-    isTokenTransfer: boolean;
-    tokenTransferRecipient?: string;
-    tokenTransferAmount?: string;
-  };
-
-  batchDetails?: {
-    callCount: number;
-    totalValue: string;
-    calls: any[]; // refined in query if needed
-  };
-
-  intentCreatedDetails?: {
-    intent: {
-      displayName: string;
-      token: string;
-      totalPlannedExecutions: number;
-    };
-    recipientCount: number;
-    totalCommitment: string;
-    scheduleDescription: string;
-  };
-
-  intentExecutionDetails?: {
-    intent: {
-      displayName: string;
-    };
-    executionNumber: number;
-    totalExecutions: number;
-    successCount: number;
-    failureCount: number;
-  };
-
-  intentCancellationDetails?: {
-    intent: {
-      displayName: string;
-    };
-    refundedAmount: string;
-    recoveredFailedAmount: string;
-    executionsCompleted: number;
-  };
+  title: string;
+  details: string; // JSON string
 }
 
 export const GET_WALLET_ACTIVITY = gql`
   query GetWalletActivityFeed(
-    $walletId: String, 
+    $walletId: String!, 
     $limit: Int = 50, 
     $offset: Int = 0
   ) {
     Wallet(where: { id: { _eq: $walletId } }) {
+      id
       owner
       deployedAt
-      totalActivityCount
-      totalValueTransferred
+      totalTransactionCount
       
-      activity(
+      transactions(
         limit: $limit
         offset: $offset
         order_by: { timestamp: desc }
       ) {
         id
-        activityType
+        transactionType
         timestamp
         txHash
-        primaryToken
-        primaryAmount
-        tags
-        
-        executeDetails {
-          target
-          value
-          decodedFunction
-          isTokenTransfer
-          tokenTransferRecipient
-          tokenTransferAmount
-        }
-        
-        batchDetails {
-          callCount
-          totalValue
-          calls {
-            target
-            value
-            decodedFunction
-          }
-        }
-        
-        intentCreatedDetails {
-          intent {
-            displayName
-            token
-            totalPlannedExecutions
-          }
-          recipientCount
-          totalCommitment
-          scheduleDescription
-        }
-        
-        intentExecutionDetails {
-          intent {
-            displayName
-          }
-          executionNumber
-          totalExecutions
-          successCount
-          failureCount
-        }
-        
-        intentCancellationDetails {
-          intent {
-            displayName
-          }
-          refundedAmount
-          recoveredFailedAmount
-          executionsCompleted
-        }
+        title
+        details
       }
     }
   }

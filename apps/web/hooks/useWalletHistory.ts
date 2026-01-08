@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { envioClient, GET_WALLET_ACTIVITY, WalletActivity, ActivityType } from '@/lib/envio/client';
+import { envioClient, GET_WALLET_ACTIVITY, Transaction, ActivityType } from '@/lib/envio/client';
 import { useMemo } from 'react';
 
 export interface TransactionItemProps {
@@ -13,102 +13,73 @@ export interface TransactionItemProps {
     icon: string;
 }
 
-const mapActivityToTransactionItem = (activity: WalletActivity): TransactionItemProps => {
+const mapTransactionToItem = (tx: Transaction): TransactionItemProps => {
     const base = {
-        id: activity.id,
-        timestamp: new Date(Number(activity.timestamp) * 1000).toISOString(),
+        id: tx.id,
+        timestamp: new Date(Number(tx.timestamp) * 1000).toISOString(),
         status: 'success' as const,
+        title: tx.title,
     };
 
-    switch (activity.activityType) {
+    let details: any = {};
+    try {
+        details = JSON.parse(tx.details);
+    } catch (e) {
+        console.error("Failed to parse transaction details", e);
+    }
+
+    switch (tx.transactionType) {
         case ActivityType.INTENT_CREATED:
-            const createdDetails = activity.intentCreatedDetails!;
             return {
                 ...base,
                 type: ActivityType.INTENT_CREATED,
-                title: `Created Intent: ${createdDetails.intent.displayName}`,
-                description: createdDetails.scheduleDescription,
-                details: {
-                    intentName: createdDetails.intent.displayName,
-                    token: createdDetails.intent.token, // Address, UI can resolve symbol
-                    totalCommitment: createdDetails.totalCommitment,
-                    recipientCount: createdDetails.recipientCount,
-                    totalPlannedExecutions: createdDetails.intent.totalPlannedExecutions,
-                },
+                description: details.frequency || 'Scheduled Payment',
+                details: details,
                 icon: '🎯'
             };
 
         case ActivityType.INTENT_EXECUTED:
-            const execDetails = activity.intentExecutionDetails!;
-            // Partial success logic
-            let execStatus: 'success' | 'partial' | 'failed' = 'success';
-            if (execDetails.failureCount > 0) {
-                execStatus = execDetails.successCount > 0 ? 'partial' : 'failed';
+            // Determine status based on transfers
+            let status: 'success' | 'failed' | 'partial' = 'success';
+            if (details.failedTransfers > 0) {
+                status = details.successfulTransfers > 0 ? 'partial' : 'failed';
             }
 
             return {
                 ...base,
                 type: ActivityType.INTENT_EXECUTED,
-                title: `Intent Executed: ${execDetails.intent.displayName}`,
-                description: `Execution #${execDetails.executionNumber} of ${execDetails.totalExecutions}`,
-                details: {
-                    intentName: execDetails.intent.displayName,
-                    executionNumber: execDetails.executionNumber,
-                    totalExecutions: execDetails.totalExecutions,
-                    // token: activity.primaryToken,
-                    totalAmount: activity.primaryAmount,
-                    successfulTransfers: execDetails.successCount,
-                    failedTransfers: execDetails.failureCount
-                },
-                status: execStatus,
+                description: `Execution #${details.executionNumber} of ${details.totalExecutions}`,
+                details: details,
+                status: status,
                 icon: '⚡'
             };
 
         case ActivityType.INTENT_CANCELLED:
-            const cancelDetails = activity.intentCancellationDetails!;
             return {
                 ...base,
                 type: ActivityType.INTENT_CANCELLED,
-                title: `Cancelled Intent: ${cancelDetails.intent.displayName}`,
-                description: `Intent cancelled after ${cancelDetails.executionsCompleted} executions`,
-                details: {
-                    intentName: cancelDetails.intent.displayName,
-                    amountRefunded: cancelDetails.refundedAmount,
-                    failedAmountRecovered: cancelDetails.recoveredFailedAmount,
-                    executionsCompleted: cancelDetails.executionsCompleted
-                },
+                description: `Intent cancelled`,
+                details: details,
                 icon: '🚫'
             };
 
         case ActivityType.EXECUTE:
-            const exec = activity.executeDetails!;
             return {
                 ...base,
                 type: ActivityType.EXECUTE,
-                title: exec.decodedFunction ? `Executed: ${exec.decodedFunction}` : 'Direct Transaction',
-                description: exec.isTokenTransfer
-                    ? `Transferred to ${exec.tokenTransferRecipient?.slice(0, 6)}...`
-                    : `Called ${exec.target.slice(0, 6)}...`,
-                details: {
-                    target: exec.target,
-                    value: exec.value,
-                    functionSelector: exec.decodedFunction || 'unknown',
-                    isTokenTransfer: exec.isTokenTransfer
-                },
+                description: details.functionCall === 'Token Transfer' || details.functionCall === 'ETH Transfer'
+                    ? `Transfer to ${details.target?.slice(0, 6)}...`
+                    : `Contract Call: ${details.functionCall}`,
+                details: details,
                 icon: '💸'
             };
 
         case ActivityType.EXECUTE_BATCH:
-            const batch = activity.batchDetails!;
             return {
                 ...base,
                 type: ActivityType.EXECUTE_BATCH,
-                title: 'Batch Transaction',
-                description: `Executed ${batch.callCount} calls in batch`,
-                details: {
-                    batchSize: batch.callCount,
-                    totalValue: batch.totalValue,
-                },
+                description: `Executed batch of ${details.batchSize} calls`,
+                details: details,
                 icon: '📦'
             };
 
@@ -116,13 +87,8 @@ const mapActivityToTransactionItem = (activity: WalletActivity): TransactionItem
             return {
                 ...base,
                 type: ActivityType.TRANSFER_FAILED,
-                title: 'Transfer Failed',
-                description: 'Failed to send funds',
-                details: {
-                    token: activity.primaryToken,
-                    amount: activity.primaryAmount,
-                    reason: 'See block explorer'
-                },
+                description: details.reason || 'Transfer failed',
+                details: details,
                 status: 'failed',
                 icon: '❌'
             };
@@ -131,21 +97,18 @@ const mapActivityToTransactionItem = (activity: WalletActivity): TransactionItem
             return {
                 ...base,
                 type: ActivityType.WALLET_CREATED,
-                title: 'Wallet Created',
-                description: 'Smart wallet deployed successfully',
-                details: {
-                    txHash: activity.txHash
-                },
+                description: 'Smart wallet deployed',
+                details: details,
                 icon: '🎉'
             };
 
         default:
             return {
                 ...base,
-                type: activity.activityType,
-                title: 'Unknown Activity',
-                description: activity.activityType,
-                details: {},
+                type: tx.transactionType,
+                title: tx.title || 'Unknown Activity',
+                description: 'Unknown transaction type',
+                details: details,
                 icon: '❓'
             };
     }
@@ -156,26 +119,29 @@ export const useWalletHistory = (walletAddress?: string) => {
         queryKey: ['walletHistory', walletAddress],
         queryFn: async () => {
             if (!walletAddress) return null;
-            // Indexer stores addresses in lowercase
             const variables = { walletId: walletAddress.toLowerCase() };
             const data: any = await envioClient.request(GET_WALLET_ACTIVITY, variables);
-            return data.Wallet?.[0]; // Get the first wallet match
+            return data.Wallet?.[0] || null;
         },
         enabled: !!walletAddress,
-        refetchInterval: 5000, // Poll every 5s for updates
+        refetchInterval: 10000,
     });
-
+ console.log(`transactions: ${query.data?.transactions}`)
+  console.log(`wallet address: ${walletAddress}`)
     const transactions = useMemo(() => {
-        if (!query.data?.activity) return [];
-        return query.data.activity.map(mapActivityToTransactionItem);
+       
+        if (!query.data?.transactions) return [];
+        return query.data.transactions.map(mapTransactionToItem);
     }, [query.data]);
 
     return {
         ...query,
         transactions,
         walletStats: {
-            totalActivity: query.data?.totalActivityCount || 0,
-            totalValue: query.data?.totalValueTransferred || 0,
+            totalActivity: query.data?.totalTransactionCount || 0,
+            // totalValue is no longer easy to aggregate on the client side without specific fields
+            // We can leave it as 0 or remove it if not used widely
+            totalValue: 0,
         }
     };
 };

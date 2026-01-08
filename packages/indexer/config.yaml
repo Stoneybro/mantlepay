@@ -12,8 +12,6 @@ networks:
   start_block: 0
   contracts:
   - name: MneeSmartWallet
-    address:
-    - 0x253CF05cd0106861f3E53636365d21dF832D804d
     handler: src/EventHandlers.ts
     events:
     - event: Executed(address indexed target, uint256 value, bytes data)

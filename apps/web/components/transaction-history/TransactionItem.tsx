@@ -37,8 +37,8 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
             case 'partial': return 'text-yellow-500 border-yellow-500/20';
             default: return '';
         }
-    }
-
+    }   
+    console.log(item.details)
     return (
         <Card className="bg-card hover:bg-accent/50 transition-colors border-border/50 overflow-hidden">
             <div
@@ -85,7 +85,43 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
 
                         {/* Dynamic fields based on activity details */}
                         {Object.entries(item.details).map(([key, value]) => {
-                            if (key === 'txHash' || typeof value === 'object') return null;
+                            if (key === 'txHash') return null;
+                            if (key === 'recipients' && Array.isArray(value)) {
+                                return (
+                                    <div key={key} className="col-span-2 mt-2">
+                                        <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Recipients</span>
+                                        <div className="space-y-1">
+                                            {value.map((r: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between text-xs bg-muted/20 p-1.5 rounded">
+                                                    <span className="font-mono text-muted-foreground">{r.address.slice(0, 6)}...{r.address.slice(-4)}</span>
+                                                    <span className="font-medium">{formatCurrency(r.amount, item.details.token)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            if (key === 'calls' && Array.isArray(value)) {
+                                return (
+                                    <div key={key} className="col-span-2 mt-2">
+                                        <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Batch Calls</span>
+                                        <div className="space-y-1">
+                                            {// Since we don't have full call details decoded yet as per indexer limitations, 
+                                                // we might only show a summary if array is empty or generic
+                                                value.length === 0 ? (
+                                                    <span className="text-xs text-muted-foreground italic">Details not available</span>
+                                                ) : (
+                                                    value.map((c: any, idx: number) => (
+                                                        <div key={idx} className="text-xs">{c.target}</div>
+                                                    ))
+                                                )
+                                            }
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            if (typeof value === 'object') return null;
+
                             return (
                                 <div key={key}>
                                     <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-0.5 capitalize">
@@ -93,7 +129,7 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                     </span>
                                     <span className="text-foreground text-xs font-medium">
                                         {key.toLowerCase().includes('amount') || key.toLowerCase().includes('value')
-                                            ? formatCurrency(value as string)
+                                            ? formatCurrency(value as string, item.details.token)
                                             : String(value)}
                                     </span>
                                 </div>
