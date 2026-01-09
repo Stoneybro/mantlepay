@@ -22,7 +22,7 @@ import { zeroAddress } from "viem";
 import { TransactionList } from "@/components/transaction-history/TransactionList";
 
 type AppSidebarRightProps = {
-  walletAddress: `0x${string}`;
+  walletAddress?: string;
 };
 
 export function AppSidebarRight({
@@ -31,10 +31,11 @@ export function AppSidebarRight({
 }: AppSidebarRightProps & React.ComponentProps<typeof Sidebar>) {
   const { data: wallet, isLoading: walletIsLoading } = useQuery({
     queryKey: ["walletBalance", walletAddress],
-    queryFn: () => fetchWalletBalance(walletAddress),
+    queryFn: () => fetchWalletBalance(walletAddress as `0x${string}`),
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     staleTime: Infinity,
+    enabled: !!walletAddress,
   });
 
 
@@ -62,8 +63,8 @@ export function AppSidebarRight({
           >
             ?
           </Button>
-          <div className=''>{truncateAddress(walletAddress)}</div>{" "}
-          <CopyText text={walletAddress} />
+          <div className=''>{walletAddress ? truncateAddress(walletAddress) : "No Wallet"}</div>{" "}
+          {walletAddress && <CopyText text={walletAddress} />}
         </div>
         {/* <SidebarInput placeholder="Type to search..." /> */}
       </SidebarHeader>
@@ -177,7 +178,7 @@ export function AppSidebarRight({
             </Card>
           </div>
 
-          <WalletQR walletAddress={walletAddress} />
+          {walletAddress && <WalletQR walletAddress={walletAddress} />}
         </SidebarGroup>
 
         <SidebarGroup className='px-4 gap-4 mt-4'>

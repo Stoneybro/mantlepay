@@ -1,31 +1,78 @@
+"use client";
 import { AppSidebar } from "@/components/wallet/app-sidebar";
 import { AppSidebarRight } from "@/components/wallet/app-sidebar-right";
-import { cookies } from "next/headers";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import Chat from "@/components/chat/chat";
-
-
-import { loadChat, getChats } from "@/lib/chat-store";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { generateId } from "ai";
-import { redirect } from "next/navigation";
+import { UIMessage } from "ai";
 
-export default async function Page(props: {
-  searchParams: Promise<{ chatId?: string }>;
-}) {
-  const searchParams = await props.searchParams;
-  let { chatId } = searchParams;
+export default function Page() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [chatId, setChatId] = useState<string>("");
+  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
+  const [chats, setChats] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [walletAddress, setWalletAddress] = useState<`0x${string}` | undefined>(undefined);
 
-  if (!chatId) {
-    chatId = generateId();
-    redirect(`/wallet?chatId=${chatId}`);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("wallet-deployed");
+    if (saved) setWalletAddress(saved as `0x${string}`);
+  }, []);
+
+  useEffect(() => {
+    const loadChatData = async () => {
+      setIsLoading(true);
+
+      // Get chatId from URL or generate new one
+      let currentChatId = searchParams.get("chatId");
+
+      if (!currentChatId) {
+        // Generate new chat ID and update URL without reload
+        currentChatId = generateId();
+        router.replace(`/wallet?chatId=${currentChatId}`, { scroll: false });
+      }
+
+      setChatId(currentChatId);
+
+      try {
+        // Load chat history if chatId exists
+        if (currentChatId) {
+          const response = await fetch(`/api/chat/${currentChatId}`);
+          if (response.ok) {
+            const data = await response.json();
+            setInitialMessages(data.messages || []);
+          }
+        }
+
+        // Load chat list
+        if (walletAddress) {
+          const chatsResponse = await fetch(`/api/chats?userId=${walletAddress}`);
+          if (chatsResponse.ok) {
+            const chatsData = await chatsResponse.json();
+            setChats(chatsData.chats || []);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading chat data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadChatData();
+  }, [searchParams, router, walletAddress]);
+
+  if (isLoading || !chatId) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
   }
-
-  const initialMessages = await loadChat(chatId);
-  const walletAddress = (await cookies()).get("wallet-deployed")?.value as `0x${string}`;
-  const chats = await getChats(walletAddress);
 
   return (
     <SidebarProvider
@@ -37,7 +84,7 @@ export default async function Page(props: {
     >
       <AppSidebar walletAddress={walletAddress} chats={chats} />
       <SidebarInset>
-        <header className='bg-background sticky top-0 flex shrink-0 items-center gap-2  p-4'>
+        <header className='bg-background sticky top-0 flex shrink-0 items-center gap-2 p-4'>
           {/* Header content */}
         </header>
 

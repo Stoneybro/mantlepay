@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { UIMessage } from "ai";
-import Image from "next/image";
+import { DefaultChatTransport } from "ai";
 import {
     useSingleTransfer,
     useSingleTokenTransfer,
@@ -13,23 +13,18 @@ import {
     useRecurringTokenPayment,
     useCancelIntent
 } from "@/hooks/payments/usePayment";
-import { BsArrowRepeat, BsArrowUpRight } from "react-icons/bs";
-import { FaUsers, FaUsersGear } from "react-icons/fa6";
-import { Card, CardAction, CardFooter, CardHeader } from "../ui/card";
 import { fetchWalletBalance } from "@/utils/helper";
 import { useQuery } from "@tanstack/react-query";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
-import { zeroAddress } from "viem";
 
 interface ChatProps {
-    walletAddress: string;
+    walletAddress?: string;
     id?: string;
     initialMessages?: UIMessage[];
 }
 
 function Chat({ walletAddress, id, initialMessages }: ChatProps) {
-    const [showOverlay, setShowOverlay] = useState(!initialMessages || initialMessages.length === 0);
     const [input, setInput] = useState("");
     const { data: wallet } = useQuery({
         queryKey: ["walletBalance", walletAddress],
@@ -43,9 +38,23 @@ function Chat({ walletAddress, id, initialMessages }: ChatProps) {
 
     // AI SDK hook
     const { messages, sendMessage, status, error, addToolResult } = useChat({
-        initialMessages,
-        body: { walletAddress },
-    } as any) as any;
+        id,
+        messages: initialMessages,
+
+        transport: new DefaultChatTransport({
+            api: '/api/chat',
+            prepareSendMessagesRequest({ messages, id }) {
+                return {
+                    body: {
+                        message: messages[messages.length - 1],
+                        chatId: id,
+                        walletAddress
+                    }
+                };
+            },
+        }),
+
+    });
 
     // Transaction hooks
     const singleEthTransfer = useSingleTransfer(wallet?.availableEthBalance);
@@ -66,13 +75,10 @@ function Chat({ walletAddress, id, initialMessages }: ChatProps) {
         cancelIntent,
     };
 
-    const handleSubmit = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
+    const handleSubmit = () => {
         if (!input.trim()) return;
-
-        sendMessage({ role: 'user', content: input });
+        sendMessage({ text: input });
         setInput("");
-        setShowOverlay(false);
     };
 
     // Check if any transaction is pending
