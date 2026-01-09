@@ -2,7 +2,7 @@
 "use client";
 import React, { useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { UIMessage, DefaultChatTransport } from "ai";
+import { UIMessage } from "ai";
 import Image from "next/image";
 import {
     useSingleTransfer,
@@ -42,13 +42,10 @@ function Chat({ walletAddress, id, initialMessages }: ChatProps) {
 
 
     // AI SDK hook
-    const { messages, sendMessage, addToolResult, status, error } = useChat({
-        id,
-        messages: initialMessages,
-        transport: new DefaultChatTransport({
-            api: `/api/chat?chatId=${id}&userId=${walletAddress}`,
-        }),
-    });
+    const { messages, sendMessage, status, error, addToolResult } = useChat({
+        initialMessages,
+        body: { walletAddress },
+    } as any) as any;
 
     // Transaction hooks
     const singleEthTransfer = useSingleTransfer(wallet?.availableEthBalance);
@@ -73,7 +70,7 @@ function Chat({ walletAddress, id, initialMessages }: ChatProps) {
         if (e) e.preventDefault();
         if (!input.trim()) return;
 
-        sendMessage({ text: input });
+        sendMessage({ role: 'user', content: input });
         setInput("");
         setShowOverlay(false);
     };
@@ -92,79 +89,6 @@ function Chat({ walletAddress, id, initialMessages }: ChatProps) {
 
     return (
         <div className='w-full h-full p-4 md:p-8 relative flex flex-col justify-center'>
-            {/* TEMPLATES OVERLAY */}
-            {showOverlay && (
-                <div className="absolute w-full h-full top-0 left-0 flex flex-col gap-16 py-4 mx-auto md:gap-6 md:py-6">
-                    <Image src={"/Aidra.svg"} className="items-center self-center" width={100} height={100} alt="Aidra logo" />
-                    <div className="text-2xl font-semibold text-center">Aidra smart wallet ready</div>
-                    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-2 gap-4 px-16 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-16 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-                        <Card className="@container/card">
-                            <CardHeader>
-                                <CardAction>
-                                    <BsArrowUpRight />
-                                </CardAction>
-                            </CardHeader>
-                            <CardFooter className="flex-col items-start gap-1.5 text-sm">
-                                <div className="line-clamp-1 flex gap-2 font-medium">
-                                    Single Payment
-                                </div>
-                                <div className="text-muted-foreground">
-                                    Send one payment to one recipient
-                                </div>
-                            </CardFooter>
-                        </Card>
-
-                        <Card className="@container/card">
-                            <CardHeader>
-                                <CardAction>
-                                    <FaUsers />
-                                </CardAction>
-                            </CardHeader>
-                            <CardFooter className="flex-col items-start gap-1.5 text-sm">
-                                <div className="line-clamp-1 flex gap-2 font-medium">
-                                    Batch Payment
-                                </div>
-                                <div className="text-muted-foreground">
-                                    Send one transaction to multiple recipients
-                                </div>
-                            </CardFooter>
-                        </Card>
-
-                        <Card className="@container/card">
-                            <CardHeader>
-                                <CardAction>
-                                    <BsArrowRepeat />
-                                </CardAction>
-                            </CardHeader>
-                            <CardFooter className="flex-col items-start gap-1.5 text-sm">
-                                <div className="line-clamp-1 flex gap-2 font-medium">
-                                    Single Recurring Payment
-                                </div>
-                                <div className="text-muted-foreground">
-                                    Automate repeated transfers to one address
-                                </div>
-                            </CardFooter>
-                        </Card>
-
-                        <Card className="@container/card">
-                            <CardHeader>
-                                <CardAction>
-                                    <FaUsersGear />
-                                </CardAction>
-                            </CardHeader>
-                            <CardFooter className="flex-col items-start gap-1.5 text-sm">
-                                <div className="line-clamp-1 flex gap-2 font-medium">
-                                    Batch Recurring Payment
-                                </div>
-                                <div className="text-muted-foreground text-xs">
-                                    Schedule recurring payments for teams or groups
-                                </div>
-                            </CardFooter>
-                        </Card>
-                    </div>
-                </div>
-            )}
-
             <ChatMessages
                 messages={messages}
                 addToolResult={addToolResult}
@@ -174,7 +98,6 @@ function Chat({ walletAddress, id, initialMessages }: ChatProps) {
                 isLoading={isLoading}
                 hooks={hooks}
             />
-
             <ChatInput
                 input={input}
                 setInput={setInput}

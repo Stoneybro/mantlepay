@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
 import { Loader2, XCircle } from "lucide-react";
 import { ToolRenderer } from './ToolRenderer';
 
@@ -42,25 +41,30 @@ export function ChatMessages({
                             {message.role === "user" ? "" : "Aidra: "}
                         </span>
                         <span className="text-foreground/90">
-                            {message.parts.map((part: any, i: number) => {
-                                // Render text parts
-                                if (part.type === "text") {
-                                    return <span key={`${message.id}-${i}`}>{part.text}</span>;
-                                }
+                            {message.parts ? (
+                                message.parts.map((part: any, i: number) => {
+                                    // Render text parts
+                                    if (part.type === "text") {
+                                        return <span key={`${message.id}-${i}`}>{part.text}</span>;
+                                    }
 
-                                // Render tool UI
-                                const toolCallId = 'toolCallId' in part ? part.toolCallId : '';
-                                return (
-                                    <ToolRenderer
-                                        key={`${message.id}-${i}`}
-                                        part={part}
-                                        toolCallId={toolCallId}
-                                        addToolResult={addToolResult}
-                                        isTransactionPending={isTransactionPending}
-                                        hooks={hooks}
-                                    />
-                                );
-                            })}
+                                    // Render tool UI
+                                    const toolCallId = 'toolCallId' in part ? part.toolCallId : '';
+                                    return (
+                                        <ToolRenderer
+                                            key={`${message.id}-${i}`}
+                                            part={part}
+                                            toolCallId={toolCallId}
+                                            addToolResult={addToolResult}
+                                            isTransactionPending={isTransactionPending}
+                                            hooks={hooks}
+                                        />
+                                    );
+                                })
+                            ) : (
+                                // Fallback for messages without parts (legacy or simple text)
+                                <span key={message.id}>{message.content}</span>
+                            )}
                         </span>
                     </div>
                 ))}
@@ -69,7 +73,6 @@ export function ChatMessages({
                 {isTransactionPending && (
                     <div className="flex items-center gap-2 text-sm animate-pulse">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Waiting for wallet signature...</span>
                     </div>
                 )}
 

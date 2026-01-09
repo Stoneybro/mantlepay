@@ -8,7 +8,7 @@ import { saveChat } from "@/lib/chat-store";
 export const maxDuration = 30;
 
 // System prompt with decision matrix
-const SYSTEM_PROMPT = `You are Aidra: an ERC-4337 interactive smart wallet agent and execution layer for on-chain payments.
+const SYSTEM_PROMPT = `You are Mneepay: an ERC-4337 interactive smart wallet agent and execution layer for on-chain payments.
 
 ## PRIMARY GOAL
 Correctly interpret natural language payment instructions and select the correct payment tool based on your interpretation.
@@ -111,9 +111,6 @@ export async function POST(req: Request) {
   try {
     const json = await req.json();
     const { messages } = json;
-    console.log("DEBUG: messages type:", typeof messages);
-    console.log("DEBUG: isArray:", Array.isArray(messages));
-    console.log("DEBUG: messages value:", messages);
     const url = new URL(req.url);
     const chatId = json.chatId || url.searchParams.get("chatId");
     const userId = url.searchParams.get("userId");
@@ -643,7 +640,7 @@ export async function GET() {
   return new Response(
     JSON.stringify({
       status: "ok",
-      service: "Aidra Payment Assistant API",
+      service: "Mneepay API",
       version: "2.0.0",
       timestamp: new Date().toISOString(),
     }),

@@ -3,6 +3,7 @@ import { chats, messages } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { UIMessage } from "ai";
 
+
 export async function saveChat({
     chatId,
     messages: newMessages,
@@ -35,27 +36,47 @@ export async function saveChat({
 
     // Upsert messages
     for (const m of newMessages) {
-        await db
-            .insert(messages)
-            .values({
+        const existingMessage = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.id, m.id))
+            .limit(1);
+
+        if (existingMessage.length > 0) {
+            await db
+                .update(messages)
+                .set({
+                    content: m,
+                })
+                .where(eq(messages.id, m.id));
+        } else {
+            await db.insert(messages).values({
                 id: m.id,
                 chatId,
                 role: m.role,
                 content: m,
                 createdAt: (m as any).createdAt ? new Date((m as any).createdAt) : new Date(),
-            })
-            .onConflictDoNothing();
+            });
+        }
     }
 }
 
 export async function loadChat(id: string): Promise<UIMessage[]> {
-    const storedMessages = await db
-        .select()
-        .from(messages)
-        .where(eq(messages.chatId, id))
-        .orderBy(messages.createdAt);
+    try {
+        const storedMessages = await db
+            .select()
+            .from(messages)
+            .where(eq(messages.chatId, id))
+            .orderBy(messages.createdAt);
 
-    return storedMessages.map((m) => m.content as UIMessage);
+        return storedMessages.map((m) => m.content as UIMessage);
+    } catch (error) {
+        console.error("DEBUG: loadChat failed:", error);
+        if (error && typeof error === 'object' && 'cause' in error) {
+            console.error("DEBUG: loadChat error cause:", (error as any).cause);
+        }
+        throw error;
+    }
 }
 
 export async function getChats(userId?: string) {
