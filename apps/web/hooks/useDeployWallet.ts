@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
-import Cookies from "js-cookie";
+
 import { useRouter } from "next/navigation";
 
 export function useDeployWallet() {
@@ -58,11 +58,7 @@ export function useDeployWallet() {
         return;
       }
 
-      Cookies.set("wallet-deployed", address, {
-        expires: 7,
-        sameSite: "strict",
-        secure: process.env.NODE_ENV === "production",
-      });
+      localStorage.setItem("wallet-deployed", address);
 
       queryClient.invalidateQueries({ queryKey: ["deploymentStatus", owner?.address] });
       router.push("/wallet");
@@ -72,20 +68,20 @@ export function useDeployWallet() {
     onError: async (error: unknown) => {
       console.error("Deployment failed:", error);
 
-    
+
       try {
         await getClient({ timeoutMs: 3000 });
-       
+
         const retry = window.confirm(
           "Deployment failed but connection appears restored. Retry deployment now?"
         );
         if (retry) {
-          
+
           router.refresh();
           return;
         }
       } catch {
-       
+
       }
 
 

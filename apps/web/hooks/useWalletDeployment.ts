@@ -1,6 +1,6 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
-import Cookies from "js-cookie";
+
 import { MneeSmartWalletFactoryABI } from "@/lib/abi/MneeSmartWalletFactoryAbi";
 import { readContract } from "@/lib/server";
 import type { Abi } from "viem";
@@ -21,11 +21,7 @@ async function checkWalletDeployment(address: string): Promise<boolean> {
     console.error("Chain read error:", e);
   }
   if (typeof rawRes === "string" && rawRes.startsWith("0x") && rawRes != ZERO) {
-    Cookies.set("wallet-deployed", rawRes.toString(), {
-      expires: 7,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-    });
+    localStorage.setItem("wallet-deployed", rawRes.toString());
     return true;
   } else {
     console.log("Wallet not deployed");

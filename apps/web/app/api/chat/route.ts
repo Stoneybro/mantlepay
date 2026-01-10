@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { google } from "@ai-sdk/google";
-import { convertToModelMessages, streamText, UIMessage } from "ai";
+import { convertToModelMessages, createIdGenerator, streamText, UIMessage } from "ai";
 import { z } from "zod";
-import { saveChat } from "@/lib/chat-store";
+import { saveChat, loadChat } from "@/lib/chat-store";
+
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -110,15 +111,23 @@ ONLY call the tool if ALL checks pass.
 export async function POST(req: Request) {
   try {
     const json = await req.json();
-    const { messages } = json;
-    const url = new URL(req.url);
-    const chatId = json.chatId || url.searchParams.get("chatId");
-    const userId = url.searchParams.get("userId");
+    const { message, chatId, walletAddress } = json;
+
+    if (!chatId) {
+      return new Response(
+        JSON.stringify({ error: "chatId is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const previousMessages = await loadChat(chatId);
+    const allMessages = [...previousMessages, message];
+    const modelMessages = await convertToModelMessages(allMessages);
+
 
     const result = streamText({
       model: google("gemini-2.5-flash-lite"),
       system: SYSTEM_PROMPT,
-      messages: await convertToModelMessages(messages),
+      messages: modelMessages,
       temperature: 0.1,
       toolChoice: "auto",
 
@@ -566,10 +575,19 @@ DO NOT USE IF:
     });
 
     return result.toUIMessageStreamResponse({
+      originalMessages: allMessages,
+      generateMessageId: createIdGenerator({
+        prefix: "msg",
+        size: 16,
+      }),
       onFinish: async ({ messages: threadMessages }) => {
         if (chatId) {
           try {
-            await saveChat({ chatId, messages: threadMessages, userId: userId || undefined });
+            await saveChat({
+              chatId,
+              messages: threadMessages,
+              userId: walletAddress || undefined
+            });
           } catch (error) {
             console.error("❌ Failed to save chat:", error);
           }
@@ -636,17 +654,38 @@ DO NOT USE IF:
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const chatId = url.pathname.split('/').pop();
+
+    if (!chatId) {
+      return new Response(
+        JSON.stringify({ error: "chatId is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const messages = await loadChat(chatId);
+
+    return new Response(
+      JSON.stringify({ messages }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("❌ GET handler error:", error);
+  }
+
   return new Response(
     JSON.stringify({
-      status: "ok",
-      service: "Mneepay API",
-      version: "2.0.0",
-      timestamp: new Date().toISOString(),
+      error: "Failed to load chat",
     }),
     {
-      status: 200,
+      status: 500,
       headers: { "Content-Type": "application/json" },
     }
-  );
+  )
 }

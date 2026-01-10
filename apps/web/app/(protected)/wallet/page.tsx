@@ -1,31 +1,30 @@
+"use client";
 import { AppSidebar } from "@/components/wallet/app-sidebar";
 import { AppSidebarRight } from "@/components/wallet/app-sidebar-right";
-import { cookies } from "next/headers";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import Chat from "@/components/chat/chat";
-
-
-import { loadChat, getChats } from "@/lib/chat-store";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { generateId } from "ai";
-import { redirect } from "next/navigation";
 
-export default async function Page(props: {
-  searchParams: Promise<{ chatId?: string }>;
-}) {
-  const searchParams = await props.searchParams;
-  let { chatId } = searchParams;
+export default function Page() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [walletAddress, setWalletAddress] = useState<`0x${string}` | undefined>(undefined);
 
-  if (!chatId) {
-    chatId = generateId();
-    redirect(`/wallet?chatId=${chatId}`);
-  }
+  useEffect(() => {
+    const saved = localStorage.getItem("wallet-deployed");
+    if (saved) setWalletAddress(saved as `0x${string}`);
+  }, []);
 
-  const initialMessages = await loadChat(chatId);
-  const walletAddress = (await cookies()).get("wallet-deployed")?.value as `0x${string}`;
-  const chats = await getChats(walletAddress);
+  const chatId = searchParams.get("chatId");
+
+  useEffect(() => {
+    if (!chatId) {
+      const newId = generateId();
+      router.replace(`/wallet?chatId=${newId}`, { scroll: false });
+    }
+  }, [chatId, router]);
 
   return (
     <SidebarProvider
@@ -35,16 +34,15 @@ export default async function Page(props: {
         } as React.CSSProperties
       }
     >
-      <AppSidebar walletAddress={walletAddress} chats={chats} />
+      <AppSidebar walletAddress={walletAddress} />
       <SidebarInset>
-        <header className='bg-background sticky top-0 flex shrink-0 items-center gap-2  p-4'>
+        <header className='bg-background sticky top-0 flex shrink-0 items-center gap-2 p-4'>
           {/* Header content */}
         </header>
 
         <Chat
           walletAddress={walletAddress}
-          id={chatId}
-          initialMessages={initialMessages}
+          id={chatId || undefined}
         />
       </SidebarInset>
       <AppSidebarRight side='right' walletAddress={walletAddress} />

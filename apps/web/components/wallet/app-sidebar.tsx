@@ -1,15 +1,12 @@
-
-import { TransactionList } from "@/components/transaction-history/TransactionList";
+"use client";
 
 import * as React from "react";
-
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { MoreHorizontalIcon } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PlusIcon, MoreHorizontalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -21,9 +18,9 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
-
-// import TransactionItem from "./TxItem";
-
+import { generateId } from "ai";
+import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type Chat = {
   id: string;
@@ -33,15 +30,60 @@ type Chat = {
 };
 
 type AppSidebarProps = {
-  walletAddress: `0x${string}`;
-  chats?: Chat[];
+  walletAddress?: string;
 };
 
-export function AppSidebar({
-  walletAddress,
-  chats,
-  ...props
-}: AppSidebarProps & React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ walletAddress }: AppSidebarProps & React.ComponentProps<typeof Sidebar>) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentChatId = searchParams.get("chatId");
+  const queryClient = useQueryClient();
+
+  const { data: chats = [], isLoading } = useQuery({
+    queryKey: ['chats', walletAddress],
+    queryFn: async () => {
+      if (!walletAddress) return [];
+      const response = await fetch(`/api/chats?userId=${walletAddress}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch chats');
+      }
+      const data = await response.json();
+      return data.chats as Chat[];
+    },
+    enabled: !!walletAddress,
+  });
+
+  const handleNewChat = () => {
+    const newChatId = generateId();
+    router.replace(`/wallet?chatId=${newChatId}`);
+  };
+
+  const handleSelectChat = (chatId: string) => {
+    router.push(`/wallet?chatId=${chatId}`);
+  };
+
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete chat');
+      }
+
+      toast.success('Chat deleted');
+      queryClient.invalidateQueries({ queryKey: ['chats', walletAddress] });
+
+      if (chatId === currentChatId) {
+        handleNewChat();
+      }
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      toast.error('Failed to delete chat');
+    }
+  };
+
   return (
     <Sidebar className='w-[calc(var(--sidebar-width))] border-r'>
       <SidebarHeader className='gap-3.5 border-b p-4'>
@@ -50,8 +92,15 @@ export function AppSidebar({
             Chats
           </div>
 
-          {/* New Chat Button or Filter */}
-          <a href="/wallet" className="text-sm text-muted-foreground hover:text-foreground">New Chat</a>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleNewChat}
+            className="h-8 w-8"
+          >
+            <PlusIcon className="h-4 w-4" />
+            <span className="sr-only">New Chat</span>
+          </Button>
         </div>
       </SidebarHeader>
 
@@ -62,25 +111,66 @@ export function AppSidebar({
         <SidebarGroup className='px-0'>
           <SidebarGroupContent className="h-full">
             <div className="flex flex-col gap-1 p-2">
-              {chats?.map((chat) => (
-                <a
-                  key={chat.id}
-                  href={`/wallet?chatId=${chat.id}`}
-                  className="block p-2 text-sm rounded hover:bg-muted truncate"
-                >
-                  {chat.title || "Untitled Chat"}
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(chat.createdAt).toLocaleDateString()}
+              {isLoading ? (
+                <div className="p-4 text-sm text-muted-foreground text-center">
+                  Loading chats...
+                </div>
+              ) : chats.length > 0 ? (
+                chats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    className={`group flex items-center gap-2 p-2 text-sm rounded hover:bg-muted cursor-pointer ${chat.id === currentChatId ? 'bg-muted' : ''
+                      }`}
+                  >
+                    <div
+                      className="flex-1 truncate"
+                      onClick={() => handleSelectChat(chat.id)}
+                    >
+                      <div className="font-medium truncate">
+                        {chat.title || "Untitled Chat"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(chat.createdAt).toLocaleDateString()} {new Date(chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        >
+                          <MoreHorizontalIcon className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteChat(chat.id)}
+                          className="text-destructive"
+                        >
+                          Delete chat
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </a>
-              ))}
-              {(!chats || chats.length === 0) && (
+                ))
+              ) : (
                 <div className="p-4 text-sm text-muted-foreground text-center">
                   No chat history
+                  <div className="mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNewChat}
+                      className="w-full"
+                    >
+                      Start a conversation
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-            {/* <TransactionList walletAddress={walletAddress} /> */}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
