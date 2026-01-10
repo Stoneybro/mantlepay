@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "../db/db";
 import { chats, messages } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { UIMessage } from "ai";
