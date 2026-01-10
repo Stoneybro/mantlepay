@@ -3,6 +3,7 @@
 import { useWalletHistory, TransactionItemProps } from '@/hooks/useWalletHistory';
 import { TransactionItem } from './TransactionItem';
 import { Loader2, FileText } from 'lucide-react';
+import { SidebarGroup, SidebarGroupContent } from '../ui/sidebar';
 
 export const TransactionList = ({ walletAddress }: { walletAddress?: string }) => {
     const { transactions, isLoading, error } = useWalletHistory(walletAddress);
@@ -39,10 +40,12 @@ export const TransactionList = ({ walletAddress }: { walletAddress?: string }) =
     }
 
     return (
-        <div className="space-y-3">
-            {transactions.map((tx: TransactionItemProps) => (
-                <TransactionItem key={tx.id} item={tx} />
-            ))}
-        </div>
+        <SidebarGroup className="px-0">
+            <SidebarGroupContent className='px-0'>
+                {transactions.map((tx: TransactionItemProps) => (
+                    <TransactionItem key={tx.id} item={tx} />
+                ))}
+            </SidebarGroupContent>
+        </SidebarGroup>
     );
 };
