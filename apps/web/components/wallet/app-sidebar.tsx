@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sidebar";
 import { generateId } from "ai";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type Chat = {
   id: string;
@@ -30,17 +31,31 @@ type Chat = {
 
 type AppSidebarProps = {
   walletAddress?: string;
-  chats?: Chat[];
 };
 
-export function AppSidebar({ walletAddress, chats = [] }: AppSidebarProps & React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ walletAddress }: AppSidebarProps & React.ComponentProps<typeof Sidebar>) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentChatId = searchParams.get("chatId");
+  const queryClient = useQueryClient();
+
+  const { data: chats = [], isLoading } = useQuery({
+    queryKey: ['chats', walletAddress],
+    queryFn: async () => {
+      if (!walletAddress) return [];
+      const response = await fetch(`/api/chats?userId=${walletAddress}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch chats');
+      }
+      const data = await response.json();
+      return data.chats as Chat[];
+    },
+    enabled: !!walletAddress,
+  });
 
   const handleNewChat = () => {
     const newChatId = generateId();
-    router.push(`/wallet?chatId=${newChatId}`);
+    router.replace(`/wallet?chatId=${newChatId}`);
   };
 
   const handleSelectChat = (chatId: string) => {
@@ -58,11 +73,10 @@ export function AppSidebar({ walletAddress, chats = [] }: AppSidebarProps & Reac
       }
 
       toast.success('Chat deleted');
+      queryClient.invalidateQueries({ queryKey: ['chats', walletAddress] });
 
       if (chatId === currentChatId) {
         handleNewChat();
-      } else {
-        router.refresh();
       }
     } catch (error) {
       console.error('Error deleting chat:', error);
@@ -97,7 +111,11 @@ export function AppSidebar({ walletAddress, chats = [] }: AppSidebarProps & Reac
         <SidebarGroup className='px-0'>
           <SidebarGroupContent className="h-full">
             <div className="flex flex-col gap-1 p-2">
-              {chats.length > 0 ? (
+              {isLoading ? (
+                <div className="p-4 text-sm text-muted-foreground text-center">
+                  Loading chats...
+                </div>
+              ) : chats.length > 0 ? (
                 chats.map((chat) => (
                   <div
                     key={chat.id}
@@ -112,7 +130,7 @@ export function AppSidebar({ walletAddress, chats = [] }: AppSidebarProps & Reac
                         {chat.title || "Untitled Chat"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(chat.createdAt).toLocaleDateString()}
+                        {new Date(chat.createdAt).toLocaleDateString()} {new Date(chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
 

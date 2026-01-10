@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
@@ -14,18 +14,77 @@ import {
     useCancelIntent
 } from "@/hooks/payments/usePayment";
 import { fetchWalletBalance } from "@/utils/helper";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 
 interface ChatProps {
     walletAddress?: string;
     id?: string;
-    initialMessages?: UIMessage[];
 }
 
-function Chat({ walletAddress, id, initialMessages }: ChatProps) {
+function Chat({ walletAddress, id }: ChatProps) {
+    const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(null);
+
+    useEffect(() => {
+        const loadMessages = async () => {
+            if (!id) {
+                setInitialMessages([]);
+                return;
+            }
+
+            try {
+                // If it's a new generated ID (long string), checking API is fine.
+                // If API returns 404 or empty, we start with empty messages.
+                const response = await fetch(`/api/chat/${id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setInitialMessages(data.messages || []);
+                } else {
+                    setInitialMessages([]);
+                }
+            } catch (error) {
+                console.error("Error loading chat:", error);
+                setInitialMessages([]);
+            }
+        };
+
+        setInitialMessages(null); // Reset while loading new ID
+        loadMessages();
+    }, [id]);
+
+    if (!initialMessages && id) {
+        return (
+            <div className="flex h-full w-full items-center justify-center">
+                <div className="text-muted-foreground">Loading specific chat...</div>
+            </div>
+        );
+    }
+
+    // If no ID, we are in a "new chat" state conceptually, but usually app redirects to a generated ID.
+    // If we have ID and messages loaded, render ChatInner.
+    return (
+        <ChatInner
+            key={id} // Force re-mount when ID changes to reset useChat
+            id={id}
+            initialMessages={initialMessages || []}
+            walletAddress={walletAddress}
+        />
+    );
+}
+
+function ChatInner({
+    walletAddress,
+    id,
+    initialMessages
+}: {
+    walletAddress?: string,
+    id?: string,
+    initialMessages: UIMessage[]
+}) {
     const [input, setInput] = useState("");
+    const queryClient = useQueryClient();
+
     const { data: wallet } = useQuery({
         queryKey: ["walletBalance", walletAddress],
         queryFn: () => fetchWalletBalance(walletAddress as `0x${string}`),
@@ -39,8 +98,11 @@ function Chat({ walletAddress, id, initialMessages }: ChatProps) {
     // AI SDK hook
     const { messages, sendMessage, status, error, addToolResult } = useChat({
         id,
-        messages: initialMessages,
-
+        messages: initialMessages || [],
+        onFinish: () => {
+            // Invalidate chats list to show new chat or title update
+            queryClient.invalidateQueries({ queryKey: ['chats', walletAddress] });
+        },
         transport: new DefaultChatTransport({
             api: '/api/chat',
             prepareSendMessagesRequest({ messages, id }) {

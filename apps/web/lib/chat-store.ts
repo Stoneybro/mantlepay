@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from "../db/db";
 import { chats, messages } from "../db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -23,31 +24,49 @@ export async function saveChat({
             .where(eq(chats.id, chatId))
             .limit(1);
 
-        // Create chat if it doesn't exist
-        if (existingChat.length === 0) {
-            // Extract title from first user message
-            const firstUserMessage = newMessages.find((m) => m.role === "user");
+        // Extract title from first user message
+        const firstUserMessage = newMessages.find((m) => m.role === "user");
+        let titleCandidate = "";
 
-            let title = "New Chat";
-            if (firstUserMessage) {
-                const messageAny = firstUserMessage as any;
-                // Handle different content formats
-                if (typeof messageAny.content === 'string') {
-                    title = messageAny.content.slice(0, 50);
-                } else if (Array.isArray(messageAny.content)) {
-                    const textPart = messageAny.content.find((p: any) => p.type === 'text');
-                    if (textPart && typeof textPart.text === 'string') {
-                        title = textPart.text.slice(0, 50);
-                    }
+        if (firstUserMessage) {
+            const messageAny = firstUserMessage as any;
+            // Handle different content formats
+            if (typeof messageAny.content === 'string') {
+                titleCandidate = messageAny.content.slice(0, 50);
+            } else if (Array.isArray(messageAny.content)) {
+                const textPart = messageAny.content.find((p: any) => p.type === 'text');
+                if (textPart && typeof textPart.text === 'string') {
+                    titleCandidate = textPart.text.slice(0, 50);
+                }
+            } else if (Array.isArray(messageAny.parts)) {
+                // Handle structure where content is split into parts
+                const textPart = messageAny.parts.find((p: any) => p.type === 'text');
+                if (textPart && typeof textPart.text === 'string') {
+                    titleCandidate = textPart.text.slice(0, 50);
                 }
             }
+        }
 
+        // Create chat if it doesn't exist
+        if (existingChat.length === 0) {
             await db.insert(chats).values({
                 id: chatId,
-                title,
+                title: titleCandidate || "New Chat",
                 userId,
                 createdAt: new Date(),
             });
+        } else {
+            // If chat exists but title is default "New Chat", try to update it
+            const currentTitle = existingChat[0].title;
+            const isDefaultTitle = currentTitle === "New Chat" || currentTitle === "New Chat " || !currentTitle;
+
+            if (isDefaultTitle && titleCandidate && titleCandidate.trim().length > 0) {
+                console.log(`📝 Updating title for chat ${chatId} from '${currentTitle}' to '${titleCandidate}'`);
+                await db
+                    .update(chats)
+                    .set({ title: titleCandidate })
+                    .where(eq(chats.id, chatId));
+            }
         }
 
         // Upsert messages - using a transaction for consistency

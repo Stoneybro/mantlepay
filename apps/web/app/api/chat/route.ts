@@ -676,14 +676,16 @@ export async function GET(req: Request) {
       }
     );
   } catch (error) {
-    console.error("❌ GET handler error:", error);}
+    console.error("❌ GET handler error:", error);
+  }
 
-    return new Response(
-      JSON.stringify({
-        error: "Failed to load chat",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    )}
+  return new Response(
+    JSON.stringify({
+      error: "Failed to load chat",
+    }),
+    {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    }
+  )
+}
