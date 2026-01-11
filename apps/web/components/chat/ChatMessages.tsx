@@ -38,7 +38,7 @@ export function ChatMessages({
                         className={`break-words ${message.role === "user" ? "ml-auto" : ""} bg-accent px-4 py-2 rounded w-fit`}
                     >
                         <span className="font-medium">
-                            {message.role === "user" ? "" : "Aidra: "}
+                            {message.role === "user" ? "" : "Mneepay: "}
                         </span>
                         <span className="text-foreground/90">
                             {message.parts ? (
@@ -87,7 +87,7 @@ export function ChatMessages({
                 {isLoading && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Aidra is thinking...</span>
+                        <span>Mneepay is thinking...</span>
                     </div>
                 )}
             </div>
