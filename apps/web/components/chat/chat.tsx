@@ -18,6 +18,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 
+import Overlay from "./overlay";
+
 interface ChatProps {
     walletAddress?: string;
     id?: string;
@@ -157,6 +159,7 @@ function ChatInner({
 
     return (
         <div className='w-full h-full p-4 md:p-8 relative flex flex-col justify-center'>
+            {messages.length === 0 && <Overlay />}
             <ChatMessages
                 messages={messages}
                 addToolResult={addToolResult}

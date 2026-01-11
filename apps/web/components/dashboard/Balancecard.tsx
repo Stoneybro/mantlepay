@@ -9,71 +9,79 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
-export function BalanceCards() {
+interface BalanceCardsProps {
+  availableEth?: string;
+  committedEth?: string;
+  isLoading?: boolean;
+}
+
+export function BalanceCards({ availableEth = "0", committedEth = "0", isLoading }: BalanceCardsProps) {
+  const totalBalance = (parseFloat(availableEth) + parseFloat(committedEth)).toFixed(4);
+  const safeTotal = isNaN(Number(totalBalance)) ? "0" : totalBalance;
+
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Total Revenue</CardDescription>
+          <CardDescription>Total Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            $1,250.00
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${safeTotal} ETH`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-          
-              +12.5%
+              +0%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Trending up this month  
+            {parseFloat(safeTotal) > 0 ? "Balance is active" : "No activity this month"}
           </div>
           <div className="text-muted-foreground">
-            Visitors for the last 6 months
+            sum of committed balance and free balance
           </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>New Customers</CardDescription>
+          <CardDescription>Committed Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            1,234
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${committedEth} ETH`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              -20%
+              0%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period 
+            {parseFloat(committedEth) > 0 ? "Funds currently reserved" : "No activity this month"}
           </div>
           <div className="text-muted-foreground">
-            Acquisition needs attention
+            Value locked in payrolls and subscriptions
           </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Active Accounts</CardDescription>
+          <CardDescription>Free Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            45,678
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${availableEth} ETH`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-          
-              +12.5%
+              0%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention   
+            {parseFloat(availableEth) > 0 ? "Liquidity available" : "No activity this month"}
           </div>
-          <div className="text-muted-foreground">Engagement exceed targets</div>
+          <div className="text-muted-foreground">Value available for use and withdrawal</div>
         </CardFooter>
       </Card>
 

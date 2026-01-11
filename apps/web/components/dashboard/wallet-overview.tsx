@@ -11,6 +11,10 @@ import CopyText from "@/components/ui/copy";
 import { Button } from "@/components/ui/button";
 import { BalanceCards } from "./Balancecard";
 import { InfoCards } from "./InfoCard";
+import { TransactionItemProps, useWalletHistory } from "@/hooks/useWalletHistory";
+import { ActivityType } from "@/lib/envio/client";
+import { useMemo } from "react";
+import PaymentTable from "./PaymentTable";
 
 type WalletOverviewProps = {
     walletAddress?: string;
@@ -26,95 +30,57 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
         enabled: !!walletAddress,
     });
 
+    const { transactions, isLoading: historyIsLoading } = useWalletHistory(walletAddress);
+
+    const stats = useMemo(() => {
+        if (!transactions) return { single: 0, batch: 0, subscription: 0, payroll: 0 };
+
+        let single = 0;
+        let batch = 0;
+        let subscription = 0;
+        let payroll = 0;
+
+        transactions.forEach((tx: TransactionItemProps) => {
+            if (tx.type === ActivityType.EXECUTE) {
+                single++;
+            } else if (tx.type === ActivityType.EXECUTE_BATCH) {
+                batch++;
+            } else if (tx.type === ActivityType.INTENT_CREATED) {
+                const recipients = tx.details?.recipients || [];
+                if (recipients.length > 1) {
+                    payroll++;
+                } else {
+                    subscription++;
+                }
+            }
+        });
+
+        return { single, batch, subscription, payroll };
+    }, [transactions]);
+
     return (
-        // <div className="flex flex-col gap-6 w-full max-w-md">
-        //     <div className='flex items-center justify-start gap-2'>
-        //         <div className='text-lg font-semibold'>{walletAddress ? truncateAddress(walletAddress) : "No Wallet"}</div>
-        //         {walletAddress && <CopyText text={walletAddress} />}
-        //     </div>
-
-        //     <div className="flex flex-col gap-4">
-        //         <Card className="@container/card gap-2">
-        //             <CardContent className="flex-col items-start text-sm">
-        //                 <CardDescription>Available Balance</CardDescription>
-        //                 <div className="flex items-center justify-between w-full">
-        //                     <div className="flex items-center">
-        //                         <div className="">ETH</div>
-        //                     </div>
-        //                     <div className="flex flex-col justify-center items-center">
-        //                         <div className="text-xs">
-        //                             {walletIsLoading ? (
-        //                                 <Skeleton className="w-6" />
-        //                             ) : (
-        //                                 wallet?.availableEthBalance
-        //                             )}{" "}
-        //                             ETH
-        //                         </div>
-        //                     </div>
-        //                 </div>
-        //                 <div className="flex items-center justify-between w-full">
-        //                     <div className="flex items-center">
-        //                         <div className="">MNEE</div>
-        //                     </div>
-        //                     <div className="flex flex-col justify-center items-end">
-        //                         <div className="text-xs">
-        //                             {walletIsLoading ? (
-        //                                 <Skeleton className="w-6" />
-        //                             ) : (
-        //                                 wallet?.availableMneeBalance
-        //                             )}{" "}
-        //                             MNEE
-        //                         </div>
-        //                     </div>
-        //                 </div>
-        //             </CardContent>
-        //         </Card>
-
-        //         <Card className="@container/card gap-2">
-        //             <CardContent className="flex-col items-start text-sm">
-        //                 <CardDescription>Locked balance</CardDescription>
-        //                 <div className="flex items-center justify-between w-full">
-        //                     <div className="flex items-center">
-        //                         <div className="">ETH</div>
-        //                     </div>
-        //                     <div className="flex flex-col justify-center items-center">
-        //                         <div className="text-xs">
-        //                             {walletIsLoading ? (
-        //                                 <Skeleton className="w-6" />
-        //                             ) : (
-        //                                 wallet?.committedEthBalance
-        //                             )}{" "}
-        //                             ETH
-        //                         </div>
-        //                     </div>
-        //                 </div>
-        //                 <div className="flex items-center justify-between w-full">
-        //                     <div className="flex items-center">
-        //                         <div className="">MNEE</div>
-        //                     </div>
-        //                     <div className="flex flex-col justify-center items-end">
-        //                         <div className="text-xs">
-        //                             {walletIsLoading ? (
-        //                                 <Skeleton className="w-6" />
-        //                             ) : (
-        //                                 wallet?.committedMneeBalance
-        //                             )}{" "}
-        //                             MNEE
-        //                         </div>
-        //                     </div>
-        //                 </div>
-        //             </CardContent>
-        //         </Card>
-        //     </div>
-
-        //     {walletAddress && <WalletQR walletAddress={walletAddress} />}
-        // </div>
         <>
-            <div className="@container/main flex flex-col gap-4  md:gap-6 ">
-                <BalanceCards />
+            <div className="@container/main flex flex-col gap-2  ">
+                <div className="text-xl font-semibold ml-4 md:ml-6">Balances:</div>
+                <BalanceCards
+                    availableEth={wallet?.availableEthBalance}
+                    committedEth={wallet?.committedEthBalance}
+                    isLoading={walletIsLoading}
+                />
             </div>
-            <div className="@container/main flex flex-col gap-4  md:gap-6 ">
-                <InfoCards />
+            <div className="@container/main flex flex-col gap-2  ">
+                <div className="text-xl font-semibold ml-4 md:ml-6">Payment Information:</div>
+                <InfoCards
+                    singleCount={stats.single}
+                    batchCount={stats.batch}
+                    subscriptionCount={stats.subscription}
+                    payrollCount={stats.payroll}
+                    isLoading={historyIsLoading}
+                />
+            </div>
+            <div className="@container/main flex flex-col gap-2  ">
+
+                <PaymentTable walletAddress={walletAddress} />
             </div>
         </>
     );
