@@ -6,7 +6,6 @@ import { formatEther } from 'viem';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 
 // Format currency helper
 const formatCurrency = (amount?: string, token?: string) => {
@@ -21,51 +20,40 @@ const formatCurrency = (amount?: string, token?: string) => {
 export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
     const [expanded, setExpanded] = useState(false);
 
-    const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-        switch (status) {
-            case 'success': return 'outline'; // Green-ish usually, but shadcn standard is outline/default
-            case 'failed': return 'destructive';
-            case 'partial': return 'secondary';
-            default: return 'outline';
-        }
-    };
-
-    const getStatusClass = (status: string) => {
-        switch (status) {
-            case 'success': return 'text-green-500 border-green-500/20';
-            case 'failed': return 'text-red-500 border-red-500/20';
-            case 'partial': return 'text-yellow-500 border-yellow-500/20';
-            default: return '';
-        }
-    }   
-    console.log(item.details)
     return (
-        <Card className="bg-card hover:bg-accent/50 transition-colors border-border/50 overflow-hidden">
+        <div className="bg-card hover:bg-accent/50 transition-colors border-border/50 overflow-hidden">
             <div
-                className="flex items-center gap-4 p-4 cursor-pointer"
+                className="flex items-center gap-2 py-4 pl-4 pr-2 cursor-pointer"
                 onClick={() => setExpanded(!expanded)}
             >
-                {/* Icon removed as requested */}
 
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium text-sm text-foreground truncate">{item.title}</h3>
-                        <Badge variant="outline" className={cn("text-[10px] px-2 py-0 h-5 font-normal capitalize", getStatusClass(item.status))}>
-                            {item.status}
-                        </Badge>
+
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <div className="flex items-center ">
+                        <div className="font-medium text-sm text-foreground truncate">{item.title}</div>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                </div>
+                    <div className="">{item.details.scheduleName && <p className="text-xs text-muted-foreground truncate">{item.details.scheduleName}</p>}</div>
 
-                <div className="text-right hidden sm:block">
-                    <div className="text-xs text-muted-foreground">
-                        {new Date(item.timestamp).toLocaleDateString()}
+
+                    <div className="flex justify-between hidden sm:flex">
+                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                        <div className="text-xs text-muted-foreground">
+                            {new Date(item.timestamp).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                            })}
+                        </div>
                     </div>
                 </div>
 
-                <div className="text-muted-foreground">
-                    {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                <div className="">
+                    {expanded ? <ChevronUp className='w-3 h-3' /> : <ChevronDown className='w-3 h-3' />}
                 </div>
+
+
             </div>
 
             {expanded && (
@@ -104,33 +92,51 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                             if (key === 'calls' && Array.isArray(value)) {
                                 return (
                                     <div key={key} className="col-span-2 mt-2">
-                                        <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Batch Calls</span>
+                                        <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Transactions</span>
                                         <div className="space-y-1">
-                                            {// Since we don't have full call details decoded yet as per indexer limitations, 
-                                                // we might only show a summary if array is empty or generic
-                                                value.length === 0 ? (
-                                                    <span className="text-xs text-muted-foreground italic">Details not available</span>
-                                                ) : (
-                                                    value.map((c: any, idx: number) => (
-                                                        <div key={idx} className="text-xs">{c.target}</div>
-                                                    ))
-                                                )
-                                            }
+                                            {value.length === 0 ? (
+                                                <span className="text-xs text-muted-foreground italic">Details not available</span>
+                                            ) : (
+                                                value.map((c: any, idx: number) => (
+                                                    <div key={idx} className="flex justify-between text-xs bg-muted/20 p-1.5 rounded">
+                                                        <span className="font-mono text-muted-foreground">{c.target?.slice(0, 6)}...{c.target?.slice(-4)}</span>
+                                                        <span className="font-medium">{formatCurrency(c.value, 'ETH')}</span>
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
                                     </div>
                                 );
                             }
+                            // Skip these fields for display
+                            if (['selector', 'data', 'functionCall', 'scheduleName'].includes(key)) return null;
                             if (typeof value === 'object') return null;
+
+                            // Update label text for scheduled payments
+                            let displayKey = key.replace(/([A-Z])/g, ' $1').trim();
+                            if (key === 'executionNumber') displayKey = 'Cycle Count';
+                            if (key === 'totalExecutions') displayKey = 'Total Cycles';
+
+                            // Truncate all Ethereum addresses (0x followed by 40 hex characters)
+                            let displayValue = String(value);
+                            if (typeof value === 'string' && value.startsWith('0x') && value.length === 42) {
+                                displayValue = `${value.slice(0, 6)}...${value.slice(-4)}`;
+                            }
+
+                            // Add 1 to cycle count since it starts from 0
+                            if (key === 'executionNumber' && typeof value === 'number') {
+                                displayValue = String(value + 1);
+                            }
 
                             return (
                                 <div key={key}>
                                     <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-0.5 capitalize">
-                                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                                        {displayKey}
                                     </span>
                                     <span className="text-foreground text-xs font-medium">
                                         {key.toLowerCase().includes('amount') || key.toLowerCase().includes('value')
                                             ? formatCurrency(value as string, item.details.token)
-                                            : String(value)}
+                                            : displayValue}
                                     </span>
                                 </div>
                             );
@@ -149,6 +155,6 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                     )}
                 </div>
             )}
-        </Card>
+        </div>
     );
 };

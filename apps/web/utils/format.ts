@@ -1,15 +1,24 @@
 import { formatEther } from "viem";
 
 export const formatInterval = (seconds: number) => {
-    if (seconds >= 86400) return `${seconds / 86400} day(s)`;
-    if (seconds >= 3600) return `${seconds / 3600} hour(s)`;
-    if (seconds >= 60) return `${seconds / 60} minute(s)`;
-    return `${seconds} second(s)`;
+  if (seconds >= 86400) {
+    const days = Math.round(seconds / 86400);
+    return `${days} day${days > 1 ? 's' : ''}`;
+  }
+  if (seconds >= 3600) {
+    const hours = Math.round(seconds / 3600);
+    return `${hours} hour${hours > 1 ? 's' : ''}`;
+  }
+  if (seconds >= 60) {
+    const minutes = Math.round(seconds / 60);
+    return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+  }
+  return `${seconds} second${seconds !== 1 ? 's' : ''}`;
 };
 
 export const formatStartTime = (timestamp: number) => {
-    if (timestamp === 0) return "Immediately";
-    return new Date(timestamp * 1000).toLocaleString();
+  if (timestamp === 0) return "Immediately";
+  return new Date(timestamp * 1000).toLocaleString();
 };
 
 /**
@@ -17,7 +26,7 @@ export const formatStartTime = (timestamp: number) => {
  * Defaults to 6 chars start / 4 chars end, improving UI readability.
  */
 export function truncateAddress(address: string, start = 6, end = 6): string {
-  if (!address) return "";
+  if (!address || typeof address !== 'string') return "";
   return `${address.slice(0, start)}...${address.slice(-end)}`;
 }
 

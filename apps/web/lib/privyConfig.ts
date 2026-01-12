@@ -13,7 +13,7 @@ export const privyConfig: PrivyClientConfig = {
   appearance: {
     accentColor: "#38CCCD",
     theme: "light",
-    landingHeader: "Aidra",
+    landingHeader: "Mneepay",
     walletChainType: "ethereum-only",
     walletList: ["detected_wallets"],
   },
