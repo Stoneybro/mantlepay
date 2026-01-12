@@ -58,10 +58,11 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
         return { single, batch, subscription, payroll };
     }, [transactions]);
 
+
     return (
         <>
             <div className="@container/main flex flex-col gap-2  ">
-                <div className="text-xl font-semibold ml-4 md:ml-6">Balances:</div>
+                <div className="text-lg font-semibold ml-2 md:ml-4">Balances:</div>
                 <BalanceCards
                     availableEth={wallet?.availableEthBalance}
                     committedEth={wallet?.committedEthBalance}
@@ -69,7 +70,7 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
                 />
             </div>
             <div className="@container/main flex flex-col gap-2  ">
-                <div className="text-xl font-semibold ml-4 md:ml-6">Payment Information:</div>
+                <div className="text-lg font-semibold ml-2 md:ml-4">Payment Information:</div>
                 <InfoCards
                     singleCount={stats.single}
                     batchCount={stats.batch}

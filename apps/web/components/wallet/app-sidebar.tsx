@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { File, Inbox, Command } from "lucide-react";
+import { File, Inbox, Command, LogOut } from "lucide-react";
+import { useLogout } from "@privy-io/react-auth";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import CopyText from "@/components/ui/copy";
 import { truncateAddress } from "@/utils/format";
 import {
@@ -17,6 +19,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { generateId } from "ai";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -108,6 +116,17 @@ export function AppSidebar({
     }
   };
 
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["chats", walletAddress] });
+  };
+
+  const { logout } = useLogout({
+    onSuccess: () => {
+      localStorage.removeItem("wallet-deployed");
+      router.push("/login");
+    },
+  });
+
   return (
     <Sidebar
       collapsible="icon"
@@ -122,11 +141,9 @@ export function AppSidebar({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                <a href="#">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Command className="size-4" />
-                  </div>
-                </a>
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <Command className="size-4" />
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -166,7 +183,15 @@ export function AppSidebar({
             <div className="text-foreground text-xl font-medium">
               {activeItem?.title}
             </div>
-
+            {activeItem.title === "Chats" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNewChat}
+              >
+                + New Chat
+              </Button>
+            )}
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -178,6 +203,7 @@ export function AppSidebar({
               onSelectChat={handleSelectChat}
               onDeleteChat={handleDeleteChat}
               onNewChat={handleNewChat}
+              onRefresh={handleRefresh}
             />
           ) : (
 
@@ -186,13 +212,31 @@ export function AppSidebar({
           )}
         </SidebarContent>
         <SidebarFooter className="border-t p-4">
-          <div className="flex items-center justify-center gap-2 text-lg">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">
-                {walletAddress ? truncateAddress(walletAddress) : "No Wallet"}
-              </span>
+          <div className="flex gap-3 ">
+            <div className="flex items-center justify-center gap-2 text-lg ml-[10%]">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">
+                  {walletAddress ? truncateAddress(walletAddress) : "No Wallet"}
+                </span>
+              </div>
+              {walletAddress && <CopyText text={walletAddress} />}
             </div>
-            {walletAddress && <CopyText text={walletAddress} />}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => logout()}
+                    className="bg-gray-900 hover:bg-gray-800 text-white ml-auto"
+                    size="sm"
+                  >
+                    <LogOut className=" h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Logout</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </SidebarFooter>
       </Sidebar>

@@ -57,8 +57,30 @@ function Chat({ walletAddress, id }: ChatProps) {
 
     if (!initialMessages && id) {
         return (
-            <div className="flex h-full w-full items-center justify-center">
-                <div className="text-muted-foreground">Loading specific chat...</div>
+            <div className="flex h-full w-full flex-col p-4 md:p-8 gap-4">
+                {/* Chat skeleton loader */}
+                <div className="flex gap-3">
+                    <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                        <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                    </div>
+                </div>
+                <div className="flex gap-3 justify-end">
+                    <div className="flex-1 space-y-2 flex flex-col items-end">
+                        <div className="h-4 w-2/3 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-1/3 bg-muted rounded animate-pulse" />
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                </div>
+                <div className="flex gap-3">
+                    <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                        <div className="h-4 w-2/3 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -159,7 +181,7 @@ function ChatInner({
 
     return (
         <div className='w-full h-full p-4 md:p-8 relative flex flex-col justify-center'>
-            {messages.length === 0 && <Overlay />}
+            {messages.length === 0 && <Overlay setInput={setInput} />}
             <ChatMessages
                 messages={messages}
                 addToolResult={addToolResult}

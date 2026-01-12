@@ -23,10 +23,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { truncateAddress } from "@/utils/format"
+import { truncateAddress, formatInterval } from "@/utils/format"
 import { Button } from "../ui/button"
 import { useWalletHistory, TransactionItemProps } from "@/hooks/useWalletHistory"
 import { ActivityType } from "@/lib/envio/client"
+import { useCancelIntent } from "@/hooks/payments/useCancelIntent"
 import { formatUnits } from "viem"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ExternalLink } from "lucide-react"
@@ -38,6 +39,7 @@ interface PaymentTableProps {
 export default function PaymentTable({ walletAddress }: PaymentTableProps) {
     const [activeTab, setActiveTab] = React.useState<"subscriptions" | "payroll">("subscriptions");
     const { transactions, isLoading } = useWalletHistory(walletAddress);
+    const { mutate: cancelIntent, isPending: isCancelling } = useCancelIntent();
 
     const { subscriptions, payrolls } = transactions?.reduce((acc: any, tx: TransactionItemProps) => {
         if (tx.type === ActivityType.INTENT_CREATED) {
@@ -62,6 +64,7 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                     <TableCell><Skeleton className="h-8 w-16" /></TableCell>
                 </TableRow>
             ));
@@ -81,11 +84,11 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
             const details = tx.details || {};
             const recipients = details.recipients || [];
             const tokenSymbol = details.tokenSymbol || 'ETH'; // Fallback
-            const amount = details.amount ? formatUnits(BigInt(details.amount), 18) : '0'; // Assuming 18 decimals, adjust if needed
+            const amount = details.totalCommitment ? formatUnits(BigInt(details.totalCommitment), 18) : '0'; // Assuming 18 decimals, adjust if needed
 
             return (
-                <TableRow key={tx.id}>
-                    <TableCell className="font-medium">{tx.title || 'Untitled Payment'}</TableCell>
+                <TableRow key={tx.id} >
+                    <TableCell className="font-medium truncate max-w-[200px]" title={tx.title}>{tx.title || 'Untitled Payment'}</TableCell>
                     <TableCell className="font-medium">{amount} {tokenSymbol}</TableCell>
                     <TableCell>
                         {recipients.length > 1 ? (
@@ -95,41 +98,61 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        {recipients.map((r: string, idx: number) => (
-                                            <SelectItem key={idx} value={r}>
-                                                {truncateAddress(r)}
-                                            </SelectItem>
-                                        ))}
+                                        {recipients.map((r: any, idx: number) => {
+                                            const address = typeof r === 'string' ? r : r?.address || '';
+                                            return (
+                                                <SelectItem key={idx} value={address || `unknown-${idx}`}>
+                                                    {truncateAddress(address)}
+                                                </SelectItem>
+                                            );
+                                        })}
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
                         ) : (
                             <div className="font-mono text-xs">
-                                {recipients[0] ? truncateAddress(recipients[0]) : 'Unknown'}
+                                {(() => {
+                                    const r = recipients[0];
+                                    const address = typeof r === 'string' ? r : r?.address || '';
+                                    return address ? truncateAddress(address) : 'Unknown';
+                                })()}
                             </div>
                         )}
                     </TableCell>
                     <TableCell className="font-medium">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                            Active
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 capitalize">
+                            {tx.status}
                         </span>
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground flex items-center gap-1">
-                        {truncateAddress(tx.id, 4, 4)}
-                        <ExternalLink className="w-3 h-3" />
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                        <a
+                            href={`https://sepolia.etherscan.io/tx/${tx.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 hover:text-primary transition-colors"
+                        >
+                            {truncateAddress(tx.id, 4, 4)}
+                            <ExternalLink className="w-3 h-3" />
+                        </a>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
                         {new Date(tx.timestamp).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
-                        {new Date(tx.timestamp).toLocaleDateString()}
+                        {details.duration ? formatInterval(parseInt(details.duration)) : 'N/A'}
                     </TableCell>
-                    <TableCell className="font-medium">
-                        0/0
+                    <TableCell className="text-muted-foreground text-xs">
+                        {details.frequency || 'N/A'}
                     </TableCell>
                     <TableCell>
-                        <Button variant="destructive" size="sm" className="h-7 text-xs">
-                            Cancel
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => cancelIntent({ intentId: tx.id as `0x${string}` })}
+                            disabled={isCancelling || tx.status === 'success'}
+                        >
+                            {isCancelling ? '...' : 'Cancel'}
                         </Button>
                     </TableCell>
                 </TableRow>
@@ -156,8 +179,8 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
                             <TableHead>Status</TableHead>
                             <TableHead>Hash</TableHead>
                             <TableHead>Created</TableHead>
-                            <TableHead>Updated</TableHead>
-                            <TableHead>Execution Count</TableHead>
+                            <TableHead>Duration</TableHead>
+                            <TableHead>Frequency</TableHead>
                             <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>

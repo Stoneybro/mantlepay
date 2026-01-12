@@ -10,8 +10,18 @@ export interface TransactionItemProps {
     description: string;
     details: any;
     status: 'success' | 'failed' | 'partial';
-    icon: string;
+
 }
+
+const formatTime = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+};
+
+const truncateName = (name: string, maxLength: number = 20): string => {
+    if (name.length <= maxLength) return name;
+    return name.slice(0, maxLength - 3) + '...';
+};
 
 const mapTransactionToItem = (tx: Transaction): TransactionItemProps => {
     const base = {
@@ -30,37 +40,44 @@ const mapTransactionToItem = (tx: Transaction): TransactionItemProps => {
 
     switch (tx.transactionType) {
         case ActivityType.INTENT_CREATED:
+            const scheduleType = details.recipientCount === 1 ? "Subscription" : "Payroll";
+            const scheduleName = truncateName(details.scheduleName || 'Untitled');
+            const createdTime = formatTime(base.timestamp);
             return {
                 ...base,
                 type: ActivityType.INTENT_CREATED,
-                description: details.frequency || 'Scheduled Payment',
+                description: `${scheduleType}`,
                 details: details,
-                icon: '🎯'
-            };
 
-        case ActivityType.INTENT_EXECUTED:
+            };
+        case ActivityType.INTENT_EXECUTION:
             // Determine status based on transfers
             let status: 'success' | 'failed' | 'partial' = 'success';
             if (details.failedTransfers > 0) {
                 status = details.successfulTransfers > 0 ? 'partial' : 'failed';
             }
 
+            const executionType = details.recipientCount === 1 ? "Subscription" : "Payroll";
+            const executionName = truncateName(details.scheduleName || 'Untitled');
+            const executionTime = formatTime(base.timestamp);
             return {
                 ...base,
-                type: ActivityType.INTENT_EXECUTED,
-                description: `Execution #${details.executionNumber} of ${details.totalExecutions}`,
+                type: ActivityType.INTENT_EXECUTION,
+                description: `${executionType}`,
                 details: details,
                 status: status,
-                icon: '⚡'
+
             };
 
         case ActivityType.INTENT_CANCELLED:
+            const cancelledName = truncateName(details.scheduleName || 'Untitled');
+            const cancelledTime = formatTime(base.timestamp);
             return {
                 ...base,
                 type: ActivityType.INTENT_CANCELLED,
-                description: `Intent cancelled`,
+                description: `${cancelledName} `,
                 details: details,
-                icon: '🚫'
+
             };
 
         case ActivityType.EXECUTE:
@@ -71,16 +88,18 @@ const mapTransactionToItem = (tx: Transaction): TransactionItemProps => {
                     ? `Transfer to ${details.target?.slice(0, 6)}...`
                     : `Contract Call: ${details.functionCall}`,
                 details: details,
-                icon: '💸'
+
             };
 
         case ActivityType.EXECUTE_BATCH:
+            const batchCount = details.batchSize || 0;
+            const batchTime = formatTime(base.timestamp);
             return {
                 ...base,
                 type: ActivityType.EXECUTE_BATCH,
-                description: `Executed batch of ${details.batchSize} calls`,
+                description: `${batchCount} ${batchCount === 1 ? 'payment' : 'payments'} `,
                 details: details,
-                icon: '📦'
+
             };
 
         case ActivityType.TRANSFER_FAILED:
@@ -90,16 +109,16 @@ const mapTransactionToItem = (tx: Transaction): TransactionItemProps => {
                 description: details.reason || 'Transfer failed',
                 details: details,
                 status: 'failed',
-                icon: '❌'
+
             };
 
         case ActivityType.WALLET_CREATED:
             return {
                 ...base,
                 type: ActivityType.WALLET_CREATED,
-                description: 'Smart wallet deployed',
+                description: 'wallet deployed',
                 details: details,
-                icon: '🎉'
+
             };
 
         default:
@@ -109,7 +128,7 @@ const mapTransactionToItem = (tx: Transaction): TransactionItemProps => {
                 title: tx.title || 'Unknown Activity',
                 description: 'Unknown transaction type',
                 details: details,
-                icon: '❓'
+
             };
     }
 };
@@ -126,12 +145,21 @@ export const useWalletHistory = (walletAddress?: string) => {
         enabled: !!walletAddress,
         refetchInterval: 10000,
     });
- console.log(`transactions: ${query.data?.transactions}`)
-  console.log(`wallet address: ${walletAddress}`)
+
     const transactions = useMemo(() => {
-       
+
         if (!query.data?.transactions) return [];
-        return query.data.transactions.map(mapTransactionToItem);
+        return query.data.transactions
+            .map(mapTransactionToItem)
+            .filter(tx => {
+                // Filter out contract calls (non-transfer EXECUTE transactions)
+                if (tx.type === ActivityType.EXECUTE) {
+                    const isTransfer = tx.details.functionCall === 'Token Transfer' ||
+                        tx.details.functionCall === 'ETH Transfer';
+                    return isTransfer;
+                }
+                return true;
+            });
     }, [query.data]);
 
     return {

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MoreHorizontalIcon } from "lucide-react";
+import { MoreHorizontalIcon, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -25,6 +25,7 @@ type ChatListProps = {
     onSelectChat: (chatId: string) => void;
     onDeleteChat: (chatId: string) => void;
     onNewChat: () => void;
+    onRefresh: () => void;
 };
 
 export function ChatList({
@@ -34,6 +35,7 @@ export function ChatList({
     onSelectChat,
     onDeleteChat,
     onNewChat,
+    onRefresh,
 }: ChatListProps) {
     return (
         <SidebarGroup className="px-0">
@@ -93,10 +95,11 @@ export function ChatList({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={onNewChat}
+                                onClick={onRefresh}
                                 className="w-full"
                             >
-                                Start a conversation
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Refresh
                             </Button>
                         </div>
                     </div>

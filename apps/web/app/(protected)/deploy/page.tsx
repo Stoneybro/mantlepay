@@ -19,12 +19,12 @@ if (isLoading) {
         <div className='w-full max-w-md flex flex-col gap-6 justify-center items-center text-center'>
 
           <div className=' text-3xl font-semibold text-center'>
-            Deploy your Mnee Wallet
+            Activate your MneePay account
           </div>
           <div className=' flex flex-col'>
-            <div className="">Mnee is a non-custodial ERC-4337 smart wallet.</div>
-            <div className=""> Demo mode allows one wallet per social login.</div>
-            <div className="">All transactions are gasless and run exclusively on eth sepolia for this demo.</div>
+            <div className="">MneePay is built on ERC-4337 smart accounts.</div>
+            <div className=""> Only one Account per social login.</div>
+            <div className="">All transactions are gasless</div>
 
           </div>
           <Label className='hover:bg-muted/50 dark:hover:bg-muted/30 flex items-start gap-3 rounded-lg border p-3 has-[[aria-checked=true]]:border-black has-[[aria-checked=true]]:bg-muted dark:has-[[aria-checked=true]]:border-accent dark:has-[[aria-checked=true]]:bg-muted/50'>
@@ -52,7 +52,7 @@ if (isLoading) {
             onClick={() => deployWallet()}
             disabled={!checked || isPending}
           >
-            {isPending ? "Deploying..." : "Deploy Wallet"}
+            {isPending ? "Activating..." : "Activate Account"}
           </Button>
 
         </div>

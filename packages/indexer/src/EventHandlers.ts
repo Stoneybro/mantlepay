@@ -76,7 +76,7 @@ MneeSmartWalletFactory.AccountCreated.handler(async ({ event, context }) => {
     blockNumber: BigInt(event.block.number),
     txHash: event.transaction.hash,
     logIndex: event.logIndex,
-    title: "Wallet Created",
+    title: "Account Activated",
     details: details
   };
   context.Transaction.set(transaction);
@@ -113,7 +113,7 @@ MneeSmartWallet.Executed.handler(async ({ event, context }) => {
 
   if (wallet) {
     const selector = event.params.data.slice(0, 10); // 0x + 8 chars
-    let title = "Contract Call";
+    let title = "Single Payment";
     let detailsObj: any = {
       target: event.params.target.toString(),
       value: event.params.value.toString(), // Wei amount
@@ -124,11 +124,11 @@ MneeSmartWallet.Executed.handler(async ({ event, context }) => {
 
     // Transaction Classification Logic
     if (event.params.data === "0x" && event.params.value > 0n) {
-      title = "ETH Transfer";
+      title = "Single Payment";
       detailsObj.functionCall = "ETH Transfer";
     } else if (selector === "0xa9059cbb" && event.params.data.length >= 138) { // 10 chars selector + 64 chars address + 64 chars amount
       // ERC20 Transfer
-      title = "Token Transfer";
+      title = "Single Payment";
       detailsObj.functionCall = "Token Transfer";
 
       // Decode params: transfer(address recipient, uint256 amount)
@@ -201,7 +201,7 @@ MneeSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
       blockNumber: BigInt(event.block.number),
       txHash: event.transaction.hash,
       logIndex: event.logIndex,
-      title: "Batch Transaction",
+      title: "Batch Payment",
       details: details
     };
 
@@ -234,7 +234,7 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
 
   // JSON Details
   const details = JSON.stringify({
-    intentName: event.params.name,
+    scheduleName: event.params.name,
     token: event.params.token.toString() === "0x0000000000000000000000000000000000000000" ? "ETH" : "USDC", // Naive check, ideally check against known addresses
     totalCommitment: event.params.totalCommitment.toString(),
     recipientCount: event.params.recipients.length,
@@ -257,7 +257,7 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
     blockNumber: BigInt(event.block.number),
     txHash: event.transaction.hash,
     logIndex: event.logIndex,
-    title: `Created Intent: ${event.params.name}`,
+    title: "Payment Schedule Created",
     details: details
   };
   context.Transaction.set(transaction);
@@ -286,9 +286,10 @@ MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
   })) : [];
 
   const details = JSON.stringify({
-    intentName: event.params.name,
+    scheduleName: event.params.name,
     executionNumber: Number(event.params.transactionCount),
     totalExecutions: intent ? Number(intent.totalTransactionCount) : 0,
+    recipientCount: intent ? intent.recipients.length : 0,
     token: tokenSymbol,
     totalAmount: event.params.totalAmount.toString(),
     successfulTransfers: recipientsList.length, // Placeholder
@@ -304,7 +305,7 @@ MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
     blockNumber: BigInt(event.block.number),
     txHash: event.transaction.hash,
     logIndex: event.logIndex,
-    title: `Intent Executed: ${event.params.name}`,
+    title: "Scheduled Payment",
     details: details
   };
   context.Transaction.set(transaction);
@@ -318,7 +319,7 @@ MneeIntentRegistry.IntentCancelled.handler(async ({ event, context }) => {
   const tokenSymbol = (event.params.token.toString() === "0x0000000000000000000000000000000000000000") ? "ETH" : "USDC";
 
   const details = JSON.stringify({
-    intentName: event.params.name,
+    scheduleName: event.params.name,
     token: tokenSymbol,
     amountRefunded: event.params.amountRefunded.toString(),
     failedAmountRecovered: event.params.failedAmountRecovered.toString(),
@@ -334,7 +335,7 @@ MneeIntentRegistry.IntentCancelled.handler(async ({ event, context }) => {
     blockNumber: BigInt(event.block.number),
     txHash: event.transaction.hash,
     logIndex: event.logIndex,
-    title: `Cancelled Intent: ${event.params.name}`,
+    title: "Scheduled Payment Canceled",
     details: details
   };
   context.Transaction.set(transaction);
@@ -347,7 +348,7 @@ MneeSmartWallet.TransferFailed.handler(async ({ event, context }) => {
   const tokenSymbol = (event.params.token.toString() === "0x0000000000000000000000000000000000000000") ? "ETH" : "USDC";
 
   const details = JSON.stringify({
-    intentName: intent ? intent.name : "Unknown Intent",
+    scheduleName: intent ? intent.name : "Unknown Schedule",
     executionNumber: Number(event.params.transactionCount),
     recipient: event.params.recipient.toString(),
     token: tokenSymbol,
@@ -363,7 +364,7 @@ MneeSmartWallet.TransferFailed.handler(async ({ event, context }) => {
     blockNumber: BigInt(event.block.number),
     txHash: event.transaction.hash,
     logIndex: event.logIndex,
-    title: "Transfer Failed",
+    title: "Payment Failed",
     details: details
   };
 
