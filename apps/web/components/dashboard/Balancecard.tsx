@@ -17,8 +17,24 @@ interface BalanceCardsProps {
   isLoading?: boolean;
 }
 
+// Smart balance formatter:
+// - Shows 0 for exact zero
+// - Shows whole numbers without decimals (1, 2, 100)
+// - Preserves small decimals (0.0001)
+const formatBalance = (value: string): string => {
+  const num = parseFloat(value);
+  if (isNaN(num)) return "0";
+  if (num === 0) return "0";
+
+  // Check if it's a whole number
+  if (Number.isInteger(num)) return num.toString();
+
+  // For decimals, remove trailing zeros but keep significant digits
+  return num.toFixed(8).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+};
+
 export function BalanceCards({ availableEth = "0", committedEth = "0", isLoading }: BalanceCardsProps) {
-  const totalBalance = (parseFloat(availableEth) + parseFloat(committedEth)).toFixed(4);
+  const totalBalance = (parseFloat(availableEth) + parseFloat(committedEth)).toString();
   const safeTotal = isNaN(Number(totalBalance)) ? "0" : totalBalance;
 
   return (
@@ -27,7 +43,7 @@ export function BalanceCards({ availableEth = "0", committedEth = "0", isLoading
         <CardHeader>
           <CardDescription>Total Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading ? <Skeleton className="h-8 w-24" /> : `${safeTotal} ETH`}
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(safeTotal)} ETH`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -48,7 +64,7 @@ export function BalanceCards({ availableEth = "0", committedEth = "0", isLoading
         <CardHeader>
           <CardDescription>Reserved Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading ? <Skeleton className="h-8 w-24" /> : `${committedEth} ETH`}
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(committedEth)} ETH`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -69,7 +85,7 @@ export function BalanceCards({ availableEth = "0", committedEth = "0", isLoading
         <CardHeader>
           <CardDescription>Available Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading ? <Skeleton className="h-8 w-24" /> : `${availableEth} ETH`}
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(availableEth)} ETH`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
