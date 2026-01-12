@@ -151,7 +151,7 @@ export const useWalletHistory = (walletAddress?: string) => {
         if (!query.data?.transactions) return [];
         return query.data.transactions
             .map(mapTransactionToItem)
-            .filter(tx => {
+            .filter((tx: TransactionItemProps) => {
                 // Filter out contract calls (non-transfer EXECUTE transactions)
                 if (tx.type === ActivityType.EXECUTE) {
                     const isTransfer = tx.details.functionCall === 'Token Transfer' ||
