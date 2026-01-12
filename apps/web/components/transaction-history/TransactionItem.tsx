@@ -7,19 +7,31 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 
+import { formatUnits } from 'viem';
+
 // Format currency helper
 const formatCurrency = (amount?: string, token?: string) => {
     if (!amount) return '-';
-    // Simple check for raw values that need formatting
-    // Assuming 18 decimals for simplicity if not provided. Ideally we fetch token decimals.
-    // For this demo, let's just display what we have unless it's obviously raw big int
-    const formatted = amount.length > 6 ? formatEther(BigInt(amount)) : amount;
-    return `${Number(formatted).toLocaleString(undefined, { maximumFractionDigits: 4 })} ${token || 'ETH'}`;
+    // Check if valid number string
+    if (isNaN(Number(amount))) return amount; // Fallback for non-numeric
+
+    let formatted = amount;
+    // If it's an integer (no dot) and looks like units, format it.
+    // We assume indexer stores raw units.
+    if (!amount.includes('.')) {
+        try {
+             formatted = formatUnits(BigInt(amount), 6);
+        } catch (e) {
+             // Keep original if BigInt fails
+        }
+    }
+    
+    return `${Number(formatted).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${token || 'MNEE'}`;
 };
 
 export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
     const [expanded, setExpanded] = useState(false);
-
+    console.log(item);
     return (
         <div className="bg-card hover:bg-accent/50 transition-colors border-border/50 overflow-hidden">
             <div
@@ -90,6 +102,7 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                 );
                             }
                             if (key === 'calls' && Array.isArray(value)) {
+                                
                                 return (
                                     <div key={key} className="col-span-2 mt-2">
                                         <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Transactions</span>
@@ -99,8 +112,10 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                             ) : (
                                                 value.map((c: any, idx: number) => (
                                                     <div key={idx} className="flex justify-between text-xs bg-muted/20 p-1.5 rounded">
-                                                        <span className="font-mono text-muted-foreground">{c.target?.slice(0, 6)}...{c.target?.slice(-4)}</span>
-                                                        <span className="font-medium">{formatCurrency(c.value, 'ETH')}</span>
+                                                        <span className="font-mono text-muted-foreground">
+                                                            {(c.recipient || c.target)?.slice(0, 6)}...{(c.recipient || c.target)?.slice(-4)}
+                                                        </span>
+                                                        <span className="font-medium">{formatCurrency(c.value, 'MNEE')}</span>
                                                     </div>
                                                 ))
                                             )}
@@ -109,7 +124,8 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                 );
                             }
                             // Skip these fields for display
-                            if (['selector', 'data', 'functionCall', 'scheduleName'].includes(key)) return null;
+                            // Added Case variations just in case
+                            if (['selector', 'data', 'functionCall', 'scheduleName', 'target', 'value', 'Target', 'Value'].includes(key)) return null;
                             if (typeof value === 'object') return null;
 
                             // Update label text for scheduled payments
@@ -134,7 +150,7 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                         {displayKey}
                                     </span>
                                     <span className="text-foreground text-xs font-medium">
-                                        {key.toLowerCase().includes('amount') || key.toLowerCase().includes('value')
+                                        {key.toLowerCase().includes('amount') || key.toLowerCase().includes('value') || key.toLowerCase().includes('commitment')
                                             ? formatCurrency(value as string, item.details.token)
                                             : displayValue}
                                     </span>

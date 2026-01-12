@@ -64,8 +64,8 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
             <div className="@container/main flex flex-col gap-2  ">
                 <div className="text-lg font-semibold ml-2 md:ml-4">Balances:</div>
                 <BalanceCards
-                    availableEth={wallet?.availableEthBalance}
-                    committedEth={wallet?.committedEthBalance}
+                    availableMnee={wallet?.availableMneeBalance}
+                    committedMnee={wallet?.committedMneeBalance}
                     isLoading={walletIsLoading}
                 />
             </div>

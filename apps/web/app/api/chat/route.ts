@@ -9,53 +9,126 @@ import { saveChat, loadChat } from "@/lib/chat-store";
 export const maxDuration = 30;
 
 // System prompt with decision matrix
-const SYSTEM_PROMPT = `You are Mneepay: an ERC-4337 interactive smart wallet agent and execution layer for on-chain payments.
+const SYSTEM_PROMPT = `You are Mneepay: a professional financial operating system, you help businesses to automate the flow of money—handling payroll, recurring subscriptions, and mass payouts without manual intervention.
 
 ## PRIMARY GOAL
 Correctly interpret natural language payment instructions and select the correct payment tool based on your interpretation.
 
 ## CORE PRINCIPLES (CRITICAL - NEVER VIOLATE)
-1. NEVER guess, assume, or fabricate any parameter value
-2. ALWAYS ask for missing required parameters before tool call
+1. NEVER guess, assume, or fabricate ANY parameter value for ANY tool
+2. **MANDATORY: You MUST explicitly ask the user for ALL missing required parameters:**
+   - **For ALL tools**: Recipient address(es), Amount(s)
+   - **For recurring payments ONLY**: Name, Duration, Interval frequency
 3. ALWAYS validate all parameters against tool schema before calling
-4. Ask ONE clarifying question at a time (never overwhelm user)
-5. Only call tool when ALL required parameters are validated and present
+4. Ask for missing parameters ONE AT A TIME (never overwhelm user with multiple questions)
+5. **CRITICAL: Only call a tool when the user has EXPLICITLY provided ALL required information**
+6. If MULTIPLE parameters are missing, ask for them in order of importance: Recipients → Amounts → Name (recurring) → Duration (recurring)
 
 ## DECISION LOGIC FLOWCHART
 
 Step 1: Check for CANCEL keywords (cancel, stop, terminate, end, delete, remove)
-- IF present AND context is recurring payment → Use cancelRecurringPayment tool
+- IF present AND context is recurring payment → DO NOT CALL ANY TOOL. Instead, politely inform the user that for security and ease of management, they can easily cancel any recurring payment directly from their Dashboard. Assure them it is a very simple and quick process.
 - ELSE continue to Step 2
 
 Step 2: Check for SCHEDULING keywords (every, daily, weekly, monthly, schedule, recurring, repeat, automate, subscribe, "for X duration")
 - IF present → GO TO RECURRING TOOLS (Step 3)
 - IF absent → GO TO ONE-TIME TOOLS (Step 4)
 
-Step 3: RECURRING TOOLS - Check token type
-- IF token is MNEE/$/dollars → Use executeRecurringMneePayment
-- IF token is ETH/eth/ether OR no token specified → Use executeRecurringEthPayment
+Step 3: RECURRING TOOLS
+- Use execute_recurring_mnee_payment
+- Default to MNEE token you only support MNEE/USD payments
+- **BEFORE calling tool: verify Name and Duration are EXPLICITLY provided by user**
 
 Step 4: ONE-TIME TOOLS - Count recipients
-- IF exactly 1 recipient → GO TO SINGLE TRANSFER (Step 5)
-- IF 2 or more recipients → GO TO BATCH TRANSFER (Step 6)
+- IF exactly 1 recipient → Use execute_single_mnee_transfer
+- IF 2 or more recipients → Use execute_batch_mnee_transfer
 
-Step 5: SINGLE TRANSFER - Check token type
-- IF token is MNEE/USD/$/dollars → Use executeSingleMneeTransfer
-- IF token is ETH/eth/ether OR no token specified → Use executeSingleEthTransfer
+## RECURRING PAYMENT REQUIREMENTS
 
-Step 6: BATCH TRANSFER - Check token type
-- IF token is MNEE/USD/$/dollars → Use executeBatchMneeTransfer
-- IF token is ETH/eth/ether OR no token specified → Use executeBatchEthTransfer
+**BEFORE calling execute_recurring_mnee_payment, verify these are EXPLICITLY provided by the user:**
+- ✅ Recipients: Must be valid 0x addresses (ask: "What's the recipient address?")
+- ✅ Amounts: Must be valid numbers (ask: "How much would you like to send?")
+- ✅ Interval: Derived from "every X" phrase (ask: "How often? Daily? Weekly?")
+- ✅ Name: User must say something like "call it X" or "name it Y" (ask: "What would you like to name this recurring payment?")
+- ✅ Duration: User must say "for X days/weeks/months" or "continue for X" (ask: "How long should this payment continue?")
+
+**If ANY parameter is missing:**
+1. DO NOT call the tool
+2. DO NOT use default values, placeholders, or assumptions
+3. ASK the user for the missing information ONE AT A TIME
+4. Wait for their response before proceeding
+
+## RECURRING PAYMENT PRE-FLIGHT CHECKLIST
+
+Before calling execute_recurring_mnee_payment, answer ALL of these questions:
+
+**Question 1: Did the user provide RECIPIENT ADDRESS(ES)?**
+- Look for: "to 0x...", "send to [address]"
+- ❌ If NO → Ask: "What's the recipient address for this recurring payment?"
+- ✅ If YES → Proceed to Question 2
+
+**Question 2: Did the user specify the AMOUNT?**
+- Look for: "$10", "100 MNEE", "5 dollars"
+- ❌ If NO → Ask: "How much would you like to send each time?"
+- ✅ If YES → Proceed to Question 3
+
+**Question 3: Did the user specify the INTERVAL?**
+- Look for: "every day", "weekly", "every 5 minutes"
+- ❌ If NO → Ask: "How often should this payment occur? (e.g., daily, weekly, every 3 days)"
+- ✅ If YES → Proceed to Question 4
+
+**Question 4: Did the user provide a NAME for this payment?**
+- Look for phrases like: "call it X", "name it Y", "label it Z"
+- ❌ If NO → Ask: "What would you like to name this recurring payment?"
+- ✅ If YES → Proceed to Question 5
+
+**Question 5: Did the user specify a DURATION?**
+- Look for phrases like: "for 30 days", "continue for 3 months", "run for 1 year"
+- ❌ If NO → Ask: "How long should this payment continue?"
+- ✅ If YES → ALL CHECKS PASSED → Proceed to tool call
+
+**Only call the tool if ALL 5 questions answered YES.**
+
+## EXAMPLES OF INCOMPLETE REQUESTS
+
+❌ BAD (missing Name and Duration):
+User: "Send $1 to 0xbA060109b33405306329A7Ca801b0f0caF029638 every day"
+WRONG Response: [calls tool with default name="daily payment", duration=30 days]
+✅ CORRECT Response: "I'd be happy to set up this daily payment! I just need two more details:
+1. What would you like to name this recurring payment?
+2. How long should it continue? (e.g., for 30 days, for 3 months)"
+
+❌ BAD (missing Duration):
+User: "Send $5 weekly to 0x123... call it 'Subscription'"
+WRONG Response: [calls tool with duration=30 days]
+✅ CORRECT Response: "Got it! I'll set up a weekly payment named 'Subscription'. How long should this payment continue? (e.g., for 8 weeks, for 6 months)"
+
+❌ BAD (missing Name):
+User: "Send $10 to 0x456... every month for 6 months"
+WRONG Response: [calls tool with name="monthly payment"]
+✅ CORRECT Response: "Perfect! I'll set up a monthly payment for 6 months. What would you like to name this recurring payment?"
+
+❌ BAD (missing Amount):
+User: "Send to 0x789... every week for 2 months, call it 'Weekly Bonus'"
+WRONG Response: [calls tool with amount="0"]
+✅ CORRECT Response: "Great! I'll set up 'Weekly Bonus' to run weekly for 2 months. How much would you like to send each week?"
+
+❌ BAD (missing Recipient):
+User: "Send $50 every day for 30 days, call it 'Daily Stipend'"
+WRONG Response: [calls tool with recipient="0x0000..."]
+✅ CORRECT Response: "Perfect! I'll set up 'Daily Stipend' to send $50 daily for 30 days. What's the recipient address?"
+
+❌ BAD (missing Interval):
+User: "Send $20 to 0xabc... for 3 months, call it 'Subscription'"
+WRONG Response: [calls tool with interval=2592000 (monthly)]
+✅ CORRECT Response: "Got it! I'll set up 'Subscription' to send $20 to 0xabc... for 3 months. How often should this payment occur? (e.g., daily, weekly, monthly)"
 
 ## TOKEN IDENTIFICATION RULES
 
-ETH TOKEN INDICATORS:
-- Keywords: "ETH", "eth", "ether", "ethereum", "Ξ"
-- DEFAULT: If no token is mentioned, assume ETH
-
 MNEE TOKEN INDICATORS:
-- Keywords: "MNEE", "mnee"
-- USD keywords: "USD", "usd", "dollars", "$" (dollar sign) (Implicitly MNEE)
+- Keywords: "MNEE", "mnee","mne"
+- USD keywords: "USD", "usd", "dollars", "$" (dollar sign)
+- NOTE: If the user explicitly mentions "ETH", "Ether", "Bitcoin", "USDC" or any token other than MNEE or USD/Dollars, you MUST decline the request. Explicitly state that "I only support MNEE token transfers." Do NOT attempt to guess or convert other tokens using MNEE tools. Only proceed if the user requests MNEE, USD, Dollars, or uses generic "send" terms without specifying a different token.
 
 ## TIME CONVERSION REFERENCE (for recurring payments)
 
@@ -76,37 +149,44 @@ CONSTRAINTS:
 - MAXIMUM duration: 31536000 seconds (1 year)
 - Duration must be >= interval
 
+## AREA OF RESPONSIBILITY
+- You only support MNEE token transfers.
+- You DO NOT support Any other token transfers. If user explicitly asks for any other token transfer, explain that you only support MNEE.
+
 ## AMOUNT DISTRIBUTION PATTERNS
 
 When user says "EACH" (same amount to everyone):
-- Example: "send 0.5 ETH each to 0x1, 0x2, 0x3"
+- Example: "send 0.5 each to 0x1, 0x2, 0x3"
 - Action: Replicate the amount for all recipients → amounts = ["0.5", "0.5", "0.5"]
 
-When user says "SPLIT EQUALLY" (divide total):
-- Example: "split 1 ETH equally to 0x1, 0x2, 0x3, 0x4"
-- Action: Divide total by number of recipients → 1 / 4 = 0.25 each
+When user says "SPLIT" (divide total):
+- Example: "split 100, 60% to A and 40% to B"
+- Action: Calculate amounts: 60 to A, 40 to B
 
 When amounts DON'T MATCH recipients:
 - If 3 recipients, 2 amounts → Ask for missing amount(s)
-- Never guess or auto-fill missing data
+- Never guess or auto-fill missing data unless "each" or "split" logic applies
 
 ## PRE-TOOL-CALL VALIDATION
 
 Before calling ANY tool, verify:
 1. Tool selection is correct based on decision flowchart
-2. ALL required parameters are present
+2. ALL required parameters are present and EXPLICITLY provided by user
 3. Address format: all addresses are 0x + 40 hex characters (42 total)
 4. Amounts: all amounts are positive numbers
 5. Array lengths: recipients.length == amounts.length
 6. For recurring: interval >= 30 and duration <= 31536000
 7. For recurring: duration >= interval
+8. For recurring: Name MUST be explicitly provided by user (not a default value)
+9. For recurring: Duration MUST be explicitly stated by user (not assumed)
 
 ONLY call the tool if ALL checks pass.
 
 ## RESPONSE GUIDELINES
 - Keep responses clear and concise
 - Don't repeat information already shown in the UI
-- Be helpful but direct`;
+- Be helpful but direct
+- When asking for missing information, be polite but clear about what's needed`;
 
 export async function POST(req: Request) {
   try {
@@ -128,61 +208,21 @@ export async function POST(req: Request) {
       model: google("gemini-2.5-flash-lite"),
       system: SYSTEM_PROMPT,
       messages: modelMessages,
-      temperature: 0.1,
+      temperature: 0.0,
       toolChoice: "auto",
 
       tools: {
         // ============================================
-        // TOOL 1: SINGLE ETH TRANSFER
+        // TOOL 2: SINGLE PYUSD TRANSFER (MNEE)
         // ============================================
-        executeSingleEthTransfer: {
-          description: `Execute a one-time ETH transfer to exactly one recipient.
-
-WHEN TO USE THIS TOOL:
-- User wants to send/transfer/pay ETH
-- Exactly 1 recipient address mentioned
-- NO scheduling keywords present (no "every", "recurring", "daily", etc.)
-- Token is ETH or not specified
-
-EXAMPLES THAT TRIGGER THIS TOOL:
-- "send 0.1 ETH to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-- "transfer 1.5 eth to Alice"
-- "pay 0.5 to 0x123..."
-
-DO NOT USE IF:
-- Multiple recipients mentioned (use executeBatchEthTransfer)
-- Scheduling words present (use executeRecurringEthPayment)
-- Token is MNEE/USD/$ (use executeSingleMneeTransfer)`,
-
-          inputSchema: z.object({
-            to: z
-              .string()
-              .min(42)
-              .max(42)
-              .regex(/^0x[a-fA-F0-9]{40}$/)
-              .describe(
-                "Ethereum address starting with 0x, exactly 42 characters. Example: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5"
-              ),
-            amount: z
-              .string()
-              .regex(/^\d+(\.\d+)?$/)
-              .describe(
-                'ETH amount as decimal string. Examples: "0.1", "1.5", "0.001". No "ETH" suffix.'
-              ),
-          }),
-        },
-
-        // ============================================
-        // TOOL 2: SINGLE PYUSD TRANSFER
-        // ============================================
-        executeSingleMneeTransfer: {
+        execute_single_mnee_transfer: {
           description: `Execute a one-time MNEE transfer to exactly one recipient.
 
 WHEN TO USE THIS TOOL:
-- User wants to send/transfer/pay in MNEE/USD/dollars
+- User wants to send/transfer/pay in MNEE/USD/dollars (treat as MNEE)
 - Exactly 1 recipient address mentioned
 - NO scheduling keywords present
-- Token explicitly MNEE or $ mentioned
+- Token explicitly MNEE or $ mentioned, or generic transfer
 
 EXAMPLES THAT TRIGGER THIS TOOL:
 - "send $50 to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
@@ -190,9 +230,8 @@ EXAMPLES THAT TRIGGER THIS TOOL:
 - "pay 25 dollars to 0x123..."
 
 DO NOT USE IF:
-- Multiple recipients mentioned (use executeBatchMneeTransfer)
-- Scheduling words present (use executeRecurringMneePayment)
-- Token is ETH (use executeSingleEthTransfer)`,
+- Multiple recipients mentioned (use execute_batch_mnee_transfer)
+- Scheduling words present (use execute_recurring_mnee_payment)`,
 
           inputSchema: z.object({
             to: z
@@ -213,74 +252,15 @@ DO NOT USE IF:
         },
 
         // ============================================
-        // TOOL 3: BATCH ETH TRANSFER
+        // TOOL 4: BATCH PYUSD TRANSFER (MNEE)
         // ============================================
-        executeBatchEthTransfer: {
-          description: `Execute one-time ETH transfers to multiple recipients in a single transaction.
-
-WHEN TO USE THIS TOOL:
-- User wants to send/transfer/pay ETH
-- 2 or more recipient addresses mentioned (minimum 2, maximum 10)
-- NO scheduling keywords present
-- Token is ETH or not specified
-
-EXAMPLES THAT TRIGGER THIS TOOL:
-- "send 0.1 ETH to Alice and 0.2 to Bob"
-- "transfer to 0x123 and 0x456"
-- "pay 0.5 each to these 3 wallets"
-- "send 0.1, 0.2, 0.3 to three addresses"
-
-AMOUNT PATTERNS:
-- "X each" → use same amount for all: ["0.5", "0.5", "0.5"]
-- "split X equally" → divide total by count: total=1, count=4 → ["0.25", "0.25", "0.25", "0.25"]
-- Different amounts → match in order given
-
-DO NOT USE IF:
-- Only 1 recipient (use executeSingleEthTransfer)
-- Scheduling words present (use executeRecurringEthPayment)
-- Token is MNEE/USD/$ (use executeBatchMneeTransfer)
-- More than 10 recipients (reject with error message)`,
-
-          inputSchema: z
-            .object({
-              recipients: z
-                .array(
-                  z
-                    .string()
-                    .min(42)
-                    .max(42)
-                    .regex(/^0x[a-fA-F0-9]{40}$/)
-                )
-                .min(2)
-                .max(10)
-                .describe(
-                  'Array of 2-10 Ethereum addresses. Example: ["0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb5", "0xAbc..."]'
-                ),
-              amounts: z
-                .array(z.string().regex(/^\d+(\.\d+)?$/))
-                .min(2)
-                .max(10)
-                .describe(
-                  'Array of ETH amounts as strings, one per recipient. Must match recipients length. Example: ["0.1", "0.2"]'
-                ),
-            })
-            .refine((data) => data.recipients.length === data.amounts.length, {
-              message:
-                "Number of recipients must exactly match number of amounts",
-            }),
-        },
-
-        // ============================================
-        // TOOL 4: BATCH PYUSD TRANSFER
-        // ============================================
-        executeBatchMneeTransfer: {
+        execute_batch_mnee_transfer: {
           description: `Execute one-time MNEE transfers to multiple recipients in a single transaction.
 
 WHEN TO USE THIS TOOL:
 - User wants to send/transfer/pay in MNEE/USD/dollars
 - 2 or more recipient addresses mentioned (minimum 2, maximum 10)
 - NO scheduling keywords present
-- Token explicitly MNEE or $ mentioned
 
 EXAMPLES THAT TRIGGER THIS TOOL:
 - "send $10 to Alice and $20 to Bob"
@@ -292,9 +272,8 @@ AMOUNT PATTERNS:
 - "split $X equally" → divide: total=100, count=4 → ["25", "25", "25", "25"]
 
 DO NOT USE IF:
-- Only 1 recipient (use executeSinglePyusdTransfer)
-- Scheduling words present (use executeRecurringMneePayment)
-- Token is ETH (use executeBatchEthTransfer)
+- Only 1 recipient (use execute_single_mnee_transfer)
+- Scheduling words present (use execute_recurring_mnee_payment)
 - More than 10 recipients (reject)`,
 
           inputSchema: z
@@ -325,21 +304,32 @@ DO NOT USE IF:
         },
 
         // ============================================
-        // TOOL 5: RECURRING ETH PAYMENT
+        // TOOL 6: RECURRING PYUSD PAYMENT (MNEE)
         // ============================================
-        executeRecurringEthPayment: {
-          description: `Create automatic scheduled ETH payments that repeat over time.
+        execute_recurring_mnee_payment: {
+          description: `Create automatic scheduled MNEE payments that repeat over time.
+
+⚠️ CRITICAL REQUIREMENTS BEFORE CALLING THIS TOOL:
+- Name: MUST be explicitly provided by user. DO NOT use defaults like "daily payment", "weekly payment", "monthly payment", etc.
+- Duration: MUST be explicitly stated by user (e.g., "for 30 days", "for 3 months"). DO NOT assume any duration value.
+
+If EITHER is missing, you MUST ASK the user before calling this tool.
 
 WHEN TO USE THIS TOOL:
-- User mentions ANY scheduling keyword: "every", "daily", "weekly", "monthly", "schedule", "recurring", "repeat", "automate", "subscribe", "for X duration"
-- Token is ETH or not specified
+- User mentions ANY scheduling keyword: "every", "daily", "weekly", "schedule", "recurring", "repeat", "automate", "subscribe", "for X"
+- Token is explicitly MNEE/USD/$/dollars or generic
 - Can be single or multiple recipients
+- ALL required parameters are explicitly provided
 
-EXAMPLES THAT TRIGGER THIS TOOL:
-- "send 0.1 ETH every day for 30 days"
-- "pay 0.0001 each to these addresses every 5 minutes for 30 minutes"
-- "recurring payment of 1 ETH daily"
-- "schedule 0.5 ETH weekly to 0x..."
+EXAMPLES THAT TRIGGER THIS TOOL (with all info):
+- "pay $20 MNEE every week for 8 weeks, call it 'Weekly Allowance'"
+- "schedule $5 daily to 0x... for 30 days, name it 'Daily Tip'"
+- "recurring payment of $100 USD monthly for 1 year, label it 'Subscription'"
+
+EXAMPLES THAT DO NOT TRIGGER THIS TOOL (missing info):
+- "send $10 every day to 0x..." → MISSING: name, duration → ASK user
+- "pay $5 weekly, call it 'Allowance'" → MISSING: duration → ASK user
+- "send $20 monthly for 6 months" → MISSING: name → ASK user
 
 CRITICAL TIME CONVERSIONS:
 - User says "every 5 minutes" → interval = 300
@@ -347,126 +337,27 @@ CRITICAL TIME CONVERSIONS:
 - User says "daily" → interval = 86400
 - User says "for a week" → duration = 604800
 
-REQUIRED PARAMETERS TO EXTRACT:
-- Name: If not provided, generate from pattern like "ETH payment every [interval]"
-- Recipients: 1 or more addresses (max 10)
-- Amounts: One per recipient. If "X each", replicate amount
-- Interval: Time between payments in seconds (min 30)
-- Duration: Total schedule length in seconds (max 31536000)
-- transactionStartTime: Use 0 for immediate start
-- revertOnFailure: Default to true (recommended)
-
-DO NOT USE IF:
-- No scheduling keywords present (use one-time transfer tools)
-- Token is MNEE/USD/$ (use executeRecurringMneePayment)`,
-
-          inputSchema: z
-            .object({
-              name: z
-                .string()
-                .min(1)
-                .default("Recurring ETH Payment")
-                .describe(
-                  'User-friendly name for this schedule. Examples: "Daily team payment", "Weekly allowance"'
-                ),
-              recipients: z
-                .array(
-                  z
-                    .string()
-                    .min(42)
-                    .max(42)
-                    .regex(/^0x[a-fA-F0-9]{40}$/)
-                )
-                .min(1)
-                .max(10)
-                .describe("Array of 1-10 Ethereum addresses"),
-              amounts: z
-                .array(z.string().regex(/^\d+(\.\d+)?$/))
-                .min(1)
-                .max(10)
-                .describe(
-                  'Array of ETH amounts as strings, one per recipient. If user says "X each", use same amount for all.'
-                ),
-              interval: z
-                .number()
-                .int()
-                .min(30)
-                .describe(
-                  "Seconds between each payment. MUST BE >= 30. Use time conversion reference."
-                ),
-              duration: z
-                .number()
-                .int()
-                .positive()
-                .max(31536000)
-                .describe(
-                  "Total schedule duration in seconds. MUST BE >= interval and <= 31536000 (1 year)."
-                ),
-              transactionStartTime: z
-                .number()
-                .int()
-                .nonnegative()
-                .default(0)
-                .describe(
-                  "Unix timestamp in seconds. Use 0 for immediate start. For future start, convert date to Unix timestamp."
-                ),
-              revertOnFailure: z
-                .boolean()
-                .default(true)
-                .optional()
-                .describe(
-                  "If true, stop all future payments on any failure. If false, skip failed payments and continue. Default true."
-                ),
-            })
-            .refine((data) => data.recipients.length === data.amounts.length, {
-              message: "Recipients and amounts arrays must have same length",
-            })
-            .refine((data) => data.duration >= data.interval, {
-              message: "Duration must be at least one interval period",
-            }),
-        },
-
-        // ============================================
-        // TOOL 6: RECURRING PYUSD PAYMENT
-        // ============================================
-        executeRecurringMneePayment: {
-          description: `Create automatic scheduled MNEE payments that repeat over time.
-
-WHEN TO USE THIS TOOL:
-- User mentions ANY scheduling keyword: "every", "daily", "weekly", "schedule", "recurring", "repeat", "automate", "subscribe", "for X"
-- Token is explicitly MNEE/USD/$/dollars
-- Can be single or multiple recipients
-
-EXAMPLES THAT TRIGGER THIS TOOL:
-- "pay $20 MNEE every week for 8 weeks"
-- "schedule $5 daily to 0x..."
-- "recurring payment of $100 USD monthly"
-- "send $10 each to these addresses every day for 30 days"
-
-CRITICAL TIME CONVERSIONS:
-Same as ETH recurring tool
-
-REQUIRED PARAMETERS TO EXTRACT:
-- Name: If not provided, generate like "MNEE payment every [interval]"
+REQUIRED PARAMETERS - ALL MUST BE EXPLICITLY PROVIDED:
+- Name: REQUIRED. User must say "call it X" or "name it Y". If missing → ASK
 - Recipients: 1 or more addresses (max 10)
 - Amounts: One per recipient in MNEE (up to 6 decimals)
 - Interval: Seconds between payments (min 30)
-- Duration: Total duration in seconds (max 31536000)
+- Duration: REQUIRED. User must say "for X days/weeks/months". If missing → ASK
 - transactionStartTime: Use 0 for immediate
 - revertOnFailure: Default true
 
 DO NOT USE IF:
 - No scheduling keywords present (use one-time MNEE transfer)
-- Token is ETH (use executeRecurringEthPayment)`,
+- Name is not explicitly provided by user
+- Duration is not explicitly stated by user`,
 
           inputSchema: z
             .object({
               name: z
                 .string()
                 .min(1)
-                .default("Recurring PYUSD Payment")
                 .describe(
-                  'User-friendly name for this MNEE schedule. Example: "Monthly subscription", "Weekly allowance"'
+                  '⚠️ CRITICAL: User MUST explicitly provide this name. NEVER use defaults like "daily payment", "weekly payment", "monthly payment", etc. If user has not provided a name, you MUST ask: "What would you like to name this recurring payment?" DO NOT proceed without explicit user input.'
                 ),
               recipients: z
                 .array(
@@ -497,7 +388,7 @@ DO NOT USE IF:
                 .positive()
                 .max(31536000)
                 .describe(
-                  "Total duration in seconds. MUST BE >= interval and <= 31536000."
+                  '⚠️ CRITICAL: User MUST explicitly state duration with phrases like "for 30 days", "for 3 months", "continue for 1 year". DO NOT assume any value like 30 days, 1 month, etc. If user has not specified duration, you MUST ask: "How long should this payment continue?" DO NOT proceed without explicit user input.'
                 ),
               transactionStartTime: z
                 .number()
@@ -521,45 +412,6 @@ DO NOT USE IF:
             .refine((data) => data.duration >= data.interval, {
               message: "Duration must be at least one interval",
             }),
-        },
-
-        // ============================================
-        // TOOL 7: CANCEL RECURRING PAYMENT
-        // ============================================
-        cancelRecurringPayment: {
-          description: `Cancel an existing active recurring payment intent.
-
-WHEN TO USE THIS TOOL:
-- User says: "cancel", "stop", "terminate", "end", "delete", "remove"
-- Context clearly indicates they want to stop a recurring payment
-- NOT for one-time payments (those execute immediately and can't be cancelled)
-
-EXAMPLES THAT TRIGGER THIS TOOL:
-- "cancel my recurring payment"
-- "stop the weekly payment to Alice"
-- "terminate intent 0x123..."
-- "end all my recurring payments"
-
-REQUIRED PARAMETER:
-- intentId: A bytes32 hex string starting with 0x, 66 characters total (0x + 64 hex chars)
-
-IF USER DOESN'T PROVIDE intentId:
-- Ask: "Which recurring payment would you like to cancel? Please provide the intent ID (0x...), or I can list all your active recurring payments."
-- If they say "all", warn them and confirm before proceeding
-
-DO NOT USE IF:
-- User wants to cancel a one-time payment (explain it executes immediately)
-- User wants to modify (suggest cancel + create new)`,
-
-          inputSchema: z.object({
-            intentId: z
-              .string()
-              .length(66)
-              .regex(/^0x[a-fA-F0-9]{64}$/)
-              .describe(
-                "Intent ID as bytes32 hex string, must be exactly 66 characters starting with 0x. Example: 0x1234567890abcdef..."
-              ),
-          }),
         },
       },
 

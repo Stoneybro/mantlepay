@@ -83,9 +83,8 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
         return items.map((tx) => {
             const details = tx.details || {};
             const recipients = details.recipients || [];
-            const tokenSymbol = details.tokenSymbol || 'ETH'; // Fallback
-            const amount = details.totalCommitment ? formatUnits(BigInt(details.totalCommitment), 18) : '0'; // Assuming 18 decimals, adjust if needed
-
+            const tokenSymbol = details.token || 'MNEE'; // Use details.token or fallback to MNEE
+            const amount = details.totalCommitment ? formatUnits(BigInt(details.totalCommitment), 6) : '0'; // MNEE has 6 decimals
             return (
                 <TableRow key={tx.id} >
                     <TableCell className="font-medium truncate max-w-[200px]" title={tx.title}>{tx.title || 'Untitled Payment'}</TableCell>

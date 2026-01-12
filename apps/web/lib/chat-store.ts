@@ -32,17 +32,17 @@ export async function saveChat({
             const messageAny = firstUserMessage as any;
             // Handle different content formats
             if (typeof messageAny.content === 'string') {
-                titleCandidate = messageAny.content.slice(0, 50);
+                titleCandidate = messageAny.content.slice(0, 20);
             } else if (Array.isArray(messageAny.content)) {
                 const textPart = messageAny.content.find((p: any) => p.type === 'text');
                 if (textPart && typeof textPart.text === 'string') {
-                    titleCandidate = textPart.text.slice(0, 50);
+                    titleCandidate = textPart.text.slice(0, 20);
                 }
             } else if (Array.isArray(messageAny.parts)) {
                 // Handle structure where content is split into parts
                 const textPart = messageAny.parts.find((p: any) => p.type === 'text');
                 if (textPart && typeof textPart.text === 'string') {
-                    titleCandidate = textPart.text.slice(0, 50);
+                    titleCandidate = textPart.text.slice(0, 20);
                 }
             }
         }

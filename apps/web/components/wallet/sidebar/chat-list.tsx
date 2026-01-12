@@ -56,7 +56,8 @@ export function ChatList({
                                 onClick={() => onSelectChat(chat.id)}
                             >
                                 <div className="font-medium truncate">
-                                    {chat.title || "Untitled Chat"}
+                                    {(chat.title || "Untitled Chat").slice(0, 20) +
+                                        ((chat.title || "Untitled Chat").length > 20 ? "..." : "")}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                     {new Date(chat.createdAt).toLocaleDateString()}{" "}

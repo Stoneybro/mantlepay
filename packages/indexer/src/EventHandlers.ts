@@ -5,11 +5,13 @@ import {
   MneeSmartWallet,
   MneeSmartWalletFactory,
   MneeIntentRegistry,
+  MneeToken,
   Transaction,
   TransactionType,
   Wallet,
   Intent,
 } from "generated";
+import { decodeFunctionData, parseAbi, hexToBigInt } from "viem";
 
 // Function selector mappings
 const SELECTORS: Record<string, string> = {
@@ -28,13 +30,17 @@ function formatTimestamp(timestamp: number): string {
 function getExecuteType(selector: string, value: bigint): string {
   if (selector === "0xa9059cbb" || selector === "0x23b872dd") return "Token Transfer";
   if (selector === "0x095ea7b3") return "Token Approval";
-  if (value > 0n && selector === "0x00000000") return "ETH Transfer";
+  // Value > 0 and 0x0...0 selector could be gas payment or contract call, just default to Contract Call
   return "Contract Call";
 }
 
 // GLOBAL STORE for Batch Calls in the same block/tx
 // Map<txHash, Array<CallDetails>>
 let batchCallsCache: Map<string, any[]> = new Map();
+
+// GLOBAL STORE for Token Transfers in the same tx
+// Map<txHash, Array<{from, to, value}>>
+let transfersCache: Map<string, { from: string, to: string, value: string }[]> = new Map();
 
 let currentWalletAction: {
   selector: string;
@@ -123,10 +129,9 @@ MneeSmartWallet.Executed.handler(async ({ event, context }) => {
     };
 
     // Transaction Classification Logic
-    if (event.params.data === "0x" && event.params.value > 0n) {
-      title = "Single Payment";
-      detailsObj.functionCall = "ETH Transfer";
-    } else if (selector === "0xa9059cbb" && event.params.data.length >= 138) { // 10 chars selector + 64 chars address + 64 chars amount
+    // If it was a plain ETH transfer, we now treat it as generic execution or gas payment
+    // We only explicitly label Token Transfers
+    if (selector === "0xa9059cbb" && event.params.data.length >= 138) { // 10 chars selector + 64 chars address + 64 chars amount
       // ERC20 Transfer
       title = "Single Payment";
       detailsObj.functionCall = "Token Transfer";
@@ -169,27 +174,45 @@ MneeSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
   const wallet = await context.Wallet.get(walletId);
 
   if (wallet) {
-    // For batch, we'd ideally have the individual calls. 
-    // Since we don't have the calldata in ExecutedBatch, we use the event params
-    // But the event only gives batchSize and totalValue.
-    // The user wants 'calls' array with target, value, selector.
-    // This information is ONLY available in the transaction input data or if we emitted it.
-    // However, MneeSmartWallet emits WalletAction for EACH call in the batch.
-    // We can't easily correlate N WalletActions to 1 ExecutedBatch in this sync handler flow without complex buffering.
-    // FOR NOW, we will satisfy the requirement by returning the aggregate data available.
+    const txHash = event.transaction.hash;
 
-    // NOTE: To get full call details, we would need to decode the transaction input `executeBatch(Call[] calls)`.
-    // Envio provides `event.transaction.input`.
+    // Get transfers from cache (populated by MneeToken.Transfer handler)
+    const transfers = transfersCache.get(txHash) || [];
+    console.log(`ExecutedBatch: Found ${transfers.length} cached transfers for ${txHash}`);
 
-    // Retrieve aggregated calls for this transaction
-    const calls = batchCallsCache.get(event.transaction.hash) || [];
+    // Get wallet actions from cache for targets
+    const walletActions = batchCallsCache.get(txHash) || [];
+    console.log(`ExecutedBatch: Found ${walletActions.length} cached wallet actions for ${txHash}`);
 
-    // Clean up cache to prevent memory leak
-    batchCallsCache.delete(event.transaction.hash);
+    // Build calls array from transfers (these have actual amounts)
+    let calls: any[] = transfers.map((transfer, idx) => {
+      return {
+        target: "0x19b2124fCb1B156284EE2C28f97e3c873f415bc5", // MNEE token
+        value: transfer.value,
+        recipient: transfer.to,
+        functionCall: "Token Transfer",
+        selector: "0xa9059cbb"
+      };
+    });
+
+    // If no transfers found, fall back to wallet actions (won't have amounts)
+    if (calls.length === 0 && walletActions.length > 0) {
+      console.log("No transfers found, falling back to wallet actions");
+      calls = walletActions.map(action => ({
+        target: action.target,
+        value: "0",
+        recipient: action.target,
+        functionCall: action.selector === "0xa9059cbb" ? "Token Transfer" : "Contract Call",
+        selector: action.selector
+      }));
+    }
+
+    // Calculate total MNEE value from transfers
+    const totalMneeValue = transfers.reduce((sum, t) => sum + BigInt(t.value), 0n);
 
     const details = JSON.stringify({
       batchSize: Number(event.params.batchSize),
-      totalValue: event.params.totalValue.toString(),
+      totalValue: totalMneeValue.toString(), // Use actual token value, not ETH
       calls: calls
     });
 
@@ -211,6 +234,10 @@ MneeSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
       ...wallet,
       totalTransactionCount: wallet.totalTransactionCount + 1
     });
+
+    // Clean up caches
+    transfersCache.delete(txHash);
+    batchCallsCache.delete(txHash);
   }
 });
 
@@ -235,7 +262,7 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
   // JSON Details
   const details = JSON.stringify({
     scheduleName: event.params.name,
-    token: event.params.token.toString() === "0x0000000000000000000000000000000000000000" ? "ETH" : "USDC", // Naive check, ideally check against known addresses
+    token: "MNEE", // Defaulting to MNEE as per migration
     totalCommitment: event.params.totalCommitment.toString(),
     recipientCount: event.params.recipients.length,
     recipients: event.params.recipients.map((r, i) => ({
@@ -268,7 +295,7 @@ MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
   const intentId = event.params.intentId.toString();
 
   const intent = await context.Intent.get(intentId);
-  const tokenSymbol = (intent?.token === "0x0000000000000000000000000000000000000000") ? "ETH" : "USDC";
+  const tokenSymbol = "MNEE";
 
   // Re-construct recipients with status
   // We assume success unless we find specific failure events, but specific status per recipient
@@ -316,7 +343,7 @@ MneeIntentRegistry.IntentCancelled.handler(async ({ event, context }) => {
   const intentId = event.params.intentId.toString();
   const intent = await context.Intent.get(intentId);
 
-  const tokenSymbol = (event.params.token.toString() === "0x0000000000000000000000000000000000000000") ? "ETH" : "USDC";
+  const tokenSymbol = "MNEE";
 
   const details = JSON.stringify({
     scheduleName: event.params.name,
@@ -345,7 +372,7 @@ MneeSmartWallet.TransferFailed.handler(async ({ event, context }) => {
   // We need to fetch the Intent to get the name
   const intentId = event.params.intentId.toString();
   const intent = await context.Intent.get(intentId);
-  const tokenSymbol = (event.params.token.toString() === "0x0000000000000000000000000000000000000000") ? "ETH" : "USDC";
+  const tokenSymbol = "MNEE";
 
   const details = JSON.stringify({
     scheduleName: intent ? intent.name : "Unknown Schedule",
@@ -369,4 +396,23 @@ MneeSmartWallet.TransferFailed.handler(async ({ event, context }) => {
   };
 
   context.Transaction.set(transaction);
+});
+
+// Handle MneeToken Transfer events to capture actual transfer amounts
+MneeToken.Transfer.handler(async ({ event }) => {
+  const txHash = event.transaction.hash;
+
+  // Store transfer in cache for correlation with batch transactions
+  if (!transfersCache.has(txHash)) {
+    transfersCache.set(txHash, []);
+  }
+
+  const transfers = transfersCache.get(txHash)!;
+  transfers.push({
+    from: event.params.from.toString().toLowerCase(),
+    to: event.params.to.toString().toLowerCase(),
+    value: event.params.value.toString()
+  });
+
+  console.log(`Transfer cached: ${event.params.value} from ${event.params.from} to ${event.params.to} in tx ${txHash}`);
 });

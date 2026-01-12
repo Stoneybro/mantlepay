@@ -5,13 +5,9 @@ import { useChat } from "@ai-sdk/react";
 import { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
 import {
-    useSingleTransfer,
     useSingleTokenTransfer,
-    useBatchTransfer,
     useBatchTokenTransfer,
-    useRecurringPayment,
     useRecurringTokenPayment,
-    useCancelIntent
 } from "@/hooks/payments/usePayment";
 import { fetchWalletBalance } from "@/utils/helper";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -143,22 +139,14 @@ function ChatInner({
     });
 
     // Transaction hooks
-    const singleEthTransfer = useSingleTransfer(wallet?.availableEthBalance);
     const singleMneeTransfer = useSingleTokenTransfer(wallet?.availableMneeBalance);
-    const batchEthTransfer = useBatchTransfer(wallet?.availableEthBalance);
     const batchMneeTransfer = useBatchTokenTransfer(wallet?.availableMneeBalance);
-    const recurringEthPayment = useRecurringPayment(wallet?.availableEthBalance);
     const recurringMneePayment = useRecurringTokenPayment(wallet?.availableMneeBalance);
-    const cancelIntent = useCancelIntent();
 
     const hooks = {
-        singleEthTransfer,
         singleMneeTransfer,
-        batchEthTransfer,
         batchMneeTransfer,
-        recurringEthPayment,
         recurringMneePayment,
-        cancelIntent,
     };
 
     const handleSubmit = () => {
@@ -169,13 +157,9 @@ function ChatInner({
 
     // Check if any transaction is pending
     const isTransactionPending =
-        singleEthTransfer.isPending ||
         singleMneeTransfer.isPending ||
-        batchEthTransfer.isPending ||
         batchMneeTransfer.isPending ||
-        recurringEthPayment.isPending ||
-        recurringMneePayment.isPending ||
-        cancelIntent.isPending;
+        recurringMneePayment.isPending;
 
     const isLoading = status === 'submitted' || status === 'streaming';
 

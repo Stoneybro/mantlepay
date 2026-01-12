@@ -27,7 +27,7 @@ export function SingleTransferTool({
     mutation,
     type
 }: SingleTransferToolProps) {
-    const toolName = type === 'ETH' ? 'executeSingleEthTransfer' : 'executeSingleMneeTransfer';
+    const toolName = type === 'ETH' ? 'executeSingleEthTransfer' : 'execute_single_mnee_transfer';
     const Icon = type === 'ETH' ? BsArrowUpRight : FaDollarSign;
     const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
 

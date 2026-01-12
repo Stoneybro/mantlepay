@@ -33,7 +33,7 @@ export function RecurringPaymentTool({
     mutation,
     type
 }: RecurringPaymentToolProps) {
-    const toolName = type === 'ETH' ? 'executeRecurringEthPayment' : 'executeRecurringMneePayment';
+    const toolName = type === 'ETH' ? 'executeRecurringEthPayment' : 'execute_recurring_mnee_payment';
     const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
 
     if ('state' in part) {

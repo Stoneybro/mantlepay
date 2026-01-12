@@ -10,13 +10,9 @@ interface ChatMessagesProps {
     isTransactionPending: boolean;
     isLoading: boolean;
     hooks: {
-        singleEthTransfer: any;
         singleMneeTransfer: any;
-        batchEthTransfer: any;
         batchMneeTransfer: any;
-        recurringEthPayment: any;
         recurringMneePayment: any;
-        cancelIntent: any;
     };
 }
 
@@ -35,7 +31,7 @@ export function ChatMessages({
                 {messages.map((message) => (
                     <div
                         key={message.id}
-                        className={`break-words ${message.role === "user" ? "ml-auto" : ""} bg-accent px-4 py-2 rounded w-fit`}
+                        className={`break-words ${message.role === "user" ? "ml-auto" : ""} bg-accent px-4 py-2 rounded w-fit max-w-3xl`}
                     >
                         <span className="font-medium">
                             {message.role === "user" ? "" : "Mneepay: "}

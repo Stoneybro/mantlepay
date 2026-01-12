@@ -26,7 +26,7 @@ export function BatchTransferTool({
     mutation,
     type
 }: BatchTransferToolProps) {
-    const toolName = type === 'ETH' ? 'executeBatchEthTransfer' : 'executeBatchMneeTransfer';
+    const toolName = type === 'ETH' ? 'executeBatchEthTransfer' : 'execute_batch_mnee_transfer';
     const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
 
     if ('state' in part) {

@@ -3,7 +3,6 @@ import React from 'react';
 import { SingleTransferTool } from './tools/SingleTransferTool';
 import { BatchTransferTool } from './tools/BatchTransferTool';
 import { RecurringPaymentTool } from './tools/RecurringPaymentTool';
-import { CancelIntentTool } from './tools/CancelIntentTool';
 
 interface ToolRendererProps {
     part: any;
@@ -11,13 +10,9 @@ interface ToolRendererProps {
     addToolResult: (result: any) => void;
     isTransactionPending: boolean;
     hooks: {
-        singleEthTransfer: any;
         singleMneeTransfer: any;
-        batchEthTransfer: any;
         batchMneeTransfer: any;
-        recurringEthPayment: any;
         recurringMneePayment: any;
-        cancelIntent: any;
     };
 }
 
@@ -29,20 +24,7 @@ export function ToolRenderer({
     hooks
 }: ToolRendererProps) {
 
-    if (part.type === "tool-executeSingleEthTransfer") {
-        return (
-            <SingleTransferTool
-                part={part}
-                callId={toolCallId}
-                addToolResult={addToolResult}
-                isTransactionPending={isTransactionPending}
-                mutation={hooks.singleEthTransfer}
-                type="ETH"
-            />
-        );
-    }
-
-    if (part.type === "tool-executeSingleMneeTransfer") {
+    if (part.type === "tool-execute_single_mnee_transfer") {
         return (
             <SingleTransferTool
                 part={part}
@@ -55,20 +37,7 @@ export function ToolRenderer({
         );
     }
 
-    if (part.type === "tool-executeBatchEthTransfer") {
-        return (
-            <BatchTransferTool
-                part={part}
-                callId={toolCallId}
-                addToolResult={addToolResult}
-                isTransactionPending={isTransactionPending}
-                mutation={hooks.batchEthTransfer}
-                type="ETH"
-            />
-        );
-    }
-
-    if (part.type === "tool-executeBatchMneeTransfer") {
+    if (part.type === "tool-execute_batch_mnee_transfer") {
         return (
             <BatchTransferTool
                 part={part}
@@ -81,20 +50,7 @@ export function ToolRenderer({
         );
     }
 
-    if (part.type === "tool-executeRecurringEthPayment") {
-        return (
-            <RecurringPaymentTool
-                part={part}
-                callId={toolCallId}
-                addToolResult={addToolResult}
-                isTransactionPending={isTransactionPending}
-                mutation={hooks.recurringEthPayment}
-                type="ETH"
-            />
-        );
-    }
-
-    if (part.type === "tool-executeRecurringMneePayment") {
+    if (part.type === "tool-execute_recurring_mnee_payment") {
         return (
             <RecurringPaymentTool
                 part={part}
@@ -103,18 +59,6 @@ export function ToolRenderer({
                 isTransactionPending={isTransactionPending}
                 mutation={hooks.recurringMneePayment}
                 type="MNEE"
-            />
-        );
-    }
-
-    if (part.type === "tool-cancelRecurringPayment") {
-        return (
-            <CancelIntentTool
-                part={part}
-                callId={toolCallId}
-                addToolResult={addToolResult}
-                isTransactionPending={isTransactionPending}
-                mutation={hooks.cancelIntent}
             />
         );
     }

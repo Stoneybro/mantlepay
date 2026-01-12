@@ -7,6 +7,8 @@ import { encodeFunctionData, parseUnits, erc20Abi, zeroAddress } from "viem";
 import { SingleTokenTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
+import { MneeAddress } from "@/utils/helper";
+
 export function useSingleTokenTransfer(availableMneeBalance?: string) {
     const { getClient } = useSmartAccountContext();
     const { wallets } = useWallets();
@@ -37,7 +39,7 @@ export function useSingleTokenTransfer(availableMneeBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = zeroAddress
+                const token = MneeAddress;
                 const decimals = 6;
                 const amountInUnits = parseUnits(params.amount, decimals);
 
