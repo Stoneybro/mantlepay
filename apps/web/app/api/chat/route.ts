@@ -176,10 +176,10 @@ Before calling ANY tool, verify:
 3. Address format: all addresses are 0x + 40 hex characters (42 total)
 4. Amounts: all amounts are positive numbers
 5. Array lengths: recipients.length == amounts.length
-6. For recurring: interval >= 30 and duration <= 31536000
-7. For recurring: duration >= interval
-8. For recurring: Name MUST be explicitly provided by user (not a default value)
-9. For recurring: Duration MUST be explicitly stated by user (not assumed)
+6. For recurring payment: interval >= 30 and duration <= 31536000
+7. For recurring payment: duration >= interval
+8. For recurring payment: Name MUST be explicitly provided by user (not a default value)
+9. For recurring payment: Duration MUST be explicitly stated by user (not assumed)
 
 ONLY call the tool if ALL checks pass.
 
@@ -189,26 +189,27 @@ ONLY call the tool if ALL checks pass.
 - Be helpful but direct
 - When asking for missing information, be polite but clear about what's needed
 
-## CONTACT RESOLUTION
+## CONTACT RESOLUTION (CRITICAL)
 
-Users can save contacts with friendly names instead of wallet addresses.
+Users save contacts with friendly names. A [User's Saved Contacts] section may appear at the END of this prompt with their contacts.
 
-**When processing transactions:**
-1. If user mentions a name (not a 0x address), check the [User's Saved Contacts] section below (if present)
-2. If contact found → use the contact's address(es) for the transaction
-3. If contact NOT found → ask user for the wallet address
-4. For group contacts with multiple addresses → automatically use batch transfer with all group addresses
+**IMPORTANT: When user mentions a name (like "bob", "alice", "team"):**
+1. FIRST check if that name exists in [User's Saved Contacts] below
+2. If the name IS in the list → IMMEDIATELY use the address(es) shown. DO NOT ask for address.
+3. If the name is NOT in the list → Then ask: "I don't have a contact named 'X' saved. What's their wallet address?"
 
-**Examples:**
-- "send 10 MNEE to bob" → Look up "bob" in contacts, use bob's address
-- "pay team 50 MNEE" → Look up "team", use batch transfer to all team addresses
+**How to use contact addresses:**
+- Single transfer to individual contact → execute_single_mnee_transfer
+- Batch transfer to group contact (multiple addresses) → execute_batch_mnee_transfer  
+- Recurring payment to contact → execute_recurring_mnee_payment
 
-**When contact not found:**
-Respond: "I don't have a contact named 'X' saved. What's their wallet address?"
+**Example with contact "bob" saved as 0x123...:**
+- "send 10 MNEE to bob" → Call execute_single_mnee_transfer with to="0x123..."
+- "pay bob $5 every week for a month, call it 'Weekly'" → Call execute_recurring_mnee_payment with recipients=["0x123..."]
 
-**Always display contact names in your responses:**
-✅ "Sending 10 MNEE to Bob (0x742d...)"
-❌ "Sending 10 MNEE to 0x742d..."`;
+**In your responses, show the contact name:**
+- ✅ "Sending 10 MNEE to Bob (0x123...)"
+- ❌ "Sending 10 MNEE to 0x123..."`;
 
 export async function POST(req: Request) {
   try {
@@ -241,21 +242,31 @@ export async function POST(req: Request) {
       messageContent = message.text;
     }
 
-    const hasNameReference = /(?:to|send|pay)\s+([a-zA-Z][a-zA-Z\s]*)/i.test(messageContent)
-      && !messageContent.includes('0x');
+    // Check if message contains payment keywords and no wallet addresses
+    // This is intentionally permissive - if there's any chance of contact usage, fetch contacts
+    const hasPaymentKeywords = /\b(send|pay|transfer|to)\b/i.test(messageContent);
+    const hasNoAddress = !messageContent.includes('0x');
+    const hasNameReference = hasPaymentKeywords && hasNoAddress;
 
-
+    console.log("📇 Contact debug:", { messageContent, hasNameReference, walletAddress });
 
     if (hasNameReference && walletAddress) {
       try {
         const userContacts = await getContacts(walletAddress);
+        console.log("📇 Contacts found:", userContacts.length, userContacts.map(c => c.name));
 
         if (userContacts.length > 0) {
           const contactList = userContacts
-            .map(c => `${c.name} (${c.type}): ${c.addresses.map(a => a.address).join(', ')}`)
+            .map(c => `- "${c.name}" = ${c.addresses.map(a => a.address).join(', ')}`)
             .join('\n');
-          contactContext = `\n\n[User's Saved Contacts]\n${contactList}\n`;
+          contactContext = `
 
+=== USER'S SAVED CONTACTS (USE THESE ADDRESSES) ===
+The user has saved these contacts. When they mention any of these names, USE THE ADDRESS DIRECTLY - do NOT ask for the address:
+${contactList}
+===================================================
+`;
+          console.log("📇 Injected context:", contactContext);
         }
       } catch (error) {
         console.error("Failed to fetch contacts:", error);

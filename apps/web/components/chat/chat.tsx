@@ -138,6 +138,48 @@ function ChatInner({
 
     });
 
+    // Track previous messages to detect tool result additions
+    const prevMessagesRef = React.useRef(messages);
+
+    // Save messages when tool results are added (state changes from input-available to output-*)
+    React.useEffect(() => {
+        const hasToolResultChange = messages.some((msg, idx) => {
+            const prevMsg = prevMessagesRef.current[idx];
+            if (!prevMsg) return false;
+
+            // Check if any tool invocation changed from input-available to output-*
+            const msgAny = msg as any;
+            const prevMsgAny = prevMsg as any;
+
+            if (msgAny.parts && prevMsgAny.parts) {
+                return msgAny.parts.some((part: any, partIdx: number) => {
+                    const prevPart = prevMsgAny.parts?.[partIdx];
+                    if (!prevPart) return false;
+
+                    // Tool state changed from input-available to output-available/output-error
+                    return prevPart.state === 'input-available' &&
+                        (part.state === 'output-available' || part.state === 'output-error');
+                });
+            }
+            return false;
+        });
+
+        if (hasToolResultChange && id) {
+            console.log('📦 Saving messages after tool result...');
+            fetch('/api/chat/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chatId: id,
+                    messages,
+                    userId: walletAddress
+                })
+            }).catch(err => console.error('Failed to save messages:', err));
+        }
+
+        prevMessagesRef.current = messages;
+    }, [messages, id, walletAddress]);
+
     // Transaction hooks
     const singleMneeTransfer = useSingleTokenTransfer(wallet?.availableMneeBalance);
     const batchMneeTransfer = useBatchTokenTransfer(wallet?.availableMneeBalance);
