@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { convertToModelMessages, createIdGenerator, streamText, UIMessage } from "ai";
 import { z } from "zod";
 import { saveChat, loadChat } from "@/lib/chat-store";
+import { getContacts } from "@/lib/contact-store";
 
 
 // Allow streaming responses up to 30 seconds
@@ -186,7 +187,28 @@ ONLY call the tool if ALL checks pass.
 - Keep responses clear and concise
 - Don't repeat information already shown in the UI
 - Be helpful but direct
-- When asking for missing information, be polite but clear about what's needed`;
+- When asking for missing information, be polite but clear about what's needed
+
+## CONTACT RESOLUTION
+
+Users can save contacts with friendly names instead of wallet addresses.
+
+**When processing transactions:**
+1. If user mentions a name (not a 0x address), check the [User's Saved Contacts] section below (if present)
+2. If contact found → use the contact's address(es) for the transaction
+3. If contact NOT found → ask user for the wallet address
+4. For group contacts with multiple addresses → automatically use batch transfer with all group addresses
+
+**Examples:**
+- "send 10 MNEE to bob" → Look up "bob" in contacts, use bob's address
+- "pay team 50 MNEE" → Look up "team", use batch transfer to all team addresses
+
+**When contact not found:**
+Respond: "I don't have a contact named 'X' saved. What's their wallet address?"
+
+**Always display contact names in your responses:**
+✅ "Sending 10 MNEE to Bob (0x742d...)"
+❌ "Sending 10 MNEE to 0x742d..."`;
 
 export async function POST(req: Request) {
   try {
@@ -203,10 +225,46 @@ export async function POST(req: Request) {
     const allMessages = [...previousMessages, message];
     const modelMessages = await convertToModelMessages(allMessages);
 
+    // Fetch and inject user's contacts if message likely references a contact name
+    let contactContext = '';
+
+    // Extract message content - AI SDK sends user messages with 'parts' array
+    let messageContent = '';
+    if (typeof message.content === 'string') {
+      messageContent = message.content;
+    } else if (message.parts && Array.isArray(message.parts)) {
+      // AI SDK format: { parts: [{ type: 'text', text: '...' }] }
+      const textPart = message.parts.find((p: any) => p.type === 'text');
+      messageContent = textPart?.text || '';
+    } else if (message.text) {
+      // Alternative format
+      messageContent = message.text;
+    }
+
+    const hasNameReference = /(?:to|send|pay)\s+([a-zA-Z][a-zA-Z\s]*)/i.test(messageContent)
+      && !messageContent.includes('0x');
+
+
+
+    if (hasNameReference && walletAddress) {
+      try {
+        const userContacts = await getContacts(walletAddress);
+
+        if (userContacts.length > 0) {
+          const contactList = userContacts
+            .map(c => `${c.name} (${c.type}): ${c.addresses.map(a => a.address).join(', ')}`)
+            .join('\n');
+          contactContext = `\n\n[User's Saved Contacts]\n${contactList}\n`;
+
+        }
+      } catch (error) {
+        console.error("Failed to fetch contacts:", error);
+      }
+    }
 
     const result = streamText({
       model: google("gemini-2.5-flash-lite"),
-      system: SYSTEM_PROMPT,
+      system: SYSTEM_PROMPT + contactContext,
       messages: modelMessages,
       temperature: 0.0,
       toolChoice: "auto",

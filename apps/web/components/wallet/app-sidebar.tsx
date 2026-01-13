@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { File, Inbox, Command, LogOut } from "lucide-react";
+import { File, Inbox, Command, LogOut, Users } from "lucide-react";
 import { useLogout } from "@privy-io/react-auth";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChatList } from "./sidebar/chat-list";
 import { TransactionList } from "@/components/transaction-history/TransactionList";
+import { ContactList } from "@/components/contacts/ContactList";
 
 type Chat = {
   id: string;
@@ -56,6 +57,12 @@ const data = {
       icon: File,
       isActive: false,
     },
+    {
+      title: "Contacts",
+      url: "#",
+      icon: Users,
+      isActive: false,
+    },
   ],
 };
 
@@ -68,6 +75,7 @@ export function AppSidebar({
   const currentChatId = searchParams.get("chatId");
   const queryClient = useQueryClient();
   const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
+  const [showContactForm, setShowContactForm] = React.useState(false);
 
   const { data: chats = [], isLoading } = useQuery({
     queryKey: ["chats", walletAddress],
@@ -192,6 +200,15 @@ export function AppSidebar({
                 + New Chat
               </Button>
             )}
+            {activeItem.title === "Contacts" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowContactForm(true)}
+              >
+                + Add Contact
+              </Button>
+            )}
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -205,10 +222,14 @@ export function AppSidebar({
               onNewChat={handleNewChat}
               onRefresh={handleRefresh}
             />
-          ) : (
-
+          ) : activeItem.title === "Transactions" ? (
             <TransactionList walletAddress={walletAddress} />
-
+          ) : (
+            <ContactList
+              walletAddress={walletAddress}
+              showForm={showContactForm}
+              onCloseForm={() => setShowContactForm(false)}
+            />
           )}
         </SidebarContent>
         <SidebarFooter className="border-t p-4">

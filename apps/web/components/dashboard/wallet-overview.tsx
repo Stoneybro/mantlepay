@@ -4,7 +4,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { WalletQR } from "@/components/wallet/qrcode";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchWalletBalance } from "@/utils/helper";
 import { truncateAddress } from "@/utils/format";
 import CopyText from "@/components/ui/copy";
@@ -15,12 +15,16 @@ import { TransactionItemProps, useWalletHistory } from "@/hooks/useWalletHistory
 import { ActivityType } from "@/lib/envio/client";
 import { useMemo } from "react";
 import PaymentTable from "./PaymentTable";
+import { RefreshCcw } from "lucide-react";
 
 type WalletOverviewProps = {
     walletAddress?: string;
 };
 
 export function WalletOverview({ walletAddress }: WalletOverviewProps) {
+    const queryClient = useQueryClient();
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
+
     const { data: wallet, isLoading: walletIsLoading } = useQuery({
         queryKey: ["walletBalance", walletAddress],
         queryFn: () => fetchWalletBalance(walletAddress as `0x${string}`),
@@ -31,6 +35,16 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
     });
 
     const { transactions, isLoading: historyIsLoading } = useWalletHistory(walletAddress);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["walletBalance", walletAddress] }),
+            queryClient.invalidateQueries({ queryKey: ["walletHistory", walletAddress] }),
+        ]);
+        // Small delay to show the animation
+        setTimeout(() => setIsRefreshing(false), 500);
+    };
 
     const stats = useMemo(() => {
         if (!transactions) return { single: 0, batch: 0, subscription: 0, payroll: 0 };
@@ -62,7 +76,17 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
     return (
         <>
             <div className="@container/main flex flex-col gap-2  ">
-                <div className="text-lg font-semibold ml-2 md:ml-4">Balances:</div>
+                <div className="flex justify-between items-center">
+                    <div className="text-lg font-semibold ml-2 md:ml-4">Balances:</div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                    >
+                        <RefreshCcw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </Button>
+                </div>
                 <BalanceCards
                     availableMnee={wallet?.availableMneeBalance}
                     committedMnee={wallet?.committedMneeBalance}
