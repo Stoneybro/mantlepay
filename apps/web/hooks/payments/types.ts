@@ -1,3 +1,15 @@
+// Universal compliance metadata for jurisdiction-aware payment tracking
+// Supports: payroll, contractor, invoice, vendor, grant, and other categories
+export type ComplianceMetadata = {
+    entityIds?: string[];    // Per-recipient identifiers (employee, vendor, customer ID)
+    jurisdiction?: string;   // e.g., "US-CA", "UK", "EU-DE", "NG"
+    category?: string;       // e.g., "PAYROLL_W2", "CONTRACTOR", "INVOICE", "VENDOR", "GRANT"
+    referenceId?: string;    // e.g., "2025-01", "INV-001", "PO-123"
+};
+
+// Legacy alias for backward compatibility
+export type PayrollMetadata = ComplianceMetadata;
+
 export type BalanceCheckParams = {
     availableBalance: string;
     requiredAmount: string;
@@ -7,21 +19,25 @@ export type BalanceCheckParams = {
 export type SingleTransferParams = {
     to: `0x${string}`;
     amount: string;
+    compliance?: ComplianceMetadata;
 };
 
 export type SingleTokenTransferParams = {
     to: `0x${string}`;
     amount: string;
+    compliance?: ComplianceMetadata;
 };
 
 export type BatchTransferParams = {
     recipients: `0x${string}`[];
     amounts: string[];
+    compliance?: ComplianceMetadata;
 };
 
 export type BatchTokenTransferParams = {
     recipients: `0x${string}`[];
     amounts: string[];
+    compliance?: ComplianceMetadata;
 };
 
 export type RecurringPaymentParams = {
@@ -32,6 +48,7 @@ export type RecurringPaymentParams = {
     interval: number;
     transactionStartTime: number;
     revertOnFailure?: boolean;
+    compliance?: ComplianceMetadata;
 };
 
 export type RecurringTokenPaymentParams = {
@@ -42,6 +59,7 @@ export type RecurringTokenPaymentParams = {
     interval: number;
     transactionStartTime: number;
     revertOnFailure?: boolean;
+    compliance?: ComplianceMetadata;
 };
 
 export type CancelIntentParams = {
@@ -66,3 +84,4 @@ export type PaymentParams = {
     "recurring-token": RecurringTokenPaymentParams;
     "cancel-intent": CancelIntentParams;
 };
+

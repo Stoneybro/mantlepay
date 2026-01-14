@@ -26,8 +26,6 @@ export function ContactList({ walletAddress, showForm, onCloseForm }: ContactLis
 
   const handleDelete = (e: React.MouseEvent, contactId: string) => {
     e.stopPropagation();
-    if (!window.confirm('Delete this contact?')) return;
-    
     deleteContact(
       { contactId, userId: walletAddress! },
       {

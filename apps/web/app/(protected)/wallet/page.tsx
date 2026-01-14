@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/wallet/app-sidebar";
 import { Dashboard } from "@/components/dashboard/dashboard";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import Chat from "@/components/chat/chat";
+import { PaymentForm } from "@/components/payment-form/PaymentForm";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { generateId } from "ai";
@@ -55,6 +56,7 @@ export default function Page() {
             <Tabs defaultValue="chat" className="h-full w-full">
               <TabsList className="flex justify-center mx-auto">
                 <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="form">Form</TabsTrigger>
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               </TabsList>
               <TabsContent value="chat">
@@ -62,6 +64,9 @@ export default function Page() {
                   walletAddress={walletAddress}
                   id={chatId || undefined}
                 />
+              </TabsContent>
+              <TabsContent value="form">
+                <PaymentForm walletAddress={walletAddress} />
               </TabsContent>
               <TabsContent value="dashboard">
                 <Dashboard walletAddress={walletAddress!} />

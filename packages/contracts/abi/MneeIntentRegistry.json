@@ -118,6 +118,33 @@
         "name": "revertOnFailure",
         "type": "bool",
         "internalType": "bool"
+      },
+      {
+        "name": "payrollData",
+        "type": "tuple",
+        "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+        "components": [
+          {
+            "name": "employeeId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "taxCategory",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "periodId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "outputs": [
@@ -243,6 +270,33 @@
             "name": "failedAmount",
             "type": "uint256",
             "internalType": "uint256"
+          },
+          {
+            "name": "payroll",
+            "type": "tuple",
+            "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+            "components": [
+              {
+                "name": "employeeId",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "jurisdiction",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "taxCategory",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "periodId",
+                "type": "string",
+                "internalType": "string"
+              }
+            ]
           }
         ]
       }
@@ -454,6 +508,33 @@
         "name": "failedAmount",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "payroll",
+        "type": "tuple",
+        "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+        "components": [
+          {
+            "name": "employeeId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "taxCategory",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "periodId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "stateMutability": "view"
@@ -576,6 +657,34 @@
         "type": "uint256[]",
         "indexed": false,
         "internalType": "uint256[]"
+      },
+      {
+        "name": "payroll",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+        "components": [
+          {
+            "name": "employeeId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "taxCategory",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "periodId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "anonymous": false

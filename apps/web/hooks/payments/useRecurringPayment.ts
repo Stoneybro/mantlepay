@@ -57,6 +57,12 @@ export function useRecurringPayment(availableEthBalance?: string) {
                         BigInt(params.interval),
                         BigInt(params.transactionStartTime),
                         params.revertOnFailure ?? true,
+                        {
+                            entityIds: params.compliance?.entityIds ?? [],
+                            jurisdiction: params.compliance?.jurisdiction ?? "",
+                            category: params.compliance?.category ?? "",
+                            referenceId: params.compliance?.referenceId ?? "",
+                        },
                     ],
                 });
 

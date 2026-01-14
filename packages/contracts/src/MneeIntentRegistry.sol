@@ -18,6 +18,20 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
                                 TYPES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Universal compliance metadata for jurisdiction-aware payment tracking
+    /// @dev Supports payroll, contractor, invoice, vendor, and other compliance categories
+    struct ComplianceMetadata {
+        /// @notice Per-recipient identifiers (employee ID, vendor ID, customer ID, etc.)
+        /// @dev Length MUST match recipients.length for intents, or be empty/single for single transfers
+        string[] entityIds;
+        /// @notice Jurisdiction code (e.g., "US-CA", "UK", "EU-DE", "NG", empty if not specified)
+        string jurisdiction;
+        /// @notice Compliance category (e.g., "PAYROLL_W2", "CONTRACTOR", "INVOICE", "VENDOR", "GRANT")
+        string category;
+        /// @notice Reference identifier (e.g., "2025-01", "INV-001", "PO-123", empty if not specified)
+        string referenceId;
+    }
+
     struct Intent {
         /// @notice The unique identifier for this intent
         bytes32 id;
@@ -49,6 +63,8 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         bool revertOnFailure;
         /// @notice Total amount that failed to transfer (for recovery)
         uint256 failedAmount;
+        /// @notice Universal compliance metadata (empty for non-compliant transactions)
+        ComplianceMetadata compliance;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -99,7 +115,8 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         uint256 transactionStartTime,
         uint256 transactionEndTime,
         address[] recipients,
-        uint256[] amounts
+        uint256[] amounts,
+        ComplianceMetadata compliance
     );
 
     /// @notice The event emitted when an intent is executed
@@ -184,6 +201,7 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
      * @param interval The interval between transactions in seconds
      * @param transactionStartTime The start time of the transaction (0 for immediate start)
      * @param revertOnFailure Whether to revert entire transaction on any failure (true) or skip failed transfers (false)
+     * @param complianceData Universal compliance metadata (pass empty for non-compliant transactions)
      *
      * @return intentId The unique identifier for the created intent
      */
@@ -195,7 +213,8 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         uint256 duration,
         uint256 interval,
         uint256 transactionStartTime,
-        bool revertOnFailure
+        bool revertOnFailure,
+        ComplianceMetadata memory complianceData
     ) external returns (bytes32) {
         address wallet = msg.sender;
 
@@ -270,7 +289,8 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             latestTransactionTime: 0,
             active: true,
             revertOnFailure: revertOnFailure,
-            failedAmount: 0
+            failedAmount: 0,
+            compliance: complianceData
         });
 
         ///@notice Update the wallet's committed funds for this token
@@ -292,7 +312,8 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
             actualStartTime,
             actualEndTime,
             recipients,
-            amounts
+            amounts,
+            complianceData
         );
         return intentId;
     }

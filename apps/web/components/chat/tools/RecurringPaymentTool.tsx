@@ -14,6 +14,11 @@ type RecurringPaymentInput = {
     duration: number;
     transactionStartTime: number;
     revertOnFailure?: boolean;
+    // Compliance metadata (universal)
+    entityIds?: string[];
+    jurisdiction?: string;
+    category?: string;
+    referenceId?: string;
 };
 
 interface RecurringPaymentToolProps {
@@ -71,6 +76,31 @@ export function RecurringPaymentTool({
                             <p><strong>Total commitment:</strong> {type === 'MNEE' ? '$' : ''}{grandTotal} {type}</p>
                             <p><strong>Starts:</strong> {formatStartTime(recurringInput.transactionStartTime)}</p>
                             <p><strong>Failure handling:</strong> {recurringInput.revertOnFailure ? "Stop on failure" : "Skip failures"}</p>
+                            {/* Compliance Badges */}
+                            {(recurringInput.category || recurringInput.jurisdiction) && (
+                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                                    {recurringInput.category && (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                            📋 {recurringInput.category}
+                                        </span>
+                                    )}
+                                    {recurringInput.jurisdiction && (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                                            📍 {recurringInput.jurisdiction}
+                                        </span>
+                                    )}
+                                    {recurringInput.referenceId && (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                                            📅 {recurringInput.referenceId}
+                                        </span>
+                                    )}
+                                    {recurringInput.entityIds && recurringInput.entityIds.length > 0 && (
+                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                                            👥 {recurringInput.entityIds.length} IDs
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex gap-2 w-full">
@@ -84,7 +114,14 @@ export function RecurringPaymentTool({
                                             interval: recurringInput.interval,
                                             duration: recurringInput.duration,
                                             transactionStartTime: recurringInput.transactionStartTime,
-                                            revertOnFailure: recurringInput.revertOnFailure
+                                            revertOnFailure: recurringInput.revertOnFailure,
+                                            // Compliance metadata
+                                            compliance: {
+                                                entityIds: recurringInput.entityIds,
+                                                jurisdiction: recurringInput.jurisdiction,
+                                                category: recurringInput.category,
+                                                referenceId: recurringInput.referenceId,
+                                            },
                                         });
 
                                         addToolResult({

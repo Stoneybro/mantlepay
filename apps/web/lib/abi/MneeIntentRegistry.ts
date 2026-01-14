@@ -1,4 +1,4 @@
-export const MneeIntentRegistryABI=[
+export const MneeIntentRegistryABI = [
   {
     "type": "function",
     "name": "MAX_DURATION",
@@ -118,6 +118,33 @@ export const MneeIntentRegistryABI=[
         "name": "revertOnFailure",
         "type": "bool",
         "internalType": "bool"
+      },
+      {
+        "name": "complianceData",
+        "type": "tuple",
+        "internalType": "struct MneeIntentRegistry.ComplianceMetadata",
+        "components": [
+          {
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "referenceId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "outputs": [
@@ -243,6 +270,33 @@ export const MneeIntentRegistryABI=[
             "name": "failedAmount",
             "type": "uint256",
             "internalType": "uint256"
+          },
+          {
+            "name": "compliance",
+            "type": "tuple",
+            "internalType": "struct MneeIntentRegistry.ComplianceMetadata",
+            "components": [
+              {
+                "name": "entityIds",
+                "type": "string[]",
+                "internalType": "string[]"
+              },
+              {
+                "name": "jurisdiction",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "category",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "referenceId",
+                "type": "string",
+                "internalType": "string"
+              }
+            ]
           }
         ]
       }
@@ -454,6 +508,33 @@ export const MneeIntentRegistryABI=[
         "name": "failedAmount",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "compliance",
+        "type": "tuple",
+        "internalType": "struct MneeIntentRegistry.ComplianceMetadata",
+        "components": [
+          {
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "referenceId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "stateMutability": "view"
@@ -576,6 +657,34 @@ export const MneeIntentRegistryABI=[
         "type": "uint256[]",
         "indexed": false,
         "internalType": "uint256[]"
+      },
+      {
+        "name": "compliance",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct MneeIntentRegistry.ComplianceMetadata",
+        "components": [
+          {
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "referenceId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "anonymous": false
@@ -710,4 +819,4 @@ export const MneeIntentRegistryABI=[
     "name": "ReentrancyGuardReentrantCall",
     "inputs": []
   }
-] as const
+]

@@ -150,6 +150,44 @@ CONSTRAINTS:
 - MAXIMUM duration: 31536000 seconds (1 year)
 - Duration must be >= interval
 
+## PAYROLL DETECTION (RWA/REALFI FEATURE)
+
+When user mentions payroll-related keywords, EXTRACT and INCLUDE payroll metadata:
+
+**PAYROLL KEYWORDS TO DETECT:**
+- "payroll", "salary", "wages", "pay my team", "employee" → taxCategory: "W2" (default for employees)
+- "contractor", "freelancer", "freelance", "1099" → taxCategory: "CONTRACTOR"
+- "bonus", "commission", "incentive" → taxCategory: "BONUS"
+
+**JURISDICTION DETECTION:**
+- "US", "USA", "California", "US-CA", "New York", "US-NY" → jurisdiction: "US-CA" (or detected state)
+- "UK", "United Kingdom", "British", "London" → jurisdiction: "UK"
+- "Germany", "German", "DE", "Berlin" → jurisdiction: "EU-DE"
+- "France", "French", "FR", "Paris" → jurisdiction: "EU-FR"
+- "Nigeria", "NG", "Lagos", "Naira" → jurisdiction: "NG"
+- If not detected → leave empty ""
+
+**EMPLOYEE ID DETECTION:**
+- Look for patterns like: "EMP-001", "employee #123", "staff ID: ABC"
+- If user mentions specific employee identifiers → capture them
+- If not detected → leave empty ""
+
+**PERIOD ID DETECTION:**
+- "January payroll", "Jan 2025" → periodId: "2025-01"
+- "Q1 payroll", "first quarter" → periodId: "2025-Q1"
+- "weekly payroll for week 5" → periodId: "2025-W05"
+- If not detected → leave empty ""
+
+**EXAMPLE PAYROLL REQUESTS:**
+- "Pay my California employees Alice and Bob $5000 each monthly for 6 months, call it 'Monthly Payroll'"
+  → taxCategory: "W2", jurisdiction: "US-CA"
+- "Send contractor payment to 0x... $3000 weekly for 2 months, name it 'UK Contractor'"
+  → taxCategory: "CONTRACTOR", jurisdiction: "" (no jurisdiction specified)
+- "Q1 bonus to team: $1000 to 0x... for January, call it 'Q1 Bonus'"
+  → taxCategory: "BONUS", periodId: "2025-Q1"
+
+**IMPORTANT:** Payroll fields are OPTIONAL. If no payroll keywords detected, leave them empty. The payment will still work.
+
 ## AREA OF RESPONSIBILITY
 - You only support MNEE token transfers.
 - You DO NOT support Any other token transfers. If user explicitly asks for any other token transfer, explain that you only support MNEE.
@@ -473,6 +511,35 @@ DO NOT USE IF:
                 .optional()
                 .describe(
                   "Stop all on failure (true) or skip and continue (false). Default true."
+                ),
+              // Payroll compliance metadata (OPTIONAL - leave empty for non-payroll)
+              employeeId: z
+                .string()
+                .optional()
+                .default("")
+                .describe(
+                  'Employee identifier for HR matching (e.g., "EMP-001"). Leave empty if not a payroll payment.'
+                ),
+              jurisdiction: z
+                .string()
+                .optional()
+                .default("")
+                .describe(
+                  'Jurisdiction code detected from context (e.g., "US-CA", "UK", "EU-DE", "NG"). Leave empty if not detected.'
+                ),
+              payrollCategory: z
+                .string()
+                .optional()
+                .default("")
+                .describe(
+                  'Tax category: "W2" for employees, "CONTRACTOR" for freelancers, "BONUS" for bonuses. Leave empty if not a payroll payment.'
+                ),
+              periodId: z
+                .string()
+                .optional()
+                .default("")
+                .describe(
+                  'Period identifier (e.g., "2025-01", "2025-Q1"). Leave empty if not detected.'
                 ),
             })
             .refine((data) => data.recipients.length === data.amounts.length, {

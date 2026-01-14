@@ -33,6 +33,19 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
         bytes data;
     }
 
+    /// @notice Universal compliance metadata for jurisdiction-aware payment tracking
+    /// @dev Supports payroll, contractor, invoice, vendor, and other compliance categories
+    struct ComplianceMetadata {
+        /// @notice Per-recipient identifiers (employee ID, vendor ID, customer ID, etc.)
+        string[] entityIds;
+        /// @notice Jurisdiction code (e.g., "US-CA", "UK", "EU-DE", "NG")
+        string jurisdiction;
+        /// @notice Compliance category (e.g., "PAYROLL_W2", "CONTRACTOR", "INVOICE", "VENDOR")
+        string category;
+        /// @notice Reference identifier (e.g., "2025-01", "INV-001", "PO-123")
+        string referenceId;
+    }
+
     /*//////////////////////////////////////////////////////////////
                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -75,8 +88,13 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     /// @notice Emitted when a batch execute is performed
     event ExecutedBatch(uint256 indexed batchSize, uint256 totalValue);
 
+    /// @notice Emitted when a transaction includes compliance metadata
+    event ComplianceExecuted(
+        bytes32 indexed txType, string[] entityIds, string jurisdiction, string category, string referenceId
+    );
+
     /// @notice The event emitted when a wallet action is performed
-    event WalletAction( 
+    event WalletAction(
         address indexed initiator,
         address indexed target,
         uint256 value,
@@ -301,6 +319,30 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     }
 
     /**
+     * @notice Executes a single call with compliance metadata.
+     * @dev Can only be called by the EntryPoint or the owner of this account.
+     * @param target The address to call.
+     * @param value  The value to send with the call.
+     * @param data   The data of the call.
+     * @param compliance Compliance metadata for tracking.
+     */
+    function executeWithCompliance(
+        address target,
+        uint256 value,
+        bytes calldata data,
+        ComplianceMetadata calldata compliance
+    ) external payable nonReentrant onlyEntryPointOrOwner {
+        _checkCommitment(address(0), value);
+        bytes4 selector = data.length >= 4 ? bytes4(data[:4]) : bytes4(0);
+        _call(target, value, data);
+        emit WalletAction(msg.sender, target, value, selector, true, "EXECUTE");
+        emit Executed(target, value, data);
+        emit ComplianceExecuted(
+            "SINGLE", compliance.entityIds, compliance.jurisdiction, compliance.category, compliance.referenceId
+        );
+    }
+
+    /**
      * @notice Executes a batch of calls from this account.
      *
      * @dev Can only be called by the EntryPoint or the owner of this account.
@@ -321,6 +363,36 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
             emit WalletAction(msg.sender, calls[i].target, calls[i].value, selector, true, "BATCH");
         }
         emit ExecutedBatch(calls.length, totalValue);
+    }
+
+    /**
+     * @notice Executes a batch of calls with compliance metadata.
+     * @dev Can only be called by the EntryPoint or the owner of this account.
+     * @param calls The list of `Call`s to execute.
+     * @param compliance Compliance metadata for tracking.
+     */
+    function executeBatchWithCompliance(Call[] calldata calls, ComplianceMetadata calldata compliance)
+        external
+        payable
+        nonReentrant
+        onlyEntryPointOrOwner
+    {
+        uint256 totalValue = 0;
+        for (uint256 i; i < calls.length; i++) {
+            totalValue += calls[i].value;
+        }
+
+        _checkCommitment(address(0), totalValue);
+
+        for (uint256 i; i < calls.length; i++) {
+            bytes4 selector = calls[i].data.length >= 4 ? bytes4(calls[i].data[:4]) : bytes4(0);
+            _call(calls[i].target, calls[i].value, calls[i].data);
+            emit WalletAction(msg.sender, calls[i].target, calls[i].value, selector, true, "BATCH");
+        }
+        emit ExecutedBatch(calls.length, totalValue);
+        emit ComplianceExecuted(
+            "BATCH", compliance.entityIds, compliance.jurisdiction, compliance.category, compliance.referenceId
+        );
     }
 
     /**
