@@ -7,18 +7,18 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {_packValidationData} from "@account-abstraction/contracts/core/Helpers.sol";
-import {IMneeSmartWallet} from "./IMneeSmartWallet.sol";
+import {IMpSmartWallet} from "./IMpSmartWallet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title Mnee Smart Wallet
+ * @title Mp Smart Wallet
  * @author stoneybro
  * @notice A smart contract wallet implementation compliant with ERC-4337.
- * @dev Implements IAccount from account-abstraction. Supports Mnee Intent Registry for automated payments.
+ * @dev Implements IAccount from account-abstraction. Supports Mp Intent Registry for automated payments.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initializable {
+contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializable {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -53,7 +53,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     /// @notice Account owner address. Signer of UserOperations.
     address public s_owner;
 
-    /// @notice Mnee intent registry authorized to trigger scheduled transfers.
+    /// @notice Mp intent registry authorized to trigger scheduled transfers.
     address public immutable intentRegistry;
 
     /// @notice Amount of funds committed to intents per token (locked)
@@ -127,31 +127,31 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Thrown when caller is not the EntryPoint.
-    error MneeSmartWallet__NotFromEntryPoint();
+    error MpSmartWallet__NotFromEntryPoint();
 
     /// @notice Thrown when caller is neither EntryPoint nor owner.
-    error MneeSmartWallet__Unauthorized();
+    error MpSmartWallet__Unauthorized();
 
     /// @notice Thrown when owner is zero address.
-    error MneeSmartWallet__OwnerIsZeroAddress();
+    error MpSmartWallet__OwnerIsZeroAddress();
 
     /// @notice Thrown when registry address is zero.
-    error MneeSmartWallet__IntentRegistryZeroAddress();
+    error MpSmartWallet__IntentRegistryZeroAddress();
 
     /// @notice Thrown when batch inputs are invalid.
-    error MneeSmartWallet__InvalidBatchInput();
+    error MpSmartWallet__InvalidBatchInput();
 
     /// @notice Thrown when a transfer fails.
-    error MneeSmartWallet__TransferFailed(address recipient, address token, uint256 amount);
+    error MpSmartWallet__TransferFailed(address recipient, address token, uint256 amount);
 
     /// @notice Thrown when there are insufficient uncommitted funds.
-    error MneeSmartWallet__InsufficientUncommittedFunds();
+    error MpSmartWallet__InsufficientUncommittedFunds();
 
     /// @notice Thrown when caller is not the registry.
-    error MneeSmartWallet__NotFromRegistry();
+    error MpSmartWallet__NotFromRegistry();
 
     /// @notice commitment decrease is more than commited balance
-    error MneeSmartWallet__InvalidCommitmentDecrease();
+    error MpSmartWallet__InvalidCommitmentDecrease();
 
     /*//////////////////////////////////////////////////////////////
                               MODIFIERS
@@ -160,7 +160,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     /// @notice Reverts if the caller is not the EntryPoint.
     modifier onlyEntryPoint() {
         if (msg.sender != entryPoint()) {
-            revert MneeSmartWallet__NotFromEntryPoint();
+            revert MpSmartWallet__NotFromEntryPoint();
         }
         _;
     }
@@ -168,7 +168,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     /// @notice Reverts if the caller is neither the EntryPoint nor the owner.
     modifier onlyEntryPointOrOwner() {
         if (msg.sender != entryPoint() && msg.sender != s_owner) {
-            revert MneeSmartWallet__Unauthorized();
+            revert MpSmartWallet__Unauthorized();
         }
         _;
     }
@@ -176,7 +176,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     /// @notice Reverts if the caller is not the registry.
     modifier onlyRegistry() {
         if (msg.sender != intentRegistry) {
-            revert MneeSmartWallet__NotFromRegistry();
+            revert MpSmartWallet__NotFromRegistry();
         }
         _;
     }
@@ -209,7 +209,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
 
     /// @notice Constructor prevents initialization of implementation contract.
     constructor(address registry) {
-        if (registry == address(0)) revert MneeSmartWallet__IntentRegistryZeroAddress();
+        if (registry == address(0)) revert MpSmartWallet__IntentRegistryZeroAddress();
         intentRegistry = registry;
         _disableInitializers();
     }
@@ -222,7 +222,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
      * @param _owner Address that will own this account and sign UserOperations.
      */
     function initialize(address _owner) external initializer {
-        if (_owner == address(0)) revert MneeSmartWallet__OwnerIsZeroAddress();
+        if (_owner == address(0)) revert MpSmartWallet__OwnerIsZeroAddress();
         s_owner = _owner;
     }
 
@@ -288,7 +288,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
      */
     function decreaseCommitment(address token, uint256 amount) external onlyRegistry {
         if (amount > s_committedFunds[token]) {
-            revert MneeSmartWallet__InvalidCommitmentDecrease();
+            revert MpSmartWallet__InvalidCommitmentDecrease();
         }
         s_committedFunds[token] -= amount;
         emit CommitmentDecreased(token, amount, s_committedFunds[token]);
@@ -396,7 +396,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
     }
 
     /**
-     * @notice Executes a batch of transfers as part of an Mnee intent.
+     * @notice Executes a batch of transfers as part of an Mp intent.
      *
      * @param token The token address (address(0) for ETH, token address for ERC20).
      * @param recipients The array of recipient addresses.
@@ -416,7 +416,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
         bool revertOnFailure
     ) external nonReentrant onlyRegistry returns (uint256 failedAmount) {
         if (recipients.length == 0 || recipients.length != amounts.length) {
-            revert MneeSmartWallet__InvalidBatchInput();
+            revert MpSmartWallet__InvalidBatchInput();
         }
         uint256 totalValue = 0;
         uint256 totalFailed = 0;
@@ -426,7 +426,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
             uint256 amount = amounts[i];
 
             if (recipient == address(0) || amount == 0) {
-                revert MneeSmartWallet__InvalidBatchInput();
+                revert MpSmartWallet__InvalidBatchInput();
             }
 
             totalValue += amount;
@@ -450,7 +450,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
 
                 if (revertOnFailure) {
                     // Atomic mode: revert entire transaction on any failure
-                    revert MneeSmartWallet__TransferFailed(recipient, token, amount);
+                    revert MpSmartWallet__TransferFailed(recipient, token, amount);
                 }
                 // Skip mode: continue to next recipient
             } else {
@@ -526,7 +526,7 @@ contract MneeSmartWallet is IAccount, IMneeSmartWallet, ReentrancyGuard, Initial
             }
 
             if (value > availableBalance) {
-                revert MneeSmartWallet__InsufficientUncommittedFunds();
+                revert MpSmartWallet__InsufficientUncommittedFunds();
             }
         }
     }

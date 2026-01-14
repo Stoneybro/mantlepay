@@ -2,12 +2,12 @@
 pragma solidity ^0.8.19;
 
 /**
- * @title IMneeSmartWallet
+ * @title IMpSmartWallet
  * @author stoneybro
- * @notice Interface for Mnee Smart Wallet that the Intent Registry interacts with
+ * @notice Interface for Mp Smart Wallet that the Intent Registry interacts with
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-interface IMneeSmartWallet {
+interface IMpSmartWallet {
     /*//////////////////////////////////////////////////////////////
                                 FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -27,7 +27,7 @@ interface IMneeSmartWallet {
     function decreaseCommitment(address token, uint256 amount) external;
 
     /**
-     * @notice Executes a batch of transfers as part of an Mnee intent.
+     * @notice Executes a batch of transfers as part of an Mp intent.
      * @param token The token address (address(0) for ETH, token address for ERC20).
      * @param recipients The array of recipient addresses.
      * @param amounts The array of amounts corresponding to each recipient.

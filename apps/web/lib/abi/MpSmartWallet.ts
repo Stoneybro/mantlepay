@@ -1,4 +1,4 @@
-export const MneeSmartWalletABI = [
+export const MpSmartWalletABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -79,7 +79,7 @@ export const MneeSmartWalletABI = [
       {
         "name": "calls",
         "type": "tuple[]",
-        "internalType": "struct MneeSmartWallet.Call[]",
+        "internalType": "struct MpSmartWallet.Call[]",
         "components": [
           {
             "name": "target",
@@ -153,7 +153,7 @@ export const MneeSmartWalletABI = [
       {
         "name": "calls",
         "type": "tuple[]",
-        "internalType": "struct MneeSmartWallet.Call[]",
+        "internalType": "struct MpSmartWallet.Call[]",
         "components": [
           {
             "name": "target",
@@ -786,42 +786,42 @@ export const MneeSmartWalletABI = [
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__InsufficientUncommittedFunds",
+    "name": "MpSmartWallet__InsufficientUncommittedFunds",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__IntentRegistryZeroAddress",
+    "name": "MpSmartWallet__IntentRegistryZeroAddress",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__InvalidBatchInput",
+    "name": "MpSmartWallet__InvalidBatchInput",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__InvalidCommitmentDecrease",
+    "name": "MpSmartWallet__InvalidCommitmentDecrease",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__NotFromEntryPoint",
+    "name": "MpSmartWallet__NotFromEntryPoint",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__NotFromRegistry",
+    "name": "MpSmartWallet__NotFromRegistry",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__OwnerIsZeroAddress",
+    "name": "MpSmartWallet__OwnerIsZeroAddress",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__TransferFailed",
+    "name": "MpSmartWallet__TransferFailed",
     "inputs": [
       {
         "name": "recipient",

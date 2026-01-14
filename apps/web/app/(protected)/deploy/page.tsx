@@ -10,19 +10,19 @@ function Page() {
   const [checked, setChecked] = useState(false);
   const { mutate: deployWallet, isPending } = useDeployWallet();
   const { isLoading } = useWalletDeployment();
-if (isLoading) {
-  return <div>Loading...</div>;
-}
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
   return (
     <div>
       <div className='bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10'>
         <div className='w-full max-w-md flex flex-col gap-6 justify-center items-center text-center'>
 
           <div className=' text-3xl font-semibold text-center'>
-            Activate your MneePay account
+            Activate your MantlePay account
           </div>
           <div className=' flex flex-col'>
-            <div className="">MneePay is built on ERC-4337 smart accounts.</div>
+            <div className="">MantlePay is built on ERC-4337 smart accounts.</div>
             <div className=""> Only one Account per social login.</div>
             <div className="">All transactions are gasless</div>
 

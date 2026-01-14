@@ -10,7 +10,7 @@ import { getContacts } from "@/lib/contact-store";
 export const maxDuration = 30;
 
 // System prompt with decision matrix
-const SYSTEM_PROMPT = `You are Mneepay: a professional financial operating system, you help businesses to automate the flow of money—handling payroll, recurring subscriptions, and mass payouts without manual intervention.
+const SYSTEM_PROMPT = `You are MantlePay: a professional financial operating system, you help businesses to automate the flow of money—handling payroll, recurring subscriptions, and mass payouts without manual intervention.
 
 ## PRIMARY GOAL
 Correctly interpret natural language payment instructions and select the correct payment tool based on your interpretation.
@@ -36,17 +36,17 @@ Step 2: Check for SCHEDULING keywords (every, daily, weekly, monthly, schedule, 
 - IF absent → GO TO ONE-TIME TOOLS (Step 4)
 
 Step 3: RECURRING TOOLS
-- Use execute_recurring_mnee_payment
-- Default to MNEE token you only support MNEE/USD payments
+- Use execute_recurring_mp_token_payment
+- Default to MNT token you only support MNT/USD payments
 - **BEFORE calling tool: verify Name and Duration are EXPLICITLY provided by user**
 
 Step 4: ONE-TIME TOOLS - Count recipients
-- IF exactly 1 recipient → Use execute_single_mnee_transfer
-- IF 2 or more recipients → Use execute_batch_mnee_transfer
+- IF exactly 1 recipient → Use execute_single_mp_token_transfer
+- IF 2 or more recipients → Use execute_batch_mp_token_transfer
 
 ## RECURRING PAYMENT REQUIREMENTS
 
-**BEFORE calling execute_recurring_mnee_payment, verify these are EXPLICITLY provided by the user:**
+**BEFORE calling execute_recurring_mp_token_payment, verify these are EXPLICITLY provided by the user:**
 - ✅ Recipients: Must be valid 0x addresses (ask: "What's the recipient address?")
 - ✅ Amounts: Must be valid numbers (ask: "How much would you like to send?")
 - ✅ Interval: Derived from "every X" phrase (ask: "How often? Daily? Weekly?")
@@ -61,7 +61,7 @@ Step 4: ONE-TIME TOOLS - Count recipients
 
 ## RECURRING PAYMENT PRE-FLIGHT CHECKLIST
 
-Before calling execute_recurring_mnee_payment, answer ALL of these questions:
+Before calling execute_recurring_mp_token_payment, answer ALL of these questions:
 
 **Question 1: Did the user provide RECIPIENT ADDRESS(ES)?**
 - Look for: "to 0x...", "send to [address]"
@@ -69,7 +69,7 @@ Before calling execute_recurring_mnee_payment, answer ALL of these questions:
 - ✅ If YES → Proceed to Question 2
 
 **Question 2: Did the user specify the AMOUNT?**
-- Look for: "$10", "100 MNEE", "5 dollars"
+- Look for: "$10", "100 MNT", "5 dollars"
 - ❌ If NO → Ask: "How much would you like to send each time?"
 - ✅ If YES → Proceed to Question 3
 
@@ -126,10 +126,10 @@ WRONG Response: [calls tool with interval=2592000 (monthly)]
 
 ## TOKEN IDENTIFICATION RULES
 
-MNEE TOKEN INDICATORS:
-- Keywords: "MNEE", "mnee","mne"
+MNT TOKEN INDICATORS:
+- Keywords: "MNT", "mnt"
 - USD keywords: "USD", "usd", "dollars", "$" (dollar sign)
-- NOTE: If the user explicitly mentions "ETH", "Ether", "Bitcoin", "USDC" or any token other than MNEE or USD/Dollars, you MUST decline the request. Explicitly state that "I only support MNEE token transfers." Do NOT attempt to guess or convert other tokens using MNEE tools. Only proceed if the user requests MNEE, USD, Dollars, or uses generic "send" terms without specifying a different token.
+- NOTE: If the user explicitly mentions "ETH", "Ether", "Bitcoin", "USDC" or any token other than MNT or USD/Dollars, you MUST decline the request. Explicitly state that "I only support MNT token transfers." Do NOT attempt to guess or convert other tokens using MNT tools. Only proceed if the user requests MNT, USD, Dollars, or uses generic "send" terms without specifying a different token.
 
 ## TIME CONVERSION REFERENCE (for recurring payments)
 
@@ -197,8 +197,8 @@ When user mentions compliance-related keywords, EXTRACT and INCLUDE compliance m
 **IMPORTANT:** Compliance fields are OPTIONAL. If no keywords detected, leave them empty. The payment will still work.
 
 ## AREA OF RESPONSIBILITY
-- You only support MNEE token transfers.
-- You DO NOT support Any other token transfers. If user explicitly asks for any other token transfer, explain that you only support MNEE.
+- You only support MNT token transfers.
+- You DO NOT support Any other token transfers. If user explicitly asks for any other token transfer, explain that you only support MNT.
 
 ## AMOUNT DISTRIBUTION PATTERNS
 
@@ -245,17 +245,17 @@ Users save contacts with friendly names. A [User's Saved Contacts] section may a
 3. If the name is NOT in the list → Then ask: "I don't have a contact named 'X' saved. What's their wallet address?"
 
 **How to use contact addresses:**
-- Single transfer to individual contact → execute_single_mnee_transfer
-- Batch transfer to group contact (multiple addresses) → execute_batch_mnee_transfer  
-- Recurring payment to contact → execute_recurring_mnee_payment
+- Single transfer to individual contact → execute_single_mp_token_transfer
+- Batch transfer to group contact (multiple addresses) → execute_batch_mp_token_transfer
+- Recurring payment to contact → execute_recurring_mp_token_payment
 
 **Example with contact "bob" saved as 0x123...:**
-- "send 10 MNEE to bob" → Call execute_single_mnee_transfer with to="0x123..."
-- "pay bob $5 every week for a month, call it 'Weekly'" → Call execute_recurring_mnee_payment with recipients=["0x123..."]
+- "send 10 MNT to bob" → Call execute_single_mp_token_transfer with to="0x123..."
+- "pay bob $5 every week for a month, call it 'Weekly'" → Call execute_recurring_mp_token_payment with recipients=["0x123..."]
 
 **In your responses, show the contact name:**
-- ✅ "Sending 10 MNEE to Bob (0x123...)"
-- ❌ "Sending 10 MNEE to 0x123..."`;
+- ✅ "Sending 10 MNT to Bob (0x123...)"
+- ❌ "Sending 10 MNT to 0x123..."`;
 
 export async function POST(req: Request) {
   try {
@@ -328,25 +328,25 @@ ${contactList}
 
       tools: {
         // ============================================
-        // TOOL 2: SINGLE PYUSD TRANSFER (MNEE)
+        // TOOL 2: SINGLE MP TOKEN TRANSFER (MNT)
         // ============================================
-        execute_single_mnee_transfer: {
-          description: `Execute a one-time MNEE transfer to exactly one recipient.
+        execute_single_mp_token_transfer: {
+          description: `Execute a one-time MNT transfer to exactly one recipient.
 
 WHEN TO USE THIS TOOL:
-- User wants to send/transfer/pay in MNEE/USD/dollars (treat as MNEE)
+- User wants to send/transfer/pay in MNT/USD/dollars (treat as MNT)
 - Exactly 1 recipient address mentioned
 - NO scheduling keywords present
-- Token explicitly MNEE or $ mentioned, or generic transfer
+- Token explicitly MNT or $ mentioned, or generic transfer
 
 EXAMPLES THAT TRIGGER THIS TOOL:
 - "send $50 to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-- "transfer 100 MNEE to Alice"
+- "transfer 100 MNT to Alice"
 - "pay 25 dollars to 0x123..."
 
 DO NOT USE IF:
-- Multiple recipients mentioned (use execute_batch_mnee_transfer)
-- Scheduling words present (use execute_recurring_mnee_payment)`,
+- Multiple recipients mentioned (use execute_batch_mp_token_transfer)
+- Scheduling words present (use execute_recurring_mp_token_payment)`,
 
           inputSchema: z.object({
             to: z
@@ -361,25 +361,25 @@ DO NOT USE IF:
               .string()
               .regex(/^\d+(\.\d{1,6})?$/)
               .describe(
-                'MNEE amount as decimal string (up to 6 decimals). Examples: "10.50", "100", "5.25"'
+                'MNT amount as decimal string (up to 6 decimals). Examples: "10.50", "100", "5.25"'
               ),
           }),
         },
 
         // ============================================
-        // TOOL 4: BATCH PYUSD TRANSFER (MNEE)
+        // TOOL 4: BATCH MP TOKEN TRANSFER (MNT)
         // ============================================
-        execute_batch_mnee_transfer: {
-          description: `Execute one-time MNEE transfers to multiple recipients in a single transaction.
+        execute_batch_mp_token_transfer: {
+          description: `Execute one-time MNT transfers to multiple recipients in a single transaction.
 
 WHEN TO USE THIS TOOL:
-- User wants to send/transfer/pay in MNEE/USD/dollars
+- User wants to send/transfer/pay in MNT/USD/dollars
 - 2 or more recipient addresses mentioned (minimum 2, maximum 10)
 - NO scheduling keywords present
 
 EXAMPLES THAT TRIGGER THIS TOOL:
 - "send $10 to Alice and $20 to Bob"
-- "pay 50 MNEE each to 3 addresses"
+- "pay 50 MNT each to 3 addresses"
 - "transfer $100, $200, $300 to these wallets"
 
 AMOUNT PATTERNS:
@@ -387,8 +387,8 @@ AMOUNT PATTERNS:
 - "split $X equally" → divide: total=100, count=4 → ["25", "25", "25", "25"]
 
 DO NOT USE IF:
-- Only 1 recipient (use execute_single_mnee_transfer)
-- Scheduling words present (use execute_recurring_mnee_payment)
+- Only 1 recipient (use execute_single_mp_token_transfer)
+- Scheduling words present (use execute_recurring_mp_token_payment)
 - More than 10 recipients (reject)`,
 
           inputSchema: z
@@ -409,7 +409,7 @@ DO NOT USE IF:
                 .min(2)
                 .max(10)
                 .describe(
-                  "Array of MNEE amounts (up to 6 decimals), one per recipient. Must match recipients length."
+                  "Array of MNT amounts (up to 6 decimals), one per recipient. Must match recipients length."
                 ),
             })
             .refine((data) => data.recipients.length === data.amounts.length, {
@@ -419,10 +419,10 @@ DO NOT USE IF:
         },
 
         // ============================================
-        // TOOL 6: RECURRING PYUSD PAYMENT (MNEE)
+        // TOOL 6: RECURRING MP TOKEN PAYMENT (MNT)
         // ============================================
-        execute_recurring_mnee_payment: {
-          description: `Create automatic scheduled MNEE payments that repeat over time.
+        execute_recurring_mp_token_payment: {
+          description: `Create automatic scheduled MNT payments that repeat over time.
 
 ⚠️ CRITICAL REQUIREMENTS BEFORE CALLING THIS TOOL:
 - Name: MUST be explicitly provided by user. DO NOT use defaults like "daily payment", "weekly payment", "monthly payment", etc.
@@ -432,12 +432,12 @@ If EITHER is missing, you MUST ASK the user before calling this tool.
 
 WHEN TO USE THIS TOOL:
 - User mentions ANY scheduling keyword: "every", "daily", "weekly", "schedule", "recurring", "repeat", "automate", "subscribe", "for X"
-- Token is explicitly MNEE/USD/$/dollars or generic
+- Token is explicitly MNT/USD/$/dollars or generic
 - Can be single or multiple recipients
 - ALL required parameters are explicitly provided
 
 EXAMPLES THAT TRIGGER THIS TOOL (with all info):
-- "pay $20 MNEE every week for 8 weeks, call it 'Weekly Allowance'"
+- "pay $20 MNT every week for 8 weeks, call it 'Weekly Allowance'"
 - "schedule $5 daily to 0x... for 30 days, name it 'Daily Tip'"
 - "recurring payment of $100 USD monthly for 1 year, label it 'Subscription'"
 
@@ -455,14 +455,14 @@ CRITICAL TIME CONVERSIONS:
 REQUIRED PARAMETERS - ALL MUST BE EXPLICITLY PROVIDED:
 - Name: REQUIRED. User must say "call it X" or "name it Y". If missing → ASK
 - Recipients: 1 or more addresses (max 10)
-- Amounts: One per recipient in MNEE (up to 6 decimals)
+- Amounts: One per recipient in MNT (up to 6 decimals)
 - Interval: Seconds between payments (min 30)
 - Duration: REQUIRED. User must say "for X days/weeks/months". If missing → ASK
 - transactionStartTime: Use 0 for immediate
 - revertOnFailure: Default true
 
 DO NOT USE IF:
-- No scheduling keywords present (use one-time MNEE transfer)
+- No scheduling keywords present (use one-time MNT transfer)
 - Name is not explicitly provided by user
 - Duration is not explicitly stated by user`,
 
@@ -490,7 +490,7 @@ DO NOT USE IF:
                 .min(1)
                 .max(10)
                 .describe(
-                  'Array of MNEE amounts as strings (up to 6 decimals), one per recipient. If "$X each", replicate amount.'
+                  'Array of MNT amounts as strings (up to 6 decimals), one per recipient. If "$X each", replicate amount.'
                 ),
               interval: z
                 .number()

@@ -15,17 +15,17 @@ const integrationBenefits = [
   "Compliance-friendly workflows",
 ];
 
-export default function MneeStablecoin() {
+export default function MantleStablecoin() {
   return (
     <section className="py-20 md:py-28 lg:py-32 bg-secondary">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <div>
             <h2 className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight">
-              Powered by MNEE, the world's fastest regulated stablecoin
+              Powered by MNT, the native token of Mantle Network
             </h2>
             <p className="text-base md:text-lg leading-relaxed text-muted-foreground mt-4">
-              MneePay uses MNEE, a fully backed and regulated USD stablecoin designed for instant, low-cost global payments.
+              MantlePay uses MNT, the gas and governance token designed for instant, low-cost global payments on Mantle Network.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
@@ -41,7 +41,7 @@ export default function MneeStablecoin() {
           </div>
 
           <div className="bg-background rounded-lg p-8 border border-border">
-            <h3 className="text-xl md:text-2xl font-semibold leading-tight">Why MNEE + MneePay</h3>
+            <h3 className="text-xl md:text-2xl font-semibold leading-tight">Why MNT + MantlePay</h3>
             <ul className="mt-6 space-y-4">
               {integrationBenefits.map((benefit, index) => (
                 <li key={index} className="flex items-start gap-3 text-muted-foreground">
@@ -50,9 +50,9 @@ export default function MneeStablecoin() {
                 </li>
               ))}
             </ul>
-            <Link href="https://mnee.io" target="_blank" rel="noopener noreferrer">
+            <Link href="https://mantle.xyz" target="_blank" rel="noopener noreferrer">
               <Button variant="outline" className="mt-8">
-                Learn more about MNEE
+                Learn more about MNT
               </Button>
             </Link>
           </div>

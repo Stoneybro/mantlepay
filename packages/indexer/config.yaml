@@ -1,5 +1,5 @@
-name: mneepaymenthub-indexer
-description: Indexer for MNEE Payment Hub
+name: mantlepaymenthub-indexer
+description: Indexer for MantlePay
 
 field_selection:
   transaction_fields:
@@ -11,7 +11,7 @@ networks:
 - id: 11155111
   start_block: 0
   contracts:
-  - name: MneeSmartWallet
+  - name: MpSmartWallet
     handler: src/EventHandlers.ts
     events:
     - event: Executed(address indexed target, uint256 value, bytes data)
@@ -21,13 +21,13 @@ networks:
     - event: IntentTransferSuccess(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
     - event: TransferFailed(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
     - event: WalletAction(address indexed initiator, address indexed target, uint256 value, bytes4 indexed selector, bool success, bytes32 actionType)
-  - name: MneeSmartWalletFactory
+  - name: MpSmartWalletFactory
     address:
     - 0xD02CF60D2D6e4c9d378793657E676055C5b686E7
     handler: src/EventHandlers.ts
     events:
     - event: AccountCreated(address indexed account, address indexed owner)
-  - name: MneeIntentRegistry
+  - name: MpIntentRegistry
     address:
     - 0x799fD0C5fE10C2eD92F497488Db22606Ac170Fdb
     handler: src/EventHandlers.ts
@@ -35,7 +35,7 @@ networks:
     - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime, address[] recipients, uint256[] amounts, (string[], string, string, string) compliance)
     - event: IntentExecuted(address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount)
     - event: IntentCancelled(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 amountRefunded, uint256 failedAmountRecovered)
-  - name: MneeToken
+  - name: MpToken
     address:
     - 0x19b2124fCb1B156284EE2C28f97e3c873f415bc5
     handler: src/EventHandlers.ts

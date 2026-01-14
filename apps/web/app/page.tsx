@@ -1,10 +1,10 @@
 import Navigation from '@/components/home/Navigation';
 import Hero from '@/components/home/Hero';
 import Problem from '@/components/home/Problem';
-import WhyMneePay from '@/components/home/WhyMneePay';
+import WhyMantlePay from '@/components/home/WhyMantlePay';
 import Features from '@/components/home/Features';
-import MneeStablecoin from '@/components/home/MneeStablecoin';
-import HowItWorks from '@/components/home/HowItWorks';
+import MantleStablecoin from '@/components/home/MantleStablecoin';
+import { HowItWorks } from '@/components/home/HowItWorks';
 import UseCases from '@/components/home/UseCases';
 import WhyTeams from '@/components/home/WhyTeams';
 import Technology from '@/components/home/Technology';
@@ -17,9 +17,9 @@ function App() {
       <Navigation />
       <Hero />
       <Problem />
-      <WhyMneePay />
+      <WhyMantlePay />
       <Features />
-      <MneeStablecoin />
+      <MantleStablecoin />
       <HowItWorks />
       <UseCases />
       <WhyTeams />

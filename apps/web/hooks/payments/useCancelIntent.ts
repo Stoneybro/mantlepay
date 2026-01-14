@@ -3,8 +3,8 @@ import { useWallets } from "@privy-io/react-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
 import { encodeFunctionData } from "viem";
-import { MneeIntentRegistryABI } from "@/lib/abi/MneeIntentRegistry";
-import { MneeRegistryAddress } from "@/lib/CA";
+import { MpIntentRegistryABI } from "@/lib/abi/MpIntentRegistry";
+import { MpRegistryAddress } from "@/lib/CA";
 import { CancelIntentParams } from "./types";
 
 export function useCancelIntent() {
@@ -25,7 +25,7 @@ export function useCancelIntent() {
                 }
 
                 const callData = encodeFunctionData({
-                    abi: MneeIntentRegistryABI,
+                    abi: MpIntentRegistryABI,
                     functionName: "cancelIntent",
                     args: [params.intentId],
                 });
@@ -34,7 +34,7 @@ export function useCancelIntent() {
                     account: smartAccountClient.account,
                     calls: [
                         {
-                            to: MneeRegistryAddress,
+                            to: MpRegistryAddress,
                             data: callData,
                             value: 0n,
                         },

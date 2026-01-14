@@ -3,17 +3,17 @@ pragma solidity ^0.8.19;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
-import {IMneeSmartWallet} from "./IMneeSmartWallet.sol";
+import {IMpSmartWallet} from "./IMpSmartWallet.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title Mnee Intent Registry
+ * @title Mp Intent Registry
  * @author stoneybro
- * @notice Central registry for managing automated payment intents across all Mnee wallets.
+ * @notice Central registry for managing automated payment intents across all Mp wallets.
  * @dev Integrates with Chainlink Automation for decentralized intent execution. Supports ETH and ERC20 tokens.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
+contract MpIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /*//////////////////////////////////////////////////////////////
                                 TYPES
     //////////////////////////////////////////////////////////////*/
@@ -99,7 +99,7 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     uint256 public constant MAX_DURATION = 365 days;
 
     /*//////////////////////////////////////////////////////////////
-                               EVENTS
+                                EVENTS
     //////////////////////////////////////////////////////////////*/
 
     /// @notice The event emitted when an intent is created
@@ -142,52 +142,52 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Thrown when no recipients are provided
-    error MneeIntentRegistry__NoRecipients();
+    error MpIntentRegistry__NoRecipients();
 
     /// @notice Thrown when a recipient address is zero
-    error MneeIntentRegistry__InvalidRecipient();
+    error MpIntentRegistry__InvalidRecipient();
 
     /// @notice Thrown when recipients and amounts arrays have different lengths
-    error MneeIntentRegistry__ArrayLengthMismatch();
+    error MpIntentRegistry__ArrayLengthMismatch();
 
     /// @notice Thrown when number of recipients exceeds maximum allowed
-    error MneeIntentRegistry__TooManyRecipients();
+    error MpIntentRegistry__TooManyRecipients();
 
     /// @notice Thrown when duration is zero or exceeds maximum
-    error MneeIntentRegistry__InvalidDuration();
+    error MpIntentRegistry__InvalidDuration();
 
     /// @notice Thrown when interval is below minimum
-    error MneeIntentRegistry__InvalidInterval();
+    error MpIntentRegistry__InvalidInterval();
 
     /// @notice Thrown when an amount is zero or negative
-    error MneeIntentRegistry__InvalidAmount();
+    error MpIntentRegistry__InvalidAmount();
 
     /// @notice Thrown when total transaction count is zero
-    error MneeIntentRegistry__InvalidTotalTransactionCount();
+    error MpIntentRegistry__InvalidTotalTransactionCount();
 
     /// @notice Thrown when wallet has insufficient funds
-    error MneeIntentRegistry__InsufficientFunds();
+    error MpIntentRegistry__InsufficientFunds();
 
     /// @notice Thrown when trying to execute an inactive intent
-    error MneeIntentRegistry__IntentNotActive();
+    error MpIntentRegistry__IntentNotActive();
 
     /// @notice Thrown when intent conditions are not met for execution
-    error MneeIntentRegistry__IntentNotExecutable();
+    error MpIntentRegistry__IntentNotExecutable();
 
     /// @notice Thrown when the caller is not the wallet owner
-    error MneeIntentRegistry__Unauthorized();
+    error MpIntentRegistry__Unauthorized();
 
     /// @notice Thrown when token address is invalid
-    error MneeIntentRegistry__InvalidToken();
+    error MpIntentRegistry__InvalidToken();
 
     /// @notice Thrown when transaction start time is in the past
-    error MneeIntentRegistry__StartTimeInPast();
+    error MpIntentRegistry__StartTimeInPast();
 
     /// @notice Thrown when intent not found for wallet
-    error MneeIntentRegistry__IntentNotFound();
+    error MpIntentRegistry__IntentNotFound();
 
     /*//////////////////////////////////////////////////////////////
-                              FUNCTIONS
+                               FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /**
@@ -228,42 +228,42 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Validate token address (address(0) for ETH is valid)
         if (token != address(0)) {
             ///@dev Basic check: token must be a contract
-            if (token.code.length == 0) revert MneeIntentRegistry__InvalidToken();
+            if (token.code.length == 0) revert MpIntentRegistry__InvalidToken();
         }
 
         ///@notice Validate recipients and amounts arrays
-        if (recipients.length == 0) revert MneeIntentRegistry__NoRecipients();
-        if (recipients.length != amounts.length) revert MneeIntentRegistry__ArrayLengthMismatch();
-        if (recipients.length > MAX_RECIPIENTS) revert MneeIntentRegistry__TooManyRecipients();
+        if (recipients.length == 0) revert MpIntentRegistry__NoRecipients();
+        if (recipients.length != amounts.length) revert MpIntentRegistry__ArrayLengthMismatch();
+        if (recipients.length > MAX_RECIPIENTS) revert MpIntentRegistry__TooManyRecipients();
 
         ///@notice Validate timing parameters
-        if (duration == 0 || duration > MAX_DURATION) revert MneeIntentRegistry__InvalidDuration();
-        if (interval < MIN_INTERVAL) revert MneeIntentRegistry__InvalidInterval();
+        if (duration == 0 || duration > MAX_DURATION) revert MpIntentRegistry__InvalidDuration();
+        if (interval < MIN_INTERVAL) revert MpIntentRegistry__InvalidInterval();
 
         ///@notice Validate start time is not in the past (unless it's 0 for immediate start)
         if (transactionStartTime != 0 && transactionStartTime < block.timestamp) {
-            revert MneeIntentRegistry__StartTimeInPast();
+            revert MpIntentRegistry__StartTimeInPast();
         }
 
         ///@notice Calculate total amount per execution and validate each recipient/amount
         uint256 totalAmountPerExecution = 0;
         for (uint256 i = 0; i < recipients.length; i++) {
-            if (recipients[i] == address(0)) revert MneeIntentRegistry__InvalidRecipient();
-            if (amounts[i] == 0) revert MneeIntentRegistry__InvalidAmount();
+            if (recipients[i] == address(0)) revert MpIntentRegistry__InvalidRecipient();
+            if (amounts[i] == 0) revert MpIntentRegistry__InvalidAmount();
             totalAmountPerExecution += amounts[i];
         }
 
         ///@notice Calculate projected final transaction count
         uint256 totalTransactionCount = duration / interval;
-        if (totalTransactionCount == 0) revert MneeIntentRegistry__InvalidTotalTransactionCount();
+        if (totalTransactionCount == 0) revert MpIntentRegistry__InvalidTotalTransactionCount();
 
         ///@notice Calculate total commitment across all executions
         uint256 totalCommitment = totalAmountPerExecution * totalTransactionCount;
 
         ///@notice Check if the wallet has enough available funds to cover the intent
-        uint256 availableBalance = IMneeSmartWallet(wallet).getAvailableBalance(token);
+        uint256 availableBalance = IMpSmartWallet(wallet).getAvailableBalance(token);
         if (availableBalance < totalCommitment) {
-            revert MneeIntentRegistry__InsufficientFunds();
+            revert MpIntentRegistry__InsufficientFunds();
         }
 
         ///@notice Generate a unique intent id using abi.encode to prevent collision
@@ -295,7 +295,7 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Update the wallet's committed funds for this token
         walletCommittedFunds[wallet][token] += totalCommitment;
-        IMneeSmartWallet(wallet).increaseCommitment(token, totalCommitment);
+        IMpSmartWallet(wallet).increaseCommitment(token, totalCommitment);
 
         ///@notice Add the intent id to the wallet's active intent ids
         walletActiveIntentIds[wallet].push(intentId);
@@ -416,14 +416,14 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Verify the intent exists and belongs to this wallet
         if (intent.id != intentId || intent.wallet != wallet) {
-            revert MneeIntentRegistry__IntentNotFound();
+            revert MpIntentRegistry__IntentNotFound();
         }
 
         ///@notice Verify the intent is active
-        if (!intent.active) revert MneeIntentRegistry__IntentNotActive();
+        if (!intent.active) revert MpIntentRegistry__IntentNotActive();
 
         ///@notice Verify the intent should be executed
-        if (!shouldExecuteIntent(intent)) revert MneeIntentRegistry__IntentNotExecutable();
+        if (!shouldExecuteIntent(intent)) revert MpIntentRegistry__IntentNotExecutable();
 
         ///@notice Store current transaction count before incrementing
         uint256 currentTransactionCount = intent.transactionCount;
@@ -446,10 +446,10 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Update the wallet's committed funds for this token
         walletCommittedFunds[wallet][intent.token] -= totalAmount;
-        IMneeSmartWallet(wallet).decreaseCommitment(intent.token, totalAmount);
+        IMpSmartWallet(wallet).decreaseCommitment(intent.token, totalAmount);
 
         ///@notice Execute the batch intent transfer with token, intentId and transaction count
-        uint256 failedAmount = IMneeSmartWallet(wallet)
+        uint256 failedAmount = IMpSmartWallet(wallet)
             .executeBatchIntentTransfer(
                 intent.token,
                 intent.recipients,
@@ -505,10 +505,10 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
 
         ///@notice Verify the intent exists and belongs to this wallet
         if (intent.id != intentId || intent.wallet != wallet) {
-            revert MneeIntentRegistry__IntentNotFound();
+            revert MpIntentRegistry__IntentNotFound();
         }
 
-        if (!intent.active) revert MneeIntentRegistry__IntentNotActive();
+        if (!intent.active) revert MpIntentRegistry__IntentNotActive();
 
         ///@notice Calculate remaining amount
         uint256 totalAmount = 0;
@@ -529,7 +529,7 @@ contract MneeIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Unlock funds when the intent is cancelled (only if there are remaining transactions)
         if (amountRemaining > 0) {
             walletCommittedFunds[wallet][intent.token] -= amountRemaining;
-            IMneeSmartWallet(wallet).decreaseCommitment(intent.token, amountRemaining);
+            IMpSmartWallet(wallet).decreaseCommitment(intent.token, amountRemaining);
         }
 
         intent.active = false;

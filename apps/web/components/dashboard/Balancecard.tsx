@@ -12,8 +12,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface BalanceCardsProps {
-  availableMnee?: string;
-  committedMnee?: string;
+  availableMpToken?: string;
+  committedMpToken?: string;
   isLoading?: boolean;
 }
 
@@ -33,8 +33,8 @@ const formatBalance = (value: string): string => {
   return num.toFixed(2).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
 };
 
-export function BalanceCards({ availableMnee = "0", committedMnee = "0", isLoading }: BalanceCardsProps) {
-  const totalBalance = (parseFloat(availableMnee) + parseFloat(committedMnee)).toString();
+export function BalanceCards({ availableMpToken = "0", committedMpToken = "0", isLoading }: BalanceCardsProps) {
+  const totalBalance = (parseFloat(availableMpToken) + parseFloat(committedMpToken)).toString();
   const safeTotal = isNaN(Number(totalBalance)) ? "0" : totalBalance;
 
   return (
@@ -43,7 +43,7 @@ export function BalanceCards({ availableMnee = "0", committedMnee = "0", isLoadi
         <CardHeader>
           <CardDescription>Total Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(safeTotal)} MNEE`}
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(safeTotal)} MNT`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -64,7 +64,7 @@ export function BalanceCards({ availableMnee = "0", committedMnee = "0", isLoadi
         <CardHeader>
           <CardDescription>Reserved Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(committedMnee)} MNEE`}
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(committedMpToken)} MNT`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -74,7 +74,7 @@ export function BalanceCards({ availableMnee = "0", committedMnee = "0", isLoadi
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {parseFloat(committedMnee) > 0 ? "Funds currently reserved" : "No activity this month"}
+            {parseFloat(committedMpToken) > 0 ? "Funds currently reserved" : "No activity this month"}
           </div>
           <div className="text-muted-foreground">
             Value locked in payrolls and subscriptions
@@ -85,7 +85,7 @@ export function BalanceCards({ availableMnee = "0", committedMnee = "0", isLoadi
         <CardHeader>
           <CardDescription>Available Balance</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(availableMnee)} MNEE`}
+            {isLoading ? <Skeleton className="h-8 w-24" /> : `${formatBalance(availableMpToken)} MNT`}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -95,7 +95,7 @@ export function BalanceCards({ availableMnee = "0", committedMnee = "0", isLoadi
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            {parseFloat(availableMnee) > 0 ? "Liquidity available" : "No activity this month"}
+            {parseFloat(availableMpToken) > 0 ? "Liquidity available" : "No activity this month"}
           </div>
           <div className="text-muted-foreground">Value available for use and withdrawal</div>
         </CardFooter>

@@ -13,7 +13,7 @@ export type PayrollMetadata = ComplianceMetadata;
 export type BalanceCheckParams = {
     availableBalance: string;
     requiredAmount: string;
-    token: "ETH" | "MNEE";
+    token: "ETH" | "MNT";
 };
 
 export type SingleTransferParams = {

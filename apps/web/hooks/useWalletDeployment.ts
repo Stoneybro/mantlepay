@@ -1,10 +1,10 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
 
-import { MneeSmartWalletFactoryABI } from "@/lib/abi/MneeSmartWalletFactoryAbi";
+import { MpSmartWalletFactoryABI } from "@/lib/abi/MpSmartWalletFactoryAbi";
 import { readContract } from "@/lib/server";
 import type { Abi } from "viem";
-import { MneeSmartWalletFactoryAddress } from "@/lib/CA";
+import { MpSmartWalletFactoryAddress } from "@/lib/CA";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -19,8 +19,8 @@ async function checkWalletDeployment(address: string): Promise<boolean> {
   let rawRes;
   try {
     rawRes = await readContract({
-      address: MneeSmartWalletFactoryAddress,
-      abi: MneeSmartWalletFactoryABI as Abi,
+      address: MpSmartWalletFactoryAddress,
+      abi: MpSmartWalletFactoryABI as Abi,
       functionName: "getUserClone",
       args: [address],
     });

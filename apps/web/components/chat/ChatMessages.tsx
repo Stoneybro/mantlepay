@@ -10,9 +10,9 @@ interface ChatMessagesProps {
     isTransactionPending: boolean;
     isLoading: boolean;
     hooks: {
-        singleMneeTransfer: any;
-        batchMneeTransfer: any;
-        recurringMneePayment: any;
+        singleMpTokenTransfer: any;
+        batchMpTokenTransfer: any;
+        recurringMpTokenPayment: any;
     };
 }
 

@@ -3,13 +3,13 @@ import { useWallets } from "@privy-io/react-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
 import { encodeFunctionData, parseUnits, zeroAddress } from "viem";
-import { MneeIntentRegistryABI } from "@/lib/abi/MneeIntentRegistry";
-import { MneeRegistryAddress } from "@/lib/CA";
-import { MneeAddress } from "@/utils/helper";
+import { MpIntentRegistryABI } from "@/lib/abi/MpIntentRegistry";
+import { MpRegistryAddress } from "@/lib/CA";
+import { MpTokenAddress } from "@/utils/helper";
 import { RecurringTokenPaymentParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
-export function useRecurringTokenPayment(availableMneeBalance?: string) {
+export function useRecurringTokenPayment(availableMpTokenBalance?: string) {
     const { getClient } = useSmartAccountContext();
     const { wallets } = useWallets();
     const owner = wallets?.find((wallet) => wallet.walletClientType === "privy");
@@ -24,11 +24,11 @@ export function useRecurringTokenPayment(availableMneeBalance?: string) {
                 const totalCommitment = (amountPerPayment * totalPayments).toString();
 
                 // Balance check
-                if (availableMneeBalance) {
+                if (availableMpTokenBalance) {
                     const balanceCheck = checkSufficientBalance({
-                        availableBalance: availableMneeBalance,
+                        availableBalance: availableMpTokenBalance,
                         requiredAmount: totalCommitment,
-                        token: "MNEE"
+                        token: "MNT"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -44,14 +44,14 @@ export function useRecurringTokenPayment(availableMneeBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = MneeAddress;
+                const token = MpTokenAddress;
                 const decimals = 6;
                 const amountsInUnits = params.amounts.map((amount) =>
                     parseUnits(amount, decimals)
                 );
 
                 const callData = encodeFunctionData({
-                    abi: MneeIntentRegistryABI,
+                    abi: MpIntentRegistryABI,
                     functionName: "createIntent",
                     args: [
                         token,
@@ -75,7 +75,7 @@ export function useRecurringTokenPayment(availableMneeBalance?: string) {
                     account: smartAccountClient.account,
                     calls: [
                         {
-                            to: MneeRegistryAddress,
+                            to: MpRegistryAddress,
                             data: callData,
                             value: 0n,
                         },
@@ -86,10 +86,10 @@ export function useRecurringTokenPayment(availableMneeBalance?: string) {
                     hash,
                 });
 
-                toast.success("Recurring MNEE payment intent created successfully!");
+                toast.success("Recurring MNT payment intent created successfully!");
                 return receipt;
             } catch (error) {
-                console.error("Error creating recurring MNEE payment intent:", error);
+                console.error("Error creating recurring MNT payment intent:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to create recurring token payment intent";
                 toast.error(errorMessage);
                 throw error;

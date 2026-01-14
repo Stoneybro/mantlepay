@@ -1,16 +1,16 @@
-# Mnee Payment Hub
+# Mantle Payment Hub
 
-**Mnee Payment Hub** is an interactive, intent-centric Smart Wallet designed to streamline crypto payments using Natural Language Processing (NLP) and Account Abstraction (ERC-4337).
+**Mantle Payment Hub** is an interactive, intent-centric Smart Wallet designed to streamline crypto payments using Natural Language Processing (NLP) and Account Abstraction (ERC-4337).
 
-Built for the **MNEE** ecosystem, it allows users to manage single transfers, batch payments, and recurring schedules simply by chatting with the interface.
+Built for the **Mantle** ecosystem, it allows users to manage single transfers, batch payments, and recurring schedules simply by chatting with the interface.
 
 ---
 
 ## 💡 The Idea
 
-Traditional crypto wallets are clunky. Executing complex actions like "pay my team every Friday" or "send 50 MNEE to these 3 people" requires multiple clicks, approvals, and technical know-how.
+Traditional crypto wallets are clunky. Executing complex actions like "pay my team every Friday" or "send 50 MNT to these 3 people" requires multiple clicks, approvals, and technical know-how.
 
-**Mnee** changes this by combining:
+**MantlePay** changes this by combining:
 1.  **AI-Powered Intent Resolution**: Converts natural language requests into executable on-chain actions.
 2.  **Smart Accounts (ERC-4337)**: Enables batching, gas sponsorship, and programmable logic.
 3.  **Automated Intents**: A registry for scheduling recurring payments without manual intervention.
@@ -21,15 +21,15 @@ Traditional crypto wallets are clunky. Executing complex actions like "pay my te
 
 ### 1. 🗣️ Natural Language Processing
 Forget complex forms. Just type what you want to do:
-> *"Send 100 MNEE to alice.eth"*
-> *"Create a recurring payment of 50 MNEE to bob.eth every week for 3 months"*
-> *"Split 300 MNEE equally between Alice, Bob, and Charlie"*
+> *"Send 100 MNT to alice.eth"*
+> *"Create a recurring payment of 50 MNT to bob.eth every week for 3 months"*
+> *"Split 300 MNT equally between Alice, Bob, and Charlie"*
 
 The system parses these intents and constructs the necessary UserOperations for you to sign.
 
 ### 2. 🔄 Recurring & Scheduled Payments ("Intents")
-Powered by the `MneeIntentRegistry` and **Chainlink Automation**, users can define "Intents" — robust, on-chain rules for future transactions.
-- **Subscriptions**: Pay for services specifically in MNEE.
+Powered by the `MpIntentRegistry` and **Chainlink Automation**, users can define "Intents" — robust, on-chain rules for future transactions.
+- **Subscriptions**: Pay for services specifically in MNT.
 - **Payrolls**: Automate salary disbursements.
 - **DCA**: Scheduled transfers for investment.
 
@@ -57,9 +57,9 @@ A dedicated indexer (powered by **Envio**) catalogs all interactions—including
 - **Account Abstraction SDK**: [Permissionless.js](https://docs.pimlico.io/permissionless) (with Pimlico)
 - **Library**: [Viem](https://viem.sh/)
 - **Contracts**: Solidity (Foundry)
-  - `MneeSmartWallet.sol`: ERC-4337 compliant account.
-  - `MneeIntentRegistry.sol`: Logic for managing recurring intents.
-  - `MneeSmartWalletFactory.sol`: Deterministic deployment of accounts.
+  - `MpSmartWallet.sol`: ERC-4337 compliant account.
+  - `MpIntentRegistry.sol`: Logic for managing recurring intents.
+  - `MpSmartWalletFactory.sol`: Deterministic deployment of accounts.
 - **Automation**: Chainlink Automation (for executing intents).
 - **Indexing**: [Envio](https://envio.dev/)
 
@@ -91,8 +91,8 @@ This is a monorepo managed with `pnpm`.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/stoneybro/Mnee.git
-   cd mneepaymenthub
+   git clone https://github.com/stoneybro/MantlePay.git
+   cd mantlepaymenthub
    ```
 
 2. Install dependencies:
@@ -102,7 +102,7 @@ This is a monorepo managed with `pnpm`.
 
 3. Set up environment variables:
    - Copy `.env.example` to `.env` in `apps/web` and `packages/indexer`.
-   - Fill in necessary keys (Privy App ID, Pimlico API Key, MNEE Token Address, etc.).
+   - Fill in necessary keys (Privy App ID, Pimlico API Key, MNT Token Address, etc.).
 
 ### Running Locally
 
@@ -122,13 +122,13 @@ pnpm contracts:test
 
 ## 📜 Contract Architecture
 
-### `MneeIntentRegistry.sol`
+### `MpIntentRegistry.sol`
 The backbone of the recurring payment system.
 - **Role**: Stores intent parameters (recipient, amount, interval, duration).
 - **Automation**: Checks `checkLog` via Chainlink to see if a payment is due.
 - **Security**: Ensures wallets have committed funds before effectively creating a liability.
 
-### `MneeSmartWallet.sol`
+### `MpSmartWallet.sol`
 The user's identity on-chain.
 - **Functionality**: Executives `UserOps`, supports batch execution, and interacts with the Intent Registry to `register` or `revoke` payment streams.
 

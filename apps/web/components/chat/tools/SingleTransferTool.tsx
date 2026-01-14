@@ -16,7 +16,7 @@ interface SingleTransferToolProps {
     addToolResult: (result: any) => void;
     isTransactionPending: boolean;
     mutation: any;
-    type: 'ETH' | 'MNEE';
+    type: 'ETH' | 'MNT';
 }
 
 export function SingleTransferTool({
@@ -27,7 +27,7 @@ export function SingleTransferTool({
     mutation,
     type
 }: SingleTransferToolProps) {
-    const toolName = type === 'ETH' ? 'executeSingleEthTransfer' : 'execute_single_mnee_transfer';
+    const toolName = type === 'ETH' ? 'executeSingleEthTransfer' : 'execute_single_mp_token_transfer';
     const Icon = type === 'ETH' ? BsArrowUpRight : FaDollarSign;
     const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
 
@@ -52,7 +52,7 @@ export function SingleTransferTool({
                         </div>
                         <div className="text-sm space-y-1 mb-4">
                             <p><strong>To:</strong> {input.to}</p>
-                            <p><strong>Amount:</strong> {type === 'MNEE' ? '$' : ''}{input.amount} {type}</p>
+                            <p><strong>Amount:</strong> {type === 'MNT' ? '$' : ''}{input.amount} {type}</p>
                         </div>
 
                         <div className="flex gap-2 w-full">

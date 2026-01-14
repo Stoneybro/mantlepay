@@ -20,13 +20,13 @@ const formatCurrency = (amount?: string, token?: string) => {
     // We assume indexer stores raw units.
     if (!amount.includes('.')) {
         try {
-             formatted = formatUnits(BigInt(amount), 6);
+            formatted = formatUnits(BigInt(amount), 6);
         } catch (e) {
-             // Keep original if BigInt fails
+            // Keep original if BigInt fails
         }
     }
-    
-    return `${Number(formatted).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${token || 'MNEE'}`;
+
+    return `${Number(formatted).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${token || 'MNT'}`;
 };
 
 export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
@@ -102,7 +102,7 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                 );
                             }
                             if (key === 'calls' && Array.isArray(value)) {
-                                
+
                                 return (
                                     <div key={key} className="col-span-2 mt-2">
                                         <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Transactions</span>
@@ -115,7 +115,7 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                                         <span className="font-mono text-muted-foreground">
                                                             {(c.recipient || c.target)?.slice(0, 6)}...{(c.recipient || c.target)?.slice(-4)}
                                                         </span>
-                                                        <span className="font-medium">{formatCurrency(c.value, 'MNEE')}</span>
+                                                        <span className="font-medium">{formatCurrency(c.value, 'MNT')}</span>
                                                     </div>
                                                 ))
                                             )}

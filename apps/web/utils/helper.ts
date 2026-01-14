@@ -1,6 +1,6 @@
 import { readContract } from "@/lib/server";
 import { formatUnits } from "viem";
-import { MneeSmartWalletABI } from "@/lib/abi/MneeSmartWalletAbi";
+import { MpSmartWalletABI } from "@/lib/abi/MpSmartWalletAbi";
 import { zeroAddress } from "viem";
 
 /**
@@ -13,22 +13,22 @@ export async function fetchWalletBalance(smartAccountAddress: `0x${string}`) {
   const [availablePyusdBalance, committedPyuBalance] = await Promise.all([
     readContract({
       address: smartAccountAddress,
-      abi: MneeSmartWalletABI,
+      abi: MpSmartWalletABI,
       functionName: "getAvailableBalance",
-      args: [MneeAddress],
+      args: [MpTokenAddress],
     }),
     readContract({
       address: smartAccountAddress,
-      abi: MneeSmartWalletABI,
+      abi: MpSmartWalletABI,
       functionName: "s_committedFunds",
-      args: [MneeAddress],
+      args: [MpTokenAddress],
     }),
   ]);
 
   return {
-    availableMneeBalance: formatUnits(availablePyusdBalance as bigint, 6),
-    committedMneeBalance: formatUnits(committedPyuBalance as bigint, 6),
+    availableMpTokenBalance: formatUnits(availablePyusdBalance as bigint, 6),
+    committedMpTokenBalance: formatUnits(committedPyuBalance as bigint, 6),
   };
 }
 
-export const MneeAddress = "0x19b2124fCb1B156284EE2C28f97e3c873f415bc5";
+export const MpTokenAddress = "0x19b2124fCb1B156284EE2C28f97e3c873f415bc5";

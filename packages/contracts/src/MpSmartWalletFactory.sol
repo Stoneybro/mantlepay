@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {MneeSmartWallet} from "./MneeSmartWallet.sol";
+import {MpSmartWallet} from "./MpSmartWallet.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 /**
- * @title Mnee Smart Wallet Factory
+ * @title Mp Smart Wallet Factory
  * @author stoneybro
- * @notice Factory for deploying ERC-1167 minimal proxy clones of Mnee Smart Wallet.
+ * @notice Factory for deploying ERC-1167 minimal proxy clones of Mp Smart Wallet.
  * @custom:security-contact stoneybrocrypto@gmail.com
  */
-contract MneeSmartWalletFactory {
+contract MpSmartWalletFactory {
     /*//////////////////////////////////////////////////////////////
                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -21,7 +21,7 @@ contract MneeSmartWalletFactory {
     /// @notice Mapping from user EOA to deployed SmartAccount clone.
     mapping(address user => address clone) public userClones;
     /*//////////////////////////////////////////////////////////////
-                               EVENTS
+                                EVENTS
     //////////////////////////////////////////////////////////////*/
 
     /**
@@ -38,20 +38,20 @@ contract MneeSmartWalletFactory {
     /**
      * @notice Thrown when trying to construct with an implementation that is not deployed.
      */
-    error MneeSmartWalletFactory__ImplementationUndeployed();
+    error MpSmartWalletFactory__ImplementationUndeployed();
 
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     /**
      * @notice Factory constructor used to initialize the implementation address to use for future
-     *   MneeSmartWallet deployments.
+     *   MpSmartWallet deployments.
      *
-     * @param _implementation The address of the MneeSmartWallet implementation which new accounts will proxy to.
+     * @param _implementation The address of the MpSmartWallet implementation which new accounts will proxy to.
      */
     constructor(address _implementation) {
         if (_implementation.code.length == 0) {
-            revert MneeSmartWalletFactory__ImplementationUndeployed();
+            revert MpSmartWalletFactory__ImplementationUndeployed();
         }
         implementation = _implementation;
     }
@@ -61,7 +61,7 @@ contract MneeSmartWalletFactory {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Deploys and initializes a deterministic MneeSmartWallet for a specific owner, or returns
+     * @notice Deploys and initializes a deterministic MpSmartWallet for a specific owner, or returns
      *         the existing account if already deployed.
      *
      * @dev Deployed as an ERC-1167 minimal proxy whose implementation is `this.implementation`.
@@ -86,7 +86,7 @@ contract MneeSmartWalletFactory {
         account = Clones.cloneDeterministic(implementation, salt);
 
         // Initialize with specified owner
-        MneeSmartWallet(payable(account)).initialize(owner);
+        MpSmartWallet(payable(account)).initialize(owner);
 
         // Record mapping and emit after successful initialize
         userClones[owner] = account;

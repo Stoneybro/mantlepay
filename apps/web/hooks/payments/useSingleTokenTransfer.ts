@@ -7,10 +7,10 @@ import { encodeFunctionData, parseUnits, erc20Abi, zeroAddress } from "viem";
 import { SingleTokenTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
-import { MneeAddress } from "@/utils/helper";
-import { MneeSmartWalletABI } from "@/lib/abi/MneeSmartWallet";
+import { MpTokenAddress } from "@/utils/helper";
+import { MpSmartWalletABI } from "@/lib/abi/MpSmartWallet";
 
-export function useSingleTokenTransfer(availableMneeBalance?: string) {
+export function useSingleTokenTransfer(availableMpTokenBalance?: string) {
     const { getClient } = useSmartAccountContext();
     const { wallets } = useWallets();
     const owner = wallets?.find((wallet) => wallet.walletClientType === "privy");
@@ -20,11 +20,11 @@ export function useSingleTokenTransfer(availableMneeBalance?: string) {
         mutationFn: async (params: SingleTokenTransferParams) => {
             try {
                 // Balance check
-                if (availableMneeBalance) {
+                if (availableMpTokenBalance) {
                     const balanceCheck = checkSufficientBalance({
-                        availableBalance: availableMneeBalance,
+                        availableBalance: availableMpTokenBalance,
                         requiredAmount: params.amount,
-                        token: "MNEE"
+                        token: "MNT"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -40,7 +40,7 @@ export function useSingleTokenTransfer(availableMneeBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = MneeAddress;
+                const token = MpTokenAddress;
                 const decimals = 6;
                 const amountInUnits = parseUnits(params.amount, decimals);
 
@@ -69,7 +69,7 @@ export function useSingleTokenTransfer(availableMneeBalance?: string) {
                     };
 
                     const executeWithComplianceData = encodeFunctionData({
-                        abi: MneeSmartWalletABI,
+                        abi: MpSmartWalletABI,
                         functionName: "executeWithCompliance",
                         args: [token, 0n, transferData, complianceData],
                     });
@@ -102,10 +102,10 @@ export function useSingleTokenTransfer(availableMneeBalance?: string) {
                     hash,
                 });
 
-                toast.success("MNEE transfer sent successfully!");
+                toast.success("MNT transfer sent successfully!");
                 return receipt;
             } catch (error) {
-                console.error("Error sending MNEE transfer:", error);
+                console.error("Error sending MNT transfer:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to send token transfer";
                 toast.error(errorMessage);
                 throw error;

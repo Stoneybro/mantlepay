@@ -1,4 +1,4 @@
-export const MneeSmartWalletABI=[
+export const MpSmartWalletABI = [
   {
     "type": "constructor",
     "inputs": [
@@ -79,7 +79,7 @@ export const MneeSmartWalletABI=[
       {
         "name": "calls",
         "type": "tuple[]",
-        "internalType": "struct MneeSmartWallet.Call[]",
+        "internalType": "struct MpSmartWallet.Call[]",
         "components": [
           {
             "name": "target",
@@ -642,51 +642,6 @@ export const MneeSmartWalletABI=[
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__InsufficientUncommittedFunds",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MneeSmartWallet__IntentRegistryZeroAddress",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MneeSmartWallet__InvalidBatchInput",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MneeSmartWallet__InvalidCommitmentDecrease",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MneeSmartWallet__NotFromEntryPoint",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MneeSmartWallet__NotFromRegistry",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MneeSmartWallet__OwnerIsZeroAddress",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MneeSmartWallet__TransferFailed",
-    "inputs": [
-      {
-        "name": "recipient",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "token",
-        "type": "address",
         "internalType": "address"
       },
       {

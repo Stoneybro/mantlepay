@@ -3,14 +3,14 @@ const useCases = [
     title: "Remote Team Payroll",
     instruction: "Pay my 15-person engineering team 6,000 dollars each every two weeks",
     outcomes: [
-      "90,000 MNEE per cycle",
+      "90,000 MNT per cycle",
       "26 automated executions per year",
       "No approvals or gas management",
     ],
   },
   {
     title: "DAO Contributor Batch Payments",
-    instruction: "Send 500 MNEE each to these 50 contributors",
+    instruction: "Send 500 MNT each to these 50 contributors",
     outcomes: [
       "One batch execution",
       "Significant gas savings",

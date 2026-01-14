@@ -7,10 +7,10 @@ import { encodeFunctionData, parseUnits, erc20Abi, zeroAddress } from "viem";
 import { BatchTokenTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
-import { MneeAddress } from "@/utils/helper";
-import { MneeSmartWalletABI } from "@/lib/abi/MneeSmartWallet";
+import { MpTokenAddress } from "@/utils/helper";
+import { MpSmartWalletABI } from "@/lib/abi/MpSmartWallet";
 
-export function useBatchTokenTransfer(availableMneeBalance?: string) {
+export function useBatchTokenTransfer(availableMpTokenBalance?: string) {
     const { getClient } = useSmartAccountContext();
     const { wallets } = useWallets();
     const owner = wallets?.find((wallet) => wallet.walletClientType === "privy");
@@ -23,11 +23,11 @@ export function useBatchTokenTransfer(availableMneeBalance?: string) {
                 const totalAmount = params.amounts.reduce((sum, amount) => sum + parseFloat(amount), 0).toString();
 
                 // Balance check
-                if (availableMneeBalance) {
+                if (availableMpTokenBalance) {
                     const balanceCheck = checkSufficientBalance({
-                        availableBalance: availableMneeBalance,
+                        availableBalance: availableMpTokenBalance,
                         requiredAmount: totalAmount,
-                        token: "MNEE"
+                        token: "MNT"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -43,7 +43,7 @@ export function useBatchTokenTransfer(availableMneeBalance?: string) {
                     throw new Error("No connected wallet found");
                 }
 
-                const token = MneeAddress;
+                const token = MpTokenAddress;
                 const decimals = 6;
                 const amountsInUnits = params.amounts.map((amount) =>
                     parseUnits(amount, decimals)
@@ -82,7 +82,7 @@ export function useBatchTokenTransfer(availableMneeBalance?: string) {
                     };
 
                     const executeBatchWithComplianceData = encodeFunctionData({
-                        abi: MneeSmartWalletABI,
+                        abi: MpSmartWalletABI,
                         functionName: "executeBatchWithCompliance",
                         args: [transferCalls, complianceData],
                     });
@@ -116,11 +116,11 @@ export function useBatchTokenTransfer(availableMneeBalance?: string) {
                 });
 
                 toast.success(
-                    `Batch MNEE transfer completed! Sent to ${params.recipients.length} recipients.`
+                    `Batch MNT transfer completed! Sent to ${params.recipients.length} recipients.`
                 );
                 return receipt;
             } catch (error) {
-                console.error("Error sending batch MNEE transfer:", error);
+                console.error("Error sending batch MNT transfer:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to send batch token transfer";
                 toast.error(errorMessage);
                 throw error;

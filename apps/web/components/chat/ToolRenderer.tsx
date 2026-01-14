@@ -10,9 +10,9 @@ interface ToolRendererProps {
     addToolResult: (result: any) => void;
     isTransactionPending: boolean;
     hooks: {
-        singleMneeTransfer: any;
-        batchMneeTransfer: any;
-        recurringMneePayment: any;
+        singleMpTokenTransfer: any;
+        batchMpTokenTransfer: any;
+        recurringMpTokenPayment: any;
     };
 }
 
@@ -24,41 +24,41 @@ export function ToolRenderer({
     hooks
 }: ToolRendererProps) {
 
-    if (part.type === "tool-execute_single_mnee_transfer") {
+    if (part.type === "tool-execute_single_mp_token_transfer") {
         return (
             <SingleTransferTool
                 part={part}
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.singleMneeTransfer}
-                type="MNEE"
+                mutation={hooks.singleMpTokenTransfer}
+                type="MNT"
             />
         );
     }
 
-    if (part.type === "tool-execute_batch_mnee_transfer") {
+    if (part.type === "tool-execute_batch_mp_token_transfer") {
         return (
             <BatchTransferTool
                 part={part}
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.batchMneeTransfer}
-                type="MNEE"
+                mutation={hooks.batchMpTokenTransfer}
+                type="MNT"
             />
         );
     }
 
-    if (part.type === "tool-execute_recurring_mnee_payment") {
+    if (part.type === "tool-execute_recurring_mp_token_payment") {
         return (
             <RecurringPaymentTool
                 part={part}
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.recurringMneePayment}
-                type="MNEE"
+                mutation={hooks.recurringMpTokenPayment}
+                type="MNT"
             />
         );
     }

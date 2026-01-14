@@ -181,14 +181,14 @@ function ChatInner({
     }, [messages, id, walletAddress]);
 
     // Transaction hooks
-    const singleMneeTransfer = useSingleTokenTransfer(wallet?.availableMneeBalance);
-    const batchMneeTransfer = useBatchTokenTransfer(wallet?.availableMneeBalance);
-    const recurringMneePayment = useRecurringTokenPayment(wallet?.availableMneeBalance);
+    const singleMpTokenTransfer = useSingleTokenTransfer(wallet?.availableMpTokenBalance);
+    const batchMpTokenTransfer = useBatchTokenTransfer(wallet?.availableMpTokenBalance);
+    const recurringMpTokenPayment = useRecurringTokenPayment(wallet?.availableMpTokenBalance);
 
     const hooks = {
-        singleMneeTransfer,
-        batchMneeTransfer,
-        recurringMneePayment,
+        singleMpTokenTransfer,
+        batchMpTokenTransfer,
+        recurringMpTokenPayment,
     };
 
     const handleSubmit = () => {
@@ -199,9 +199,9 @@ function ChatInner({
 
     // Check if any transaction is pending
     const isTransactionPending =
-        singleMneeTransfer.isPending ||
-        batchMneeTransfer.isPending ||
-        recurringMneePayment.isPending;
+        singleMpTokenTransfer.isPending ||
+        batchMpTokenTransfer.isPending ||
+        recurringMpTokenPayment.isPending;
 
     const isLoading = status === 'submitted' || status === 'streaming';
 

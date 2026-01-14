@@ -10,7 +10,7 @@ export default function FinalCTA() {
             Automate complex payments on chain
           </h2>
           <p className="text-lg text-gray-600 mb-12">
-            MneePay turns payroll, subscriptions, batch payouts, and revenue splits into programmable workflows.
+            MantlePay turns payroll, subscriptions, batch payouts, and revenue splits into programmable workflows.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-12">

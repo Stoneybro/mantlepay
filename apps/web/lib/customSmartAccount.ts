@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { toSmartAccount, entryPoint07Abi } from "viem/account-abstraction";
-import { MneeSmartWalletABI } from "./abi/MneeSmartWalletAbi";
+import { MpSmartWalletABI } from "./abi/MpSmartWalletAbi";
 import { recoverAddress, hashMessage, concat, pad, toHex, encodeFunctionData, decodeFunctionData } from "viem";
-import { MneeSmartWalletFactoryAddress } from "./CA";
-import { MneeSmartWalletFactoryABI } from "./abi/MneeSmartWalletFactoryAbi";
+import { MpSmartWalletFactoryAddress } from "./CA";
+import { MpSmartWalletFactoryABI } from "./abi/MpSmartWalletFactoryAbi";
 import { useWallets, useSignMessage, useSignTypedData } from "@privy-io/react-auth";
 import { publicClient } from "./pimlico";
 import type { SmartAccount } from "viem/account-abstraction";
@@ -30,8 +30,8 @@ export default function CustomSmartAccount() {
 
   async function predictAddress(ownerAddress: `0x${string}`) {
     return publicClient.readContract({
-      address: MneeSmartWalletFactoryAddress,
-      abi: MneeSmartWalletFactoryABI,
+      address: MpSmartWalletFactoryAddress,
+      abi: MpSmartWalletFactoryABI,
       functionName: "getPredictedAddress",
       args: [ownerAddress],
     }) as Promise<`0x${string}`>;
@@ -61,7 +61,7 @@ export default function CustomSmartAccount() {
         async decodeCalls(data) {
           try {
             const decoded = decodeFunctionData({
-              abi: MneeSmartWalletABI,
+              abi: MpSmartWalletABI,
               data: data as `0x${string}`,
             });
 
@@ -90,7 +90,7 @@ export default function CustomSmartAccount() {
           if (calls.length === 1) {
             const call = calls[0];
             return encodeFunctionData({
-              abi: MneeSmartWalletABI,
+              abi: MpSmartWalletABI,
               functionName: "execute",
               args: [call.to, call.value || 0n, call.data || "0x"],
             });
@@ -103,7 +103,7 @@ export default function CustomSmartAccount() {
           }));
 
           return encodeFunctionData({
-            abi: MneeSmartWalletABI,
+            abi: MpSmartWalletABI,
             functionName: "executeBatch",
             args: [batchCalls],
           });
@@ -115,9 +115,9 @@ export default function CustomSmartAccount() {
 
         async getFactoryArgs() {
           return {
-            factory: MneeSmartWalletFactoryAddress,
+            factory: MpSmartWalletFactoryAddress,
             factoryData: encodeFunctionData({
-              abi: MneeSmartWalletFactoryABI,
+              abi: MpSmartWalletFactoryABI,
               functionName: "createSmartAccount",
               args: [owner.address as `0x${string}`],
             }),
