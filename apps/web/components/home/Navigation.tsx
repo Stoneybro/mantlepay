@@ -22,22 +22,22 @@ export default function Navigation() {
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/mneepay-logo.svg" alt="MantlePay" width={120} height={32} className="h-8 w-auto" />
-          </Link>
+          <div className="flex items-center">
+            <Image src="/mneepay-logo.svg" alt="MneePay" width={120} height={32} className="h-8 w-auto" />
+          </div>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
               Features
             </a>
             <a href="#how-it-works" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-              How it Works
+              How It Works
             </a>
-            <a href="#use-cases" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-              Use Cases
+            <a href="#technology" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              Technology
             </a>
             <a href="#why-mneepay" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-              Why MantlePay
+              Why MneePay
             </a>
             <Link href="https://github.com/Stoneybro/mneepaymenthub" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
               GitHub

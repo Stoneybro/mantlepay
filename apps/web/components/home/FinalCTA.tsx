@@ -7,10 +7,10 @@ export default function FinalCTA() {
       <div className="max-w-6xl mx-auto">
         <div className="max-w-3xl">
           <h2 className="text-4xl font-semibold text-gray-900 mb-6">
-            Automate complex payments on chain
+            Build compliant global payroll on-chain
           </h2>
           <p className="text-lg text-gray-600 mb-12">
-            MantlePay turns payroll, subscriptions, batch payouts, and revenue splits into programmable workflows.
+            MantlePay turns cross-border payments into programmable, auditable, jurisdiction-aware workflows on Mantle.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -36,6 +36,10 @@ export default function FinalCTA() {
               <div className="flex items-start">
                 <span className="mr-3 mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0"></span>
                 <span className="text-sm text-gray-600">Deploy in minutes</span>
+              </div>
+              <div className="flex items-start">
+                <span className="mr-3 mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0"></span>
+                <span className="text-sm text-gray-600">Full compliance tracking</span>
               </div>
             </div>
           </div>

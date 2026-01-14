@@ -2,45 +2,30 @@ const steps = [
   {
     number: "01",
     title: "Define",
-    description: "User defines payments in natural language",
+    description: "User specifies payment details with jurisdiction and tax data",
   },
   {
     number: "02",
     title: "Generate",
-    description: "MantlePay generates an ERC-4337 UserOperation",
-    icon: (
-      <svg className="w-6 h-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    )
+    description: "MantlePay creates ERC-4337 UserOperation with compliance metadata",
   },
   {
-    title: "Funds Committed",
-    description: "Smart contract locks funds for future payments",
-    icon: (
-      <svg className="w-6 h-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-      </svg>
-    )
+    number: "03",
+    title: "Commit",
+    description: "Smart contract locks funds and records jurisdiction tags",
   },
   {
-    title: "Auto-Execution",
-    description: "Network executes transfers exactly when due",
-    icon: (
-      <svg className="w-6 h-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )
-  }
+    number: "04",
+    title: "Execute",
+    description: "Chainlink Automation triggers payments with immutable data",
+  },
 ];
 
-export function HowItWorks() {
+export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-20 bg-gray-50">
-      <div className="container px-4 mx-auto">
-        <div className="max-w-3xl mx-auto text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight">How MantlePay works</h2>
-        </div>
+    <section id="how-it-works" className="py-20 md:py-28 lg:py-32 border-t border-border">
+      <div className="max-w-6xl mx-auto px-6">
+        <h2 className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight">How MantlePay delivers compliant global payroll</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
           {steps.map((step, index) => (
@@ -58,7 +43,7 @@ export function HowItWorks() {
 
         <div className="mt-12 flex gap-2 text-sm text-muted-foreground">
           <span>Simple.</span>
-          <span>Deterministic.</span>
+          <span>Compliant.</span>
           <span>Trustless.</span>
         </div>
       </div>

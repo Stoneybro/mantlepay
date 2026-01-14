@@ -2,19 +2,23 @@ export default function Technology() {
   const layers = [
     {
       title: 'Interface Layer',
-      items: ['AI-driven intent parsing', 'Natural language to structured logic'],
+      items: ['AI-driven intent parsing with compliance extraction', 'Natural language to structured, jurisdiction-aware payment logic'],
     },
     {
       title: 'Authentication',
-      items: ['Embedded wallets via Privy', 'Email and social login', 'No seed phrases'],
+      items: ['Embedded wallets via Privy (email/social login)', 'No seed phrases or crypto complexity for end users'],
     },
     {
       title: 'Smart Accounts',
-      items: ['ERC-4337 compliant', 'Batch and split execution', 'Gas sponsorship', 'Built with Foundry'],
+      items: ['ERC-4337 compliant with compliance metadata', 'Batch execution with per-recipient jurisdiction tagging', 'Gas sponsorship', 'Built with Foundry'],
     },
     {
       title: 'Automation',
-      items: ['On-chain intent registry', 'Chainlink Automation', 'No centralized servers'],
+      items: ['On-chain intent registry with compliance preservation', 'Chainlink Automation for decentralized execution', 'No centralized servers or custody'],
+    },
+    {
+      title: 'Compliance Infrastructure',
+      items: ['Universal metadata schema for multiple jurisdictions', 'Built-in category taxonomy (W2, 1099, contractor, invoice, vendor, grant)', 'Real-time dashboard and export capabilities'],
     },
   ];
 

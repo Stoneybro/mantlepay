@@ -1,29 +1,29 @@
 const useCases = [
   {
-    title: "Remote Team Payroll",
-    instruction: "Pay my 15-person engineering team 6,000 dollars each every two weeks",
+    title: "Multi-Jurisdiction Payroll",
+    instruction: "Run monthly payroll: Alice and Bob in California W2 $6000 each, Charlie in UK contractor £4000, Dayo in Nigeria contractor ₦800,000",
     outcomes: [
-      "90,000 MNT per cycle",
-      "26 automated executions per year",
-      "No approvals or gas management",
+      "Automatic jurisdiction tagging",
+      "Correct tax categories applied",
+      "One export with breakdowns",
     ],
   },
   {
-    title: "DAO Contributor Batch Payments",
-    instruction: "Send 500 MNT each to these 50 contributors",
+    title: "Quarterly Contractor Payments",
+    instruction: "Pay 1099 contractors quarterly: 10 US-based developers $15,000 each for Q1 2025",
     outcomes: [
-      "One batch execution",
-      "Significant gas savings",
-      "Transparent on-chain record",
+      "Category: PAYROLL_1099",
+      "Immutable record for IRS",
+      "One-click 1099-ready CSV",
     ],
   },
   {
-    title: "Revenue Split Distribution",
-    instruction: "Split 100,000 MNEE monthly, 60% to core team, 25% to partners, 15% to treasury",
+    title: "International Vendor Invoices",
+    instruction: "Process monthly invoices: UK hosting provider £500, Nigerian design agency ₦200,000, German legal services €2000",
     outcomes: [
-      "Automatic enforcement",
-      "No manual calculations",
-      "Fully on-chain distribution",
+      "Link to invoice numbers",
+      "Filtered by vendor type",
+      "Complete international audit trail",
     ],
   },
 ];
@@ -32,7 +32,7 @@ export default function UseCases() {
   return (
     <section className="py-20 md:py-28 lg:py-32 bg-secondary">
       <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight">Designed for real business workflows</h2>
+        <h2 className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight">Real compliance scenarios solved by MantlePay</h2>
 
         <div className="grid md:grid-cols-3 gap-8 mt-12">
           {useCases.map((useCase, index) => (

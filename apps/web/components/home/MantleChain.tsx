@@ -3,29 +3,30 @@ import { Zap, DollarSign, Fuel, Shield } from "lucide-react";
 import Link from "next/link";
 
 const benefits = [
-  { icon: Zap, text: "Instant settlement (under one second)" },
-  { icon: DollarSign, text: "Ultra-low fees (under one cent)" },
-  { icon: Fuel, text: "No gas token required" },
-  { icon: Shield, text: "Licensed, fully collateralized, GENIUS-compliant" },
+  { icon: Zap, text: "Ultra-low fees (under $1 for 50-person payroll)" },
+  { icon: DollarSign, text: "Fast finality (seconds)" },
+  { icon: Fuel, text: "EVM compatible" },
+  { icon: Shield, text: "Secured by Ethereum + Mantle DA" },
 ];
 
 const integrationBenefits = [
-  "Predictable payroll costs",
-  "Efficient batch and split payouts",
-  "Compliance-friendly workflows",
+  "Predictable payroll costs regardless of team size",
+  "Efficient batch processing for global teams",
+  "Built-in compliance tracking at infrastructure level",
+  "Audit-ready transaction history on Mantle Explorer",
 ];
 
-export default function MantleStablecoin() {
+export default function MneeStablecoin() {
   return (
     <section className="py-20 md:py-28 lg:py-32 bg-secondary">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <div>
             <h2 className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight">
-              Powered by MNT, the native token of Mantle Network
+              Powered by Mantle Network's infrastructure for real-world finance
             </h2>
             <p className="text-base md:text-lg leading-relaxed text-muted-foreground mt-4">
-              MantlePay uses MNT, the gas and governance token designed for instant, low-cost global payments on Mantle Network.
+              MantlePay leverages Mantle's low-cost, high-performance L2 to make compliant global payroll economically viable for businesses of any size.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
@@ -41,7 +42,7 @@ export default function MantleStablecoin() {
           </div>
 
           <div className="bg-background rounded-lg p-8 border border-border">
-            <h3 className="text-xl md:text-2xl font-semibold leading-tight">Why MNT + MantlePay</h3>
+            <h3 className="text-xl md:text-2xl font-semibold leading-tight">Integration Benefits</h3>
             <ul className="mt-6 space-y-4">
               {integrationBenefits.map((benefit, index) => (
                 <li key={index} className="flex items-start gap-3 text-muted-foreground">
@@ -50,11 +51,6 @@ export default function MantleStablecoin() {
                 </li>
               ))}
             </ul>
-            <Link href="https://mantle.xyz" target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="mt-8">
-                Learn more about MNT
-              </Button>
-            </Link>
           </div>
         </div>
       </div>

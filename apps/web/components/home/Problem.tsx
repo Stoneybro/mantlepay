@@ -3,17 +3,17 @@ import { motion } from "framer-motion";
 import { X, Check, Clock, Wallet, Shield, Zap, FileWarning, Cog } from "lucide-react";
 
 const oldWayItems = [
-  { icon: Clock, text: "Manual approvals every pay cycle" },
-  { icon: Wallet, text: "Complex gas token management" },
-  { icon: FileWarning, text: "Complex setup and onboarding" },
-  { icon: Cog, text: "Multiple tools and dashboards" },
+  { icon: Clock, text: "Manual jurisdiction tracking for each payment" },
+  { icon: Wallet, text: "Separate tools for W2, 1099, and international contractors" },
+  { icon: FileWarning, text: "Hours spent categorizing transactions for tax reporting" },
+  { icon: Cog, text: "No audit trail linking payments to compliance metadata" },
 ];
 
 const newWayItems = [
-  { icon: Zap, text: "Fully automated execution" },
-  { icon: Shield, text: "Gas sponsored, no token needed" },
-  { icon: Check, text: "Flexible on-chain payments" },
-  { icon: Check, text: "One conversational interface" },
+  { icon: Zap, text: "Automatic jurisdiction detection and tagging" },
+  { icon: Shield, text: "Universal compliance metadata for all payment types" },
+  { icon: Check, text: "Real-time compliance dashboard with CSV exports" },
+  { icon: Check, text: "Immutable on-chain audit trail for every payment" },
 ];
 
 export default function Problem() {
@@ -31,11 +31,11 @@ export default function Problem() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-semibold leading-tight tracking-tight mb-4">
-            Payroll and subscriptions are still{" "}
+            Cross-border payroll compliance is{" "}
             <span className="text-muted-foreground">broken</span>
           </h2>
           <p className="text-lg md:text-xl leading-relaxed text-muted-foreground max-w-2xl mx-auto">
-            Traditional payment systems weren't built for the speed and flexibility of modern on-chain businesses
+            Traditional payment systems weren't designed for global teams operating across multiple tax jurisdictions with different employment classifications.
           </p>
         </motion.div>
 
@@ -61,7 +61,7 @@ export default function Problem() {
                 </div>
 
                 <p className="text-muted-foreground mb-8">
-                  Manual approvals, gas management headaches, and rigid Web2 systems that can't keep up.
+                  Manual jurisdiction tracking, separate tools for contractors, and no audit trails.
                 </p>
 
                 <div className="space-y-4">
@@ -90,15 +90,15 @@ export default function Problem() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="h-3 w-24 bg-muted-foreground/20 rounded" />
-                      <div className="text-xs text-muted-foreground">⚠ Pending approval</div>
+                      <div className="text-xs text-muted-foreground">⚠ Uncategorized</div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="h-3 w-32 bg-muted-foreground/20 rounded" />
-                      <div className="text-xs text-muted-foreground">⏳ Gas too low</div>
+                      <div className="text-xs text-muted-foreground">⏳ Missing Jurisdiction</div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="h-3 w-20 bg-muted-foreground/20 rounded" />
-                      <div className="text-xs text-muted-foreground">✗ Failed</div>
+                      <div className="text-xs text-muted-foreground">✗ Audit Failed</div>
                     </div>
                   </div>
                 </div>
@@ -106,7 +106,7 @@ export default function Problem() {
             </div>
           </motion.div>
 
-          {/* The MneePay Way */}
+          {/* The MantlePay Way */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -123,11 +123,11 @@ export default function Problem() {
                   <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
                     <Check className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-semibold leading-tight">The MneePay Way</h3>
+                  <h3 className="text-xl md:text-2xl font-semibold leading-tight">The MantlePay Way</h3>
                 </div>
 
                 <p className="text-muted-foreground mb-8">
-                  Automated, predictable, and non-custodial. Just describe what you need.
+                  Automatic jurisdiction tagging, universal compliance metadata, and audit-ready reports.
                 </p>
 
                 <div className="space-y-4">
@@ -156,15 +156,15 @@ export default function Problem() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="h-3 w-24 bg-primary/20 rounded" />
-                      <div className="text-xs text-primary">✓ Automated</div>
+                      <div className="text-xs text-primary">✓ Compliant (US-CA)</div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="h-3 w-32 bg-primary/20 rounded" />
-                      <div className="text-xs text-primary">✓ Gas sponsored</div>
+                      <div className="text-xs text-primary">✓ Tax Tagged (W2)</div>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="h-3 w-20 bg-primary/20 rounded" />
-                      <div className="text-xs text-primary">✓ Complete</div>
+                      <div className="text-xs text-primary">✓ Export Ready</div>
                     </div>
                   </div>
                 </div>
