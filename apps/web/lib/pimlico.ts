@@ -1,10 +1,10 @@
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { createPublicClient, http } from "viem";
-import { sepolia } from "viem/chains";
+import { mantleTestnet } from "viem/chains";
 import { entryPoint07Address } from "viem/account-abstraction";
 
 // Bundler URL with API key + sponsorship policy
-export const pimlicoBundlerUrl = `https://api.pimlico.io/v2/11155111/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}&sponsorshipPolicyId=${process.env.NEXT_PUBLIC_PIMPLICO_SPONSOR_ID}`;
+export const pimlicoBundlerUrl = `https://api.pimlico.io/v2/5001/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}&sponsorshipPolicyId=${process.env.NEXT_PUBLIC_PIMPLICO_SPONSOR_ID}`;
 export const pimlicoBundlerTransport = http(pimlicoBundlerUrl);
 
 // Pimlico client for account abstraction (ERC-4337)
@@ -18,6 +18,6 @@ export const pimlicoClient = createPimlicoClient({
 
 // Public client for standard JSON-RPC calls
 export const publicClient = createPublicClient({
-  chain: sepolia,
+  chain: mantleTestnet,
   transport: http(),
 });

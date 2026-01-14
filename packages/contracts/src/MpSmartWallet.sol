@@ -33,18 +33,7 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
         bytes data;
     }
 
-    /// @notice Universal compliance metadata for jurisdiction-aware payment tracking
-    /// @dev Supports payroll, contractor, invoice, vendor, and other compliance categories
-    struct ComplianceMetadata {
-        /// @notice Per-recipient identifiers (employee ID, vendor ID, customer ID, etc.)
-        string[] entityIds;
-        /// @notice Jurisdiction code (e.g., "US-CA", "UK", "EU-DE", "NG")
-        string jurisdiction;
-        /// @notice Compliance category (e.g., "PAYROLL_W2", "CONTRACTOR", "INVOICE", "VENDOR")
-        string category;
-        /// @notice Reference identifier (e.g., "2025-01", "INV-001", "PO-123")
-        string referenceId;
-    }
+    /// @notice ComplianceMetadata is defined in IMpSmartWallet interface
 
     /*//////////////////////////////////////////////////////////////
                            STATE VARIABLES
@@ -330,7 +319,7 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
         address target,
         uint256 value,
         bytes calldata data,
-        ComplianceMetadata calldata compliance
+        IMpSmartWallet.ComplianceMetadata calldata compliance
     ) external payable nonReentrant onlyEntryPointOrOwner {
         _checkCommitment(address(0), value);
         bytes4 selector = data.length >= 4 ? bytes4(data[:4]) : bytes4(0);
@@ -371,7 +360,7 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
      * @param calls The list of `Call`s to execute.
      * @param compliance Compliance metadata for tracking.
      */
-    function executeBatchWithCompliance(Call[] calldata calls, ComplianceMetadata calldata compliance)
+    function executeBatchWithCompliance(Call[] calldata calls, IMpSmartWallet.ComplianceMetadata calldata compliance)
         external
         payable
         nonReentrant
@@ -404,6 +393,7 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
      * @param intentId The unique identifier for the intent being executed.
      * @param transactionCount The current transaction number within the intent.
      * @param revertOnFailure Whether to revert entire transaction on any failure (true) or skip failed transfers (false).
+     * @param compliance Compliance metadata for tracking.
      *
      * @return failedAmount The total amount that failed to transfer (only in skip mode)
      */
@@ -413,7 +403,8 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
         uint256[] calldata amounts,
         bytes32 intentId,
         uint256 transactionCount,
-        bool revertOnFailure
+        bool revertOnFailure,
+        IMpSmartWallet.ComplianceMetadata calldata compliance
     ) external nonReentrant onlyRegistry returns (uint256 failedAmount) {
         if (recipients.length == 0 || recipients.length != amounts.length) {
             revert MpSmartWallet__InvalidBatchInput();
@@ -460,6 +451,13 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
         }
 
         emit IntentBatchTransferExecuted(intentId, transactionCount, token, recipients.length, totalValue, totalFailed);
+
+        // Emit compliance event if category is provided (C-03 fix)
+        if (bytes(compliance.category).length > 0) {
+            emit ComplianceExecuted(
+                "INTENT", compliance.entityIds, compliance.jurisdiction, compliance.category, compliance.referenceId
+            );
+        }
 
         return totalFailed;
     }

@@ -186,6 +186,9 @@ contract MpIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
     /// @notice Thrown when intent not found for wallet
     error MpIntentRegistry__IntentNotFound();
 
+    /// @notice Thrown when compliance metadata is invalid (e.g., entityIds length mismatch)
+    error MpIntentRegistry__InvalidComplianceMetadata();
+
     /*//////////////////////////////////////////////////////////////
                                FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -243,6 +246,11 @@ contract MpIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         ///@notice Validate start time is not in the past (unless it's 0 for immediate start)
         if (transactionStartTime != 0 && transactionStartTime < block.timestamp) {
             revert MpIntentRegistry__StartTimeInPast();
+        }
+
+        ///@notice Validate compliance metadata: entityIds length must match recipients if provided
+        if (complianceData.entityIds.length > 0 && complianceData.entityIds.length != recipients.length) {
+            revert MpIntentRegistry__InvalidComplianceMetadata();
         }
 
         ///@notice Calculate total amount per execution and validate each recipient/amount
@@ -456,7 +464,13 @@ contract MpIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
                 intent.amounts,
                 intentId,
                 currentTransactionCount,
-                intent.revertOnFailure
+                intent.revertOnFailure,
+                IMpSmartWallet.ComplianceMetadata({
+                    entityIds: intent.compliance.entityIds,
+                    jurisdiction: intent.compliance.jurisdiction,
+                    category: intent.compliance.category,
+                    referenceId: intent.compliance.referenceId
+                })
             );
 
         ///@notice Track failed amounts for recovery

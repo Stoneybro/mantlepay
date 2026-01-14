@@ -74,7 +74,7 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                         <div>
                             <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-0.5">Tx Hash</span>
                             <a
-                                href={`https://sepolia.etherscan.io/tx/${item.id.split('-')[0]}`}
+                                href={`https://explorer.testnet.mantle.xyz/tx/${item.id.split('-')[0]}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-primary hover:text-primary/80 truncate block underline text-xs font-mono"

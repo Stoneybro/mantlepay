@@ -1,13 +1,11 @@
 import { createPublicClient, createWalletClient, http, custom } from "viem";
-import { sepolia } from "viem/chains";
+import { mantleTestnet } from "viem/chains";
 
 // Public client: used for read-only blockchain interactions
 export const getPublicClient = () =>
   createPublicClient({
-    chain: sepolia,
-    transport: http(
-      `https://eth-sepolia.blockscout.com/api/eth-rpc?apikey=${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_KEY}`
-    ),
+    chain: mantleTestnet,
+    transport: http("https://rpc.testnet.mantle.xyz"),
   });
 
 // Wallet client: used for signed transactions via a connected wallet
@@ -20,6 +18,6 @@ export const getWalletClient = async ({
 }) =>
   createWalletClient({
     account: address,
-    chain: sepolia,
+    chain: mantleTestnet,
     transport: custom(eip1193),
   });

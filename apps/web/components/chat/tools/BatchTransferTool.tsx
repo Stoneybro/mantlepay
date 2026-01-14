@@ -27,7 +27,7 @@ export function BatchTransferTool({
     type
 }: BatchTransferToolProps) {
     const toolName = type === 'ETH' ? 'executeBatchEthTransfer' : 'execute_batch_mp_token_transfer';
-    const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
+    const explorerUrl = "https://explorer.testnet.mantle.xyz/tx/";
 
     if ('state' in part) {
         switch (part.state) {

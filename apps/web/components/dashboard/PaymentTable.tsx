@@ -125,7 +125,7 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                         <a
-                            href={`https://sepolia.etherscan.io/tx/${tx.id}`}
+                            href={`https://explorer.testnet.mantle.xyz/tx/${tx.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 hover:text-primary transition-colors"

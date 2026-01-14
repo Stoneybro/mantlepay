@@ -29,7 +29,7 @@ export function SingleTransferTool({
 }: SingleTransferToolProps) {
     const toolName = type === 'ETH' ? 'executeSingleEthTransfer' : 'execute_single_mp_token_transfer';
     const Icon = type === 'ETH' ? BsArrowUpRight : FaDollarSign;
-    const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
+    const explorerUrl = "https://explorer.testnet.mantle.xyz/tx/";
 
     if ('state' in part) {
         switch (part.state) {

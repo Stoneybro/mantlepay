@@ -23,7 +23,7 @@ export function CancelIntentTool({
     isTransactionPending,
     mutation
 }: CancelIntentToolProps) {
-    const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
+    const explorerUrl = "https://explorer.testnet.mantle.xyz/tx/";
 
     if ('state' in part) {
         switch (part.state) {

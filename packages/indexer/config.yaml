@@ -8,7 +8,8 @@ field_selection:
     - input
 
 networks:
-- id: 11155111
+# Mantle Testnet (chain ID 5001)
+- id: 5001
   start_block: 0
   contracts:
   - name: MpSmartWallet

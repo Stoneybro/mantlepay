@@ -9,6 +9,18 @@ pragma solidity ^0.8.19;
  */
 interface IMpSmartWallet {
     /*//////////////////////////////////////////////////////////////
+                                TYPES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Universal compliance metadata for jurisdiction-aware payment tracking
+    struct ComplianceMetadata {
+        string[] entityIds;
+        string jurisdiction;
+        string category;
+        string referenceId;
+    }
+
+    /*//////////////////////////////////////////////////////////////
                                 FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -34,6 +46,7 @@ interface IMpSmartWallet {
      * @param intentId The unique identifier for the intent being executed.
      * @param transactionCount The current transaction number within the intent.
      * @param revertOnFailure Whether to revert entire transaction on any failure.
+     * @param compliance Compliance metadata for tracking.
      * @return failedAmount The total amount that failed to transfer (only in skip mode)
      */
     function executeBatchIntentTransfer(
@@ -42,7 +55,8 @@ interface IMpSmartWallet {
         uint256[] calldata amounts,
         bytes32 intentId,
         uint256 transactionCount,
-        bool revertOnFailure
+        bool revertOnFailure,
+        ComplianceMetadata calldata compliance
     ) external returns (uint256 failedAmount);
 
     /**

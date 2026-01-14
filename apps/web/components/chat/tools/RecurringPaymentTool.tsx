@@ -39,7 +39,7 @@ export function RecurringPaymentTool({
     type
 }: RecurringPaymentToolProps) {
     const toolName = type === 'ETH' ? 'executeRecurringEthPayment' : 'execute_recurring_mp_token_payment';
-    const explorerUrl = "https://eth-sepolia.blockscout.com/tx/";
+    const explorerUrl = "https://explorer.testnet.mantle.xyz/tx/";
 
     if ('state' in part) {
         switch (part.state) {
