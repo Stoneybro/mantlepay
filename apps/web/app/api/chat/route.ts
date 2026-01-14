@@ -150,16 +150,21 @@ CONSTRAINTS:
 - MAXIMUM duration: 31536000 seconds (1 year)
 - Duration must be >= interval
 
-## PAYROLL DETECTION (RWA/REALFI FEATURE)
+## COMPLIANCE DETECTION (RWA/REALFI FEATURE)
 
-When user mentions payroll-related keywords, EXTRACT and INCLUDE payroll metadata:
+When user mentions compliance-related keywords, EXTRACT and INCLUDE compliance metadata:
 
-**PAYROLL KEYWORDS TO DETECT:**
-- "payroll", "salary", "wages", "pay my team", "employee" → taxCategory: "W2" (default for employees)
-- "contractor", "freelancer", "freelance", "1099" → taxCategory: "CONTRACTOR"
-- "bonus", "commission", "incentive" → taxCategory: "BONUS"
+**CATEGORY DETECTION (category field):**
+- "payroll", "salary", "wages", "pay my team", "employee" → category: "PAYROLL_W2" (default for employees)
+- "1099", "contractor payment" → category: "PAYROLL_1099"
+- "contractor", "freelancer", "freelance" → category: "CONTRACTOR"
+- "bonus", "commission", "incentive" → category: "BONUS"
+- "invoice", "bill", "pay invoice", "vendor payment" → category: "INVOICE"
+- "vendor", "supplier", "supplier payment" → category: "VENDOR"
+- "grant", "donation", "funding", "disbursement" → category: "GRANT"
+- "subscription", "recurring B2B" → category: "SUBSCRIPTION"
 
-**JURISDICTION DETECTION:**
+**JURISDICTION DETECTION (jurisdiction field):**
 - "US", "USA", "California", "US-CA", "New York", "US-NY" → jurisdiction: "US-CA" (or detected state)
 - "UK", "United Kingdom", "British", "London" → jurisdiction: "UK"
 - "Germany", "German", "DE", "Berlin" → jurisdiction: "EU-DE"
@@ -167,26 +172,29 @@ When user mentions payroll-related keywords, EXTRACT and INCLUDE payroll metadat
 - "Nigeria", "NG", "Lagos", "Naira" → jurisdiction: "NG"
 - If not detected → leave empty ""
 
-**EMPLOYEE ID DETECTION:**
-- Look for patterns like: "EMP-001", "employee #123", "staff ID: ABC"
-- If user mentions specific employee identifiers → capture them
+**ENTITY ID DETECTION (entityIds field - one per recipient):**
+- Look for patterns like: "EMP-001", "employee #123", "staff ID: ABC", "vendor ID: V001", "invoice INV-123"
+- If user mentions specific identifiers → capture them as array matching recipients
+- If not detected → leave empty array []
+
+**REFERENCE ID DETECTION (referenceId field):**
+- "January payroll", "Jan 2025" → referenceId: "2025-01"
+- "Q1 payroll", "first quarter" → referenceId: "2025-Q1"
+- "invoice #12345" → referenceId: "INV-12345"
+- "PO number 789" → referenceId: "PO-789"
 - If not detected → leave empty ""
 
-**PERIOD ID DETECTION:**
-- "January payroll", "Jan 2025" → periodId: "2025-01"
-- "Q1 payroll", "first quarter" → periodId: "2025-Q1"
-- "weekly payroll for week 5" → periodId: "2025-W05"
-- If not detected → leave empty ""
-
-**EXAMPLE PAYROLL REQUESTS:**
+**EXAMPLE COMPLIANCE REQUESTS:**
 - "Pay my California employees Alice and Bob $5000 each monthly for 6 months, call it 'Monthly Payroll'"
-  → taxCategory: "W2", jurisdiction: "US-CA"
+  → category: "PAYROLL_W2", jurisdiction: "US-CA"
 - "Send contractor payment to 0x... $3000 weekly for 2 months, name it 'UK Contractor'"
-  → taxCategory: "CONTRACTOR", jurisdiction: "" (no jurisdiction specified)
-- "Q1 bonus to team: $1000 to 0x... for January, call it 'Q1 Bonus'"
-  → taxCategory: "BONUS", periodId: "2025-Q1"
+  → category: "CONTRACTOR", jurisdiction: "UK"
+- "Pay invoice #INV-2025-001 to vendor 0x... for $10000"
+  → category: "INVOICE", referenceId: "INV-2025-001"
+- "Quarterly grant disbursement to 0x... $5000 for Q1"
+  → category: "GRANT", referenceId: "2025-Q1"
 
-**IMPORTANT:** Payroll fields are OPTIONAL. If no payroll keywords detected, leave them empty. The payment will still work.
+**IMPORTANT:** Compliance fields are OPTIONAL. If no keywords detected, leave them empty. The payment will still work.
 
 ## AREA OF RESPONSIBILITY
 - You only support MNEE token transfers.
@@ -512,13 +520,13 @@ DO NOT USE IF:
                 .describe(
                   "Stop all on failure (true) or skip and continue (false). Default true."
                 ),
-              // Payroll compliance metadata (OPTIONAL - leave empty for non-payroll)
-              employeeId: z
-                .string()
+              // Compliance metadata (OPTIONAL - leave empty for non-compliance transactions)
+              entityIds: z
+                .array(z.string())
                 .optional()
-                .default("")
+                .default([])
                 .describe(
-                  'Employee identifier for HR matching (e.g., "EMP-001"). Leave empty if not a payroll payment.'
+                  'Array of identifiers per recipient (e.g., ["EMP-001", "EMP-002"] or ["VENDOR-A", "VENDOR-B"]). Leave empty if not applicable.'
                 ),
               jurisdiction: z
                 .string()
@@ -527,19 +535,19 @@ DO NOT USE IF:
                 .describe(
                   'Jurisdiction code detected from context (e.g., "US-CA", "UK", "EU-DE", "NG"). Leave empty if not detected.'
                 ),
-              payrollCategory: z
+              category: z
                 .string()
                 .optional()
                 .default("")
                 .describe(
-                  'Tax category: "W2" for employees, "CONTRACTOR" for freelancers, "BONUS" for bonuses. Leave empty if not a payroll payment.'
+                  'Compliance category: "PAYROLL_W2", "PAYROLL_1099", "CONTRACTOR", "BONUS", "INVOICE", "VENDOR", "GRANT". Leave empty if not applicable.'
                 ),
-              periodId: z
+              referenceId: z
                 .string()
                 .optional()
                 .default("")
                 .describe(
-                  'Period identifier (e.g., "2025-01", "2025-Q1"). Leave empty if not detected.'
+                  'Reference identifier (e.g., "2025-01", "INV-12345", "PO-789"). Leave empty if not detected.'
                 ),
             })
             .refine((data) => data.recipients.length === data.amounts.length, {

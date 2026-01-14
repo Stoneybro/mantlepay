@@ -8,6 +8,7 @@ import { SingleTokenTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
 import { MneeAddress } from "@/utils/helper";
+import { MneeSmartWalletABI } from "@/lib/abi/MneeSmartWallet";
 
 export function useSingleTokenTransfer(availableMneeBalance?: string) {
     const { getClient } = useSmartAccountContext();
@@ -49,16 +50,53 @@ export function useSingleTokenTransfer(availableMneeBalance?: string) {
                     args: [params.to, amountInUnits],
                 });
 
-                const hash = await smartAccountClient.sendUserOperation({
-                    account: smartAccountClient.account,
-                    calls: [
-                        {
-                            to: token,
-                            data: transferData,
-                            value: 0n,
-                        },
-                    ],
-                });
+                // Check if compliance metadata is provided
+                const hasCompliance = params.compliance && (
+                    (params.compliance.entityIds && params.compliance.entityIds.length > 0) ||
+                    params.compliance.jurisdiction ||
+                    params.compliance.category ||
+                    params.compliance.referenceId
+                );
+
+                let hash;
+                if (hasCompliance) {
+                    // Use executeWithCompliance to emit ComplianceExecuted event
+                    const complianceData = {
+                        entityIds: params.compliance?.entityIds || [],
+                        jurisdiction: params.compliance?.jurisdiction || "",
+                        category: params.compliance?.category || "",
+                        referenceId: params.compliance?.referenceId || ""
+                    };
+
+                    const executeWithComplianceData = encodeFunctionData({
+                        abi: MneeSmartWalletABI,
+                        functionName: "executeWithCompliance",
+                        args: [token, 0n, transferData, complianceData],
+                    });
+
+                    hash = await smartAccountClient.sendUserOperation({
+                        account: smartAccountClient.account,
+                        calls: [
+                            {
+                                to: smartAccountClient.account!.address,
+                                data: executeWithComplianceData,
+                                value: 0n,
+                            },
+                        ],
+                    });
+                } else {
+                    // Standard transfer without compliance
+                    hash = await smartAccountClient.sendUserOperation({
+                        account: smartAccountClient.account,
+                        calls: [
+                            {
+                                to: token,
+                                data: transferData,
+                                value: 0n,
+                            },
+                        ],
+                    });
+                }
 
                 const receipt = await smartAccountClient.waitForUserOperationReceipt({
                     hash,
@@ -78,3 +116,4 @@ export function useSingleTokenTransfer(availableMneeBalance?: string) {
         },
     });
 }
+

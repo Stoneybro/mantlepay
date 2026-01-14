@@ -245,7 +245,17 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
   const walletId = event.params.wallet.toString().toLowerCase();
   const intentId = event.params.intentId.toString();
 
-  // Create Intent helper entity
+  // Extract compliance metadata from event tuple
+  // Tuple order: [entityIds: string[], jurisdiction: string, category: string, referenceId: string]
+  const complianceTuple = event.params.compliance || [[] as string[], "", "", ""] as unknown as readonly [readonly string[], string, string, string];
+  const compliance = {
+    entityIds: complianceTuple[0] || [],
+    jurisdiction: complianceTuple[1] || "",
+    category: complianceTuple[2] || "",
+    referenceId: complianceTuple[3] || ""
+  };
+
+  // Create Intent helper entity with compliance data
   const intent: Intent = {
     id: intentId,
     wallet: walletId,
@@ -255,11 +265,16 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
     recipients: event.params.recipients.map(r => r.toString().toLowerCase()),
     amounts: event.params.amounts, // Already bigint[]
     interval: event.params.interval,
-    duration: event.params.duration
+    duration: event.params.duration,
+    // Compliance fields
+    entityIds: compliance.entityIds || [],
+    jurisdiction: compliance.jurisdiction || "",
+    category: compliance.category || "",
+    referenceId: compliance.referenceId || ""
   };
   context.Intent.set(intent);
 
-  // JSON Details
+  // JSON Details including compliance
   const details = JSON.stringify({
     scheduleName: event.params.name,
     token: "MNEE", // Defaulting to MNEE as per migration
@@ -267,13 +282,21 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
     recipientCount: event.params.recipients.length,
     recipients: event.params.recipients.map((r, i) => ({
       address: r.toString(),
-      amount: event.params.amounts[i].toString()
+      amount: event.params.amounts[i].toString(),
+      entityId: compliance.entityIds && compliance.entityIds[i] ? compliance.entityIds[i] : ""
     })),
     frequency: `Every ${event.params.interval} seconds`, // User wanted "Every 30 days", but we have raw seconds
     duration: `${event.params.duration} seconds`,
     totalExecutions: Number(event.params.totalTransactionCount),
     startDate: formatTimestamp(Number(event.params.transactionStartTime)),
-    endDate: formatTimestamp(Number(event.params.transactionEndTime))
+    endDate: formatTimestamp(Number(event.params.transactionEndTime)),
+    // Compliance metadata
+    compliance: {
+      entityIds: compliance.entityIds || [],
+      jurisdiction: compliance.jurisdiction || "",
+      category: compliance.category || "",
+      referenceId: compliance.referenceId || ""
+    }
   });
 
   const transaction: Transaction = {
@@ -297,19 +320,13 @@ MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
   const intent = await context.Intent.get(intentId);
   const tokenSymbol = "MNEE";
 
-  // Re-construct recipients with status
-  // We assume success unless we find specific failure events, but specific status per recipient
-  // is hard without correlating strictly with IntentTransferSuccess/Failed events.
-  // Those events are emitted by MneeSmartWallet, but this is MneeIntentRegistry.
-  // They are in the same transaction.
-
-  // For the purpose of this implementation we will default to "success" for all
-  // and if we were to handle failures rigorously we'd need to fetch the TransferFailed events from appropriate context (if feasible).
-  // Given simplifications:
+  // Re-construct recipients with status and entityIds
+  // We assume success unless we find specific failure events
   const recipientsList = intent ? intent.recipients.map((r, i) => ({
     address: r,
     amount: intent.amounts[i].toString(),
-    status: "success" // Optimistic default
+    status: "success", // Optimistic default
+    entityId: intent.entityIds && intent.entityIds[i] ? intent.entityIds[i] : ""
   })) : [];
 
   const details = JSON.stringify({
@@ -321,7 +338,14 @@ MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
     totalAmount: event.params.totalAmount.toString(),
     successfulTransfers: recipientsList.length, // Placeholder
     failedTransfers: 0, // Placeholder
-    recipients: recipientsList
+    recipients: recipientsList,
+    // Compliance metadata from stored Intent
+    compliance: intent ? {
+      entityIds: intent.entityIds || [],
+      jurisdiction: intent.jurisdiction || "",
+      category: intent.category || "",
+      referenceId: intent.referenceId || ""
+    } : undefined
   });
 
   const transaction: Transaction = {

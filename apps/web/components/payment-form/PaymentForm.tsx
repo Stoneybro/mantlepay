@@ -95,10 +95,21 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                 await singleMutation.mutateAsync({
                     to: singleRecipient as `0x${string}`,
                     amount: singleAmount,
+                    // Compliance metadata for single payment
+                    compliance: {
+                        entityIds: employeeId ? [employeeId] : [],
+                        category: payrollCategory === "none" ? undefined : payrollCategory,
+                        jurisdiction: jurisdiction === "none" ? undefined : jurisdiction,
+                        referenceId: periodId || undefined,
+                    },
                 });
                 // Reset
                 setSingleRecipient("");
                 setSingleAmount("");
+                setPayrollCategory("none");
+                setJurisdiction("none");
+                setEmployeeId("");
+                setPeriodId("");
             } else if (paymentType === "batch") {
                 const validRecipients = batchRecipients.filter(r => r.address && r.amount);
                 if (validRecipients.length < 2) {
@@ -108,8 +119,19 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                 await batchMutation.mutateAsync({
                     recipients: validRecipients.map(r => r.address as `0x${string}`),
                     amounts: validRecipients.map(r => r.amount),
+                    // Compliance metadata for batch payment - entityIds per recipient
+                    compliance: {
+                        entityIds: validRecipients.map((_, i) => employeeId ? `${employeeId}-${i + 1}` : ""),
+                        category: payrollCategory === "none" ? undefined : payrollCategory,
+                        jurisdiction: jurisdiction === "none" ? undefined : jurisdiction,
+                        referenceId: periodId || undefined,
+                    },
                 });
                 setBatchRecipients([{ address: "", amount: "" }]);
+                setPayrollCategory("none");
+                setJurisdiction("none");
+                setEmployeeId("");
+                setPeriodId("");
             } else if (paymentType === "recurring") {
                 if (!recurringName) {
                     toast.error("Please provide a name for this recurring payment");

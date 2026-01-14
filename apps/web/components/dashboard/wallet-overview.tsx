@@ -11,7 +11,7 @@ import CopyText from "@/components/ui/copy";
 import { Button } from "@/components/ui/button";
 import { BalanceCards } from "./Balancecard";
 import { InfoCards } from "./InfoCard";
-import { PayrollSummary } from "./PayrollSummary";
+import { ComplianceSummary } from "./ComplianceSummary";
 import { TransactionItemProps, useWalletHistory } from "@/hooks/useWalletHistory";
 import { ActivityType } from "@/lib/envio/client";
 import { useMemo } from "react";
@@ -105,8 +105,8 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
                 />
             </div>
             <div className="@container/main flex flex-col gap-2  ">
-                <div className="text-lg font-semibold ml-2 md:ml-4">Payroll Compliance:</div>
-                <PayrollSummary
+                <div className="text-lg font-semibold ml-2 md:ml-4">Compliance Tracking:</div>
+                <ComplianceSummary
                     transactions={transactions}
                     isLoading={historyIsLoading}
                 />

@@ -46,4 +46,9 @@ type Intent @entity {
   amounts: [BigInt!]!
   interval: BigInt!
   duration: BigInt!
+  # Compliance metadata
+  entityIds: [String!]
+  jurisdiction: String
+  category: String
+  referenceId: String
 }

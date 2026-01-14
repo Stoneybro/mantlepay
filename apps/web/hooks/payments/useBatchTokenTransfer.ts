@@ -8,6 +8,7 @@ import { BatchTokenTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 
 import { MneeAddress } from "@/utils/helper";
+import { MneeSmartWalletABI } from "@/lib/abi/MneeSmartWallet";
 
 export function useBatchTokenTransfer(availableMneeBalance?: string) {
     const { getClient } = useSmartAccountContext();
@@ -48,7 +49,7 @@ export function useBatchTokenTransfer(availableMneeBalance?: string) {
                     parseUnits(amount, decimals)
                 );
 
-                const calls = params.recipients.map((recipient, index) => {
+                const transferCalls = params.recipients.map((recipient, index) => {
                     const transferData = encodeFunctionData({
                         abi: erc20Abi,
                         functionName: "transfer",
@@ -56,16 +57,59 @@ export function useBatchTokenTransfer(availableMneeBalance?: string) {
                     });
 
                     return {
-                        to: token,
-                        data: transferData,
+                        target: token as `0x${string}`,
                         value: 0n,
+                        data: transferData as `0x${string}`,
                     };
                 });
 
-                const hash = await smartAccountClient.sendUserOperation({
-                    account: smartAccountClient.account,
-                    calls,
-                } as never);
+                // Check if compliance metadata is provided
+                const hasCompliance = params.compliance && (
+                    (params.compliance.entityIds && params.compliance.entityIds.length > 0) ||
+                    params.compliance.jurisdiction ||
+                    params.compliance.category ||
+                    params.compliance.referenceId
+                );
+
+                let hash;
+                if (hasCompliance) {
+                    // Use executeBatchWithCompliance to emit ComplianceExecuted event
+                    const complianceData = {
+                        entityIds: params.compliance?.entityIds || [],
+                        jurisdiction: params.compliance?.jurisdiction || "",
+                        category: params.compliance?.category || "",
+                        referenceId: params.compliance?.referenceId || ""
+                    };
+
+                    const executeBatchWithComplianceData = encodeFunctionData({
+                        abi: MneeSmartWalletABI,
+                        functionName: "executeBatchWithCompliance",
+                        args: [transferCalls, complianceData],
+                    });
+
+                    hash = await smartAccountClient.sendUserOperation({
+                        account: smartAccountClient.account,
+                        calls: [
+                            {
+                                to: smartAccountClient.account!.address,
+                                data: executeBatchWithComplianceData,
+                                value: 0n,
+                            },
+                        ],
+                    });
+                } else {
+                    // Standard batch transfer without compliance
+                    const calls = transferCalls.map(c => ({
+                        to: c.target,
+                        data: c.data,
+                        value: 0n,
+                    }));
+
+                    hash = await smartAccountClient.sendUserOperation({
+                        account: smartAccountClient.account,
+                        calls,
+                    } as never);
+                }
 
                 const receipt = await smartAccountClient.waitForUserOperationReceipt({
                     hash,
@@ -87,3 +131,4 @@ export function useBatchTokenTransfer(availableMneeBalance?: string) {
         },
     });
 }
+
