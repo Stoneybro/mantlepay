@@ -3,7 +3,7 @@ import { useWallets } from "@privy-io/react-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
 import { encodeFunctionData } from "viem";
-import { MpIntentRegistryABI } from "@/lib/abi/MpIntentRegistry";
+import { MpIntentRegistryABI } from "@/lib/abi/MpIntentRegistryABI";
 import { MpRegistryAddress } from "@/lib/CA";
 import { CancelIntentParams } from "./types";
 

@@ -1,34 +1,35 @@
 import { readContract } from "@/lib/server";
-import { formatUnits } from "viem";
+import { formatUnits, formatEther } from "viem";
 import { MpSmartWalletABI } from "@/lib/abi/MpSmartWalletAbi";
 import { zeroAddress } from "viem";
+import { getPublicClient } from "@/lib/client";
 
 /**
- * Fetches wallet balances :
+ * Fetches wallet balances for native MNT:
  * - availableBalance: spendable funds
- * - committedFunds: locked rewards
+ * - committedFunds: locked in scheduled payments
  */
 
 export async function fetchWalletBalance(smartAccountAddress: `0x${string}`) {
-  const [availablePyusdBalance, committedPyuBalance] = await Promise.all([
-    readContract({
-      address: smartAccountAddress,
-      abi: MpSmartWalletABI,
-      functionName: "getAvailableBalance",
-      args: [MpTokenAddress],
-    }),
-    readContract({
-      address: smartAccountAddress,
-      abi: MpSmartWalletABI,
-      functionName: "s_committedFunds",
-      args: [MpTokenAddress],
-    }),
-  ]);
+  const publicClient = getPublicClient();
+
+  // Get native MNT balance directly from the chain
+  const nativeBalance = await publicClient.getBalance({ address: smartAccountAddress });
+
+  // Get committed funds for native token (zeroAddress represents native MNT)
+  const committedFunds = await readContract({
+    address: smartAccountAddress,
+    abi: MpSmartWalletABI,
+    functionName: "s_committedFunds",
+    args: [zeroAddress],
+  }) as bigint;
+
+  // Available = total balance - committed
+  const availableBalance = nativeBalance - committedFunds;
 
   return {
-    availableMpTokenBalance: formatUnits(availablePyusdBalance as bigint, 6),
-    committedMpTokenBalance: formatUnits(committedPyuBalance as bigint, 6),
+    availableMntBalance: formatEther(availableBalance > 0n ? availableBalance : 0n),
+    committedMntBalance: formatEther(committedFunds),
+    totalMntBalance: formatEther(nativeBalance),
   };
 }
-
-export const MpTokenAddress = "0x19b2124fCb1B156284EE2C28f97e3c873f415bc5";

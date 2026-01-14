@@ -3,7 +3,7 @@ import { useWallets } from "@privy-io/react-auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSmartAccountContext } from "@/lib/SmartAccountProvider";
 import { encodeFunctionData, parseEther, zeroAddress } from "viem";
-import { MpIntentRegistryABI } from "@/lib/abi/MpIntentRegistry";
+import { MpIntentRegistryABI } from "@/lib/abi/MpIntentRegistryABI";
 import { MpRegistryAddress } from "@/lib/CA";
 import { RecurringPaymentParams } from "./types";
 import { checkSufficientBalance } from "./utils";
@@ -27,7 +27,7 @@ export function useRecurringPayment(availableEthBalance?: string) {
                     const balanceCheck = checkSufficientBalance({
                         availableBalance: availableEthBalance,
                         requiredAmount: totalCommitment,
-                        token: "ETH"
+                        token: "MNT"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -49,7 +49,7 @@ export function useRecurringPayment(availableEthBalance?: string) {
                     abi: MpIntentRegistryABI,
                     functionName: "createIntent",
                     args: [
-                        zeroAddress, // ETH
+                        zeroAddress, // MNT (native token)
                         params.name,
                         params.recipients,
                         amountsInWei,
@@ -81,10 +81,10 @@ export function useRecurringPayment(availableEthBalance?: string) {
                     hash,
                 });
 
-                toast.success("Recurring ETH payment intent created successfully!");
+                toast.success("Recurring MNT payment intent created successfully!");
                 return receipt;
             } catch (error) {
-                console.error("Error creating recurring ETH payment intent:", error);
+                console.error("Error creating recurring MNT payment intent:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to create recurring payment intent";
                 toast.error(errorMessage);
                 throw error;

@@ -8,8 +8,8 @@ field_selection:
     - input
 
 networks:
-# Mantle Testnet (chain ID 5001)
-- id: 5001
+# Mantle Sepolia (chain ID 5003)
+- id: 5003
   start_block: 0
   contracts:
   - name: MpSmartWallet
@@ -24,21 +24,15 @@ networks:
     - event: WalletAction(address indexed initiator, address indexed target, uint256 value, bytes4 indexed selector, bool success, bytes32 actionType)
   - name: MpSmartWalletFactory
     address:
-    - 0xD02CF60D2D6e4c9d378793657E676055C5b686E7
+    - 0x43e0BC90661dAF20C6fFbae1079d6E07E88e403A
     handler: src/EventHandlers.ts
     events:
     - event: AccountCreated(address indexed account, address indexed owner)
   - name: MpIntentRegistry
     address:
-    - 0x799fD0C5fE10C2eD92F497488Db22606Ac170Fdb
+    - 0x6A0C73162c20Bc56212D643112c339f654C45198
     handler: src/EventHandlers.ts
     events:
     - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime, address[] recipients, uint256[] amounts, (string[], string, string, string) compliance)
     - event: IntentExecuted(address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount)
     - event: IntentCancelled(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 amountRefunded, uint256 failedAmountRecovered)
-  - name: MpToken
-    address:
-    - 0x19b2124fCb1B156284EE2C28f97e3c873f415bc5
-    handler: src/EventHandlers.ts
-    events:
-    - event: Transfer(address indexed from, address indexed to, uint256 value)

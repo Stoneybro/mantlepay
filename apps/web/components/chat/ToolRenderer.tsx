@@ -10,9 +10,9 @@ interface ToolRendererProps {
     addToolResult: (result: any) => void;
     isTransactionPending: boolean;
     hooks: {
-        singleMpTokenTransfer: any;
-        batchMpTokenTransfer: any;
-        recurringMpTokenPayment: any;
+        singleMntTransfer: any;
+        batchMntTransfer: any;
+        recurringMntPayment: any;
     };
 }
 
@@ -31,7 +31,7 @@ export function ToolRenderer({
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.singleMpTokenTransfer}
+                mutation={hooks.singleMntTransfer}
                 type="MNT"
             />
         );
@@ -44,7 +44,7 @@ export function ToolRenderer({
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.batchMpTokenTransfer}
+                mutation={hooks.batchMntTransfer}
                 type="MNT"
             />
         );
@@ -57,7 +57,7 @@ export function ToolRenderer({
                 callId={toolCallId}
                 addToolResult={addToolResult}
                 isTransactionPending={isTransactionPending}
-                mutation={hooks.recurringMpTokenPayment}
+                mutation={hooks.recurringMntPayment}
                 type="MNT"
             />
         );

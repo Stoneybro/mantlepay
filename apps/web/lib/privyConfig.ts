@@ -1,5 +1,5 @@
 import type { PrivyClientConfig } from "@privy-io/react-auth";
-import { mantleTestnet } from "viem/chains";
+import { mantleSepoliaTestnet } from "viem/chains";
 
 export const privyConfig: PrivyClientConfig = {
   embeddedWallets: {
@@ -7,8 +7,8 @@ export const privyConfig: PrivyClientConfig = {
       createOnLogin: "users-without-wallets",
     },
   },
-  defaultChain: mantleTestnet,
-  supportedChains: [mantleTestnet],
+  defaultChain: mantleSepoliaTestnet,
+  supportedChains: [mantleSepoliaTestnet],
   loginMethods: ["email", "google", "github"],
   appearance: {
     accentColor: "#38CCCD",

@@ -1,11 +1,11 @@
 import { createPublicClient, createWalletClient, http, custom } from "viem";
-import { mantleTestnet } from "viem/chains";
+import { mantleSepoliaTestnet } from "viem/chains";
 
 // Public client: used for read-only blockchain interactions
 export const getPublicClient = () =>
   createPublicClient({
-    chain: mantleTestnet,
-    transport: http("https://rpc.testnet.mantle.xyz"),
+    chain: mantleSepoliaTestnet,
+    transport: http("https://rpc.sepolia.mantle.xyz"),
   });
 
 // Wallet client: used for signed transactions via a connected wallet
@@ -18,6 +18,6 @@ export const getWalletClient = async ({
 }) =>
   createWalletClient({
     account: address,
-    chain: mantleTestnet,
+    chain: mantleSepoliaTestnet,
     transport: custom(eip1193),
   });

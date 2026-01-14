@@ -141,7 +141,7 @@
   },
   {
     "type": "error",
-    "name": "MneeSmartWalletFactory__ImplementationUndeployed",
+    "name": "MpSmartWalletFactory__ImplementationUndeployed",
     "inputs": []
   }
 ]

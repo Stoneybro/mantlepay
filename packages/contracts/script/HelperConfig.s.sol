@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 import {Script} from "forge-std/Script.sol";
 import {EntryPoint} from "lib/account-abstraction/contracts/core/EntryPoint.sol";
 
-
 contract HelperConfig is Script {
     /*//////////////////////////////////////////////////////////////
                                  TYPES
@@ -17,7 +16,7 @@ contract HelperConfig is Script {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     NetworkConfig public localNetwork;
-    uint256 constant SEPOLIA_CHAIN_ID = 11155111;
+    uint256 constant MANTLE_CHAIN_ID = 5003;
     uint256 constant LOCAL_CHAIN_ID = 31337;
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -40,15 +39,18 @@ contract HelperConfig is Script {
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {
         if (chainId == LOCAL_CHAIN_ID) {
             return getAnvilEthConfig();
-        } else if (chainId == SEPOLIA_CHAIN_ID) {
-            return getSepoliaEthConfig();
+        } else if (chainId == MANTLE_CHAIN_ID) {
+            return getMantleEthConfig();
         } else {
             revert HelperConfig__UnsupportedNetwork();
         }
     }
 
-    function getSepoliaEthConfig() public pure returns (NetworkConfig memory) {
-        return NetworkConfig({implementation:0x253CF05cd0106861f3E53636365d21dF832D804d, registry:   0x799fD0C5fE10C2eD92F497488Db22606Ac170Fdb});
+    function getMantleEthConfig() public pure returns (NetworkConfig memory) {
+        return NetworkConfig({
+            implementation:0x6c6b5c86752D8B5330Cb055A967E2f6253D09195,
+            registry: 0x6A0C73162c20Bc56212D643112c339f654C45198
+        });
     }
 
     function getAnvilEthConfig() public returns (NetworkConfig memory) {

@@ -1,4 +1,4 @@
-export const MpIntentRegistryABI = [
+[
   {
     "type": "function",
     "name": "MAX_DURATION",
@@ -771,6 +771,11 @@ export const MpIntentRegistryABI = [
   },
   {
     "type": "error",
+    "name": "MpIntentRegistry__InvalidComplianceMetadata",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "MpIntentRegistry__InvalidDuration",
     "inputs": []
   },
@@ -805,15 +810,9 @@ export const MpIntentRegistryABI = [
     "inputs": []
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "length",
-        "type": "uint256"
-      }
-    ],
+    "type": "error",
     "name": "MpIntentRegistry__TooManyRecipients",
-    "type": "error"
+    "inputs": []
   },
   {
     "type": "error",

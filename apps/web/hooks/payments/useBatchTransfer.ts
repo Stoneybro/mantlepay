@@ -23,7 +23,7 @@ export function useBatchTransfer(availableEthBalance?: string) {
                     const balanceCheck = checkSufficientBalance({
                         availableBalance: availableEthBalance,
                         requiredAmount: totalAmount,
-                        token: "ETH"
+                        token: "MNT"
                     });
 
                     if (!balanceCheck.sufficient) {
@@ -57,11 +57,11 @@ export function useBatchTransfer(availableEthBalance?: string) {
                 });
 
                 toast.success(
-                    `Batch ETH transfer completed! Sent to ${params.recipients.length} recipients.`
+                    `Batch MNT transfer completed! Sent to ${params.recipients.length} recipients.`
                 );
                 return receipt;
             } catch (error) {
-                console.error("Error sending batch ETH transfer:", error);
+                console.error("Error sending batch MNT transfer:", error);
                 const errorMessage = error instanceof Error ? error.message : "Failed to send batch transfer";
                 toast.error(errorMessage);
                 throw error;

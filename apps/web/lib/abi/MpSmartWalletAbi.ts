@@ -135,6 +135,33 @@ export const MpSmartWalletABI = [
         "name": "revertOnFailure",
         "type": "bool",
         "internalType": "bool"
+      },
+      {
+        "name": "compliance",
+        "type": "tuple",
+        "internalType": "struct IMpSmartWallet.ComplianceMetadata",
+        "components": [
+          {
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "referenceId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
       }
     ],
     "outputs": [
@@ -145,6 +172,113 @@ export const MpSmartWalletABI = [
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "executeBatchWithCompliance",
+    "inputs": [
+      {
+        "name": "calls",
+        "type": "tuple[]",
+        "internalType": "struct MpSmartWallet.Call[]",
+        "components": [
+          {
+            "name": "target",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "compliance",
+        "type": "tuple",
+        "internalType": "struct IMpSmartWallet.ComplianceMetadata",
+        "components": [
+          {
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "referenceId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "executeWithCompliance",
+    "inputs": [
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "compliance",
+        "type": "tuple",
+        "internalType": "struct IMpSmartWallet.ComplianceMetadata",
+        "components": [
+          {
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "jurisdiction",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "category",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "referenceId",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -387,6 +521,43 @@ export const MpSmartWalletABI = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ComplianceExecuted",
+    "inputs": [
+      {
+        "name": "txType",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "entityIds",
+        "type": "string[]",
+        "indexed": false,
+        "internalType": "string[]"
+      },
+      {
+        "name": "jurisdiction",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "category",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "referenceId",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       }
     ],
     "anonymous": false
@@ -642,6 +813,51 @@ export const MpSmartWalletABI = [
   },
   {
     "type": "error",
+    "name": "MpSmartWallet__InsufficientUncommittedFunds",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpSmartWallet__IntentRegistryZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpSmartWallet__InvalidBatchInput",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpSmartWallet__InvalidCommitmentDecrease",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpSmartWallet__NotFromEntryPoint",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpSmartWallet__NotFromRegistry",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpSmartWallet__OwnerIsZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpSmartWallet__TransferFailed",
+    "inputs": [
+      {
+        "name": "recipient",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
         "internalType": "address"
       },
       {
@@ -653,7 +869,7 @@ export const MpSmartWalletABI = [
   },
   {
     "type": "error",
-    "name": "MneeSmartWallet__Unauthorized",
+    "name": "MpSmartWallet__Unauthorized",
     "inputs": []
   },
   {

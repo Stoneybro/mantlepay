@@ -5,7 +5,6 @@ import {
   MneeSmartWallet,
   MneeSmartWalletFactory,
   MneeIntentRegistry,
-  MneeToken,
   Transaction,
   TransactionType,
   Wallet,
@@ -277,7 +276,7 @@ MneeIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
   // JSON Details including compliance
   const details = JSON.stringify({
     scheduleName: event.params.name,
-    token: "MNEE", // Defaulting to MNEE as per migration
+    token: "MNT", // Using native MNT token
     totalCommitment: event.params.totalCommitment.toString(),
     recipientCount: event.params.recipients.length,
     recipients: event.params.recipients.map((r, i) => ({
@@ -318,7 +317,7 @@ MneeIntentRegistry.IntentExecuted.handler(async ({ event, context }) => {
   const intentId = event.params.intentId.toString();
 
   const intent = await context.Intent.get(intentId);
-  const tokenSymbol = "MNEE";
+  const tokenSymbol = "MNT";
 
   // Re-construct recipients with status and entityIds
   // We assume success unless we find specific failure events
@@ -367,7 +366,7 @@ MneeIntentRegistry.IntentCancelled.handler(async ({ event, context }) => {
   const intentId = event.params.intentId.toString();
   const intent = await context.Intent.get(intentId);
 
-  const tokenSymbol = "MNEE";
+  const tokenSymbol = "MNT";
 
   const details = JSON.stringify({
     scheduleName: event.params.name,
@@ -396,7 +395,7 @@ MneeSmartWallet.TransferFailed.handler(async ({ event, context }) => {
   // We need to fetch the Intent to get the name
   const intentId = event.params.intentId.toString();
   const intent = await context.Intent.get(intentId);
-  const tokenSymbol = "MNEE";
+  const tokenSymbol = "MNT";
 
   const details = JSON.stringify({
     scheduleName: intent ? intent.name : "Unknown Schedule",
@@ -420,23 +419,4 @@ MneeSmartWallet.TransferFailed.handler(async ({ event, context }) => {
   };
 
   context.Transaction.set(transaction);
-});
-
-// Handle MneeToken Transfer events to capture actual transfer amounts
-MneeToken.Transfer.handler(async ({ event }) => {
-  const txHash = event.transaction.hash;
-
-  // Store transfer in cache for correlation with batch transactions
-  if (!transfersCache.has(txHash)) {
-    transfersCache.set(txHash, []);
-  }
-
-  const transfers = transfersCache.get(txHash)!;
-  transfers.push({
-    from: event.params.from.toString().toLowerCase(),
-    to: event.params.to.toString().toLowerCase(),
-    value: event.params.value.toString()
-  });
-
-  console.log(`Transfer cached: ${event.params.value} from ${event.params.from} to ${event.params.to} in tx ${txHash}`);
 });

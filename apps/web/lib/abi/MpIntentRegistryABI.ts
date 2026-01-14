@@ -1,4 +1,4 @@
-[
+export const MpIntentRegistryABI = [
   {
     "type": "function",
     "name": "MAX_DURATION",
@@ -120,14 +120,14 @@
         "internalType": "bool"
       },
       {
-        "name": "payrollData",
+        "name": "complianceData",
         "type": "tuple",
-        "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+        "internalType": "struct MpIntentRegistry.ComplianceMetadata",
         "components": [
           {
-            "name": "employeeId",
-            "type": "string",
-            "internalType": "string"
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
           },
           {
             "name": "jurisdiction",
@@ -135,12 +135,12 @@
             "internalType": "string"
           },
           {
-            "name": "taxCategory",
+            "name": "category",
             "type": "string",
             "internalType": "string"
           },
           {
-            "name": "periodId",
+            "name": "referenceId",
             "type": "string",
             "internalType": "string"
           }
@@ -194,7 +194,7 @@
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct MneeIntentRegistry.Intent",
+        "internalType": "struct MpIntentRegistry.Intent",
         "components": [
           {
             "name": "id",
@@ -272,14 +272,14 @@
             "internalType": "uint256"
           },
           {
-            "name": "payroll",
+            "name": "compliance",
             "type": "tuple",
-            "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+            "internalType": "struct MpIntentRegistry.ComplianceMetadata",
             "components": [
               {
-                "name": "employeeId",
-                "type": "string",
-                "internalType": "string"
+                "name": "entityIds",
+                "type": "string[]",
+                "internalType": "string[]"
               },
               {
                 "name": "jurisdiction",
@@ -287,12 +287,12 @@
                 "internalType": "string"
               },
               {
-                "name": "taxCategory",
+                "name": "category",
                 "type": "string",
                 "internalType": "string"
               },
               {
-                "name": "periodId",
+                "name": "referenceId",
                 "type": "string",
                 "internalType": "string"
               }
@@ -510,14 +510,14 @@
         "internalType": "uint256"
       },
       {
-        "name": "payroll",
+        "name": "compliance",
         "type": "tuple",
-        "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+        "internalType": "struct MpIntentRegistry.ComplianceMetadata",
         "components": [
           {
-            "name": "employeeId",
-            "type": "string",
-            "internalType": "string"
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
           },
           {
             "name": "jurisdiction",
@@ -525,12 +525,12 @@
             "internalType": "string"
           },
           {
-            "name": "taxCategory",
+            "name": "category",
             "type": "string",
             "internalType": "string"
           },
           {
-            "name": "periodId",
+            "name": "referenceId",
             "type": "string",
             "internalType": "string"
           }
@@ -659,15 +659,15 @@
         "internalType": "uint256[]"
       },
       {
-        "name": "payroll",
+        "name": "compliance",
         "type": "tuple",
         "indexed": false,
-        "internalType": "struct MneeIntentRegistry.PayrollMetadata",
+        "internalType": "struct MpIntentRegistry.ComplianceMetadata",
         "components": [
           {
-            "name": "employeeId",
-            "type": "string",
-            "internalType": "string"
+            "name": "entityIds",
+            "type": "string[]",
+            "internalType": "string[]"
           },
           {
             "name": "jurisdiction",
@@ -675,12 +675,12 @@
             "internalType": "string"
           },
           {
-            "name": "taxCategory",
+            "name": "category",
             "type": "string",
             "internalType": "string"
           },
           {
-            "name": "periodId",
+            "name": "referenceId",
             "type": "string",
             "internalType": "string"
           }
@@ -741,77 +741,82 @@
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__ArrayLengthMismatch",
+    "name": "MpIntentRegistry__ArrayLengthMismatch",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__InsufficientFunds",
+    "name": "MpIntentRegistry__InsufficientFunds",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__IntentNotActive",
+    "name": "MpIntentRegistry__IntentNotActive",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__IntentNotExecutable",
+    "name": "MpIntentRegistry__IntentNotExecutable",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__IntentNotFound",
+    "name": "MpIntentRegistry__IntentNotFound",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__InvalidAmount",
+    "name": "MpIntentRegistry__InvalidAmount",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__InvalidDuration",
+    "name": "MpIntentRegistry__InvalidComplianceMetadata",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__InvalidInterval",
+    "name": "MpIntentRegistry__InvalidDuration",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__InvalidRecipient",
+    "name": "MpIntentRegistry__InvalidInterval",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__InvalidToken",
+    "name": "MpIntentRegistry__InvalidRecipient",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__InvalidTotalTransactionCount",
+    "name": "MpIntentRegistry__InvalidToken",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__NoRecipients",
+    "name": "MpIntentRegistry__InvalidTotalTransactionCount",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__StartTimeInPast",
+    "name": "MpIntentRegistry__NoRecipients",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__TooManyRecipients",
+    "name": "MpIntentRegistry__StartTimeInPast",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "MneeIntentRegistry__Unauthorized",
+    "name": "MpIntentRegistry__TooManyRecipients",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MpIntentRegistry__Unauthorized",
     "inputs": []
   },
   {
@@ -819,4 +824,5 @@
     "name": "ReentrancyGuardReentrantCall",
     "inputs": []
   }
-]
+] as const
+

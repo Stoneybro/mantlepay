@@ -1,4 +1,4 @@
-export const MpSmartWalletFactoryABI = [
+export const MpSmartWalletFactoryABI =[
   {
     "type": "constructor",
     "inputs": [
