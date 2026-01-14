@@ -1,6 +1,6 @@
 // Tests temporarily removed during refactor
 import {
-  MneeSmartWallet,
+  MpSmartWallet,
 } from "generated";
 
 // Placeholder

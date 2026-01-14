@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useRecurringTokenPayment } from "@/hooks/payments/useRecurringTokenPayment";
-import { useSingleTokenTransfer } from "@/hooks/payments/useSingleTokenTransfer";
-import { useBatchTokenTransfer } from "@/hooks/payments/useBatchTokenTransfer";
+import { useRecurringPayment } from "@/hooks/payments/useRecurringPayment";
+import { useSingleTransfer } from "@/hooks/payments/useSingleTransfer";
+import { useBatchTransfer } from "@/hooks/payments/useBatchTransfer";
 import { toast } from "sonner";
 
 interface PaymentFormProps {
@@ -49,9 +49,9 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
     const [periodId, setPeriodId] = useState("");
 
     // Mutations
-    const singleMutation = useSingleTokenTransfer(availableBalance);
-    const batchMutation = useBatchTokenTransfer(availableBalance);
-    const recurringMutation = useRecurringTokenPayment(availableBalance);
+    const singleMutation = useSingleTransfer(availableBalance);
+    const batchMutation = useBatchTransfer(availableBalance);
+    const recurringMutation = useRecurringPayment(availableBalance);
 
     const isProcessing = singleMutation.isPending || batchMutation.isPending || recurringMutation.isPending;
 

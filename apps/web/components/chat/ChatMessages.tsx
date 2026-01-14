@@ -83,7 +83,7 @@ export function ChatMessages({
                 {isLoading && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Mneepay is thinking...</span>
+                        <span>MantlePay is thinking...</span>
                     </div>
                 )}
             </div>
