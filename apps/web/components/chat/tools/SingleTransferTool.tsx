@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 type SingleTransferInput = {
     to: string;
     amount: string;
+    entityIds?: string[];
+    jurisdictions?: string[];
+    categories?: string[];
+    referenceId?: string;
 };
 
 interface SingleTransferToolProps {
@@ -61,7 +65,13 @@ export function SingleTransferTool({
                                     try {
                                         const result = await mutation.mutateAsync({
                                             to: input.to as `0x${string}`,
-                                            amount: input.amount
+                                            amount: input.amount,
+                                            compliance: {
+                                                entityIds: input.entityIds,
+                                                jurisdictions: input.jurisdictions,
+                                                categories: input.categories,
+                                                referenceId: input.referenceId
+                                            }
                                         });
 
                                         addToolResult({

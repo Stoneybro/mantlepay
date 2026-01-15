@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 type BatchTransferInput = {
     recipients: string[];
     amounts: string[];
+    entityIds?: string[];
+    jurisdictions?: string[];
+    categories?: string[];
+    referenceId?: string;
 };
 
 interface BatchTransferToolProps {
@@ -68,7 +72,13 @@ export function BatchTransferTool({
                                     try {
                                         const result = await mutation.mutateAsync({
                                             recipients: batchInput.recipients as `0x${string}`[],
-                                            amounts: batchInput.amounts
+                                            amounts: batchInput.amounts,
+                                            compliance: {
+                                                entityIds: batchInput.entityIds,
+                                                jurisdictions: batchInput.jurisdictions,
+                                                categories: batchInput.categories,
+                                                referenceId: batchInput.referenceId
+                                            }
                                         });
 
                                         addToolResult({

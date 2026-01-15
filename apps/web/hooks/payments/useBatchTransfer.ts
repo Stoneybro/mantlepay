@@ -6,6 +6,7 @@ import { parseEther, encodeFunctionData } from "viem";
 import { BatchTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 import { MpSmartWalletABI } from "@/lib/abi/MpSmartWalletAbi";
+import { stringsToJurisdictions, stringsToCategories } from "@/lib/compliance-enums";
 
 export function useBatchTransfer(availableEthBalance?: string) {
     const { getClient } = useSmartAccountContext();
@@ -54,7 +55,8 @@ export function useBatchTransfer(availableEthBalance?: string) {
                 const hasCompliance = params.compliance && (
                     (params.compliance.entityIds && params.compliance.entityIds.length > 0) ||
                     (params.compliance.jurisdictions && params.compliance.jurisdictions.length > 0) ||
-                    (params.compliance.categories && params.compliance.categories.length > 0)
+                    (params.compliance.categories && params.compliance.categories.length > 0) ||
+                    (params.compliance.referenceId && params.compliance.referenceId.length > 0)
                 );
 
                 let hash;
@@ -63,8 +65,8 @@ export function useBatchTransfer(availableEthBalance?: string) {
                     // Encode custom execution for compliance
                     const complianceData = {
                         entityIds: params.compliance.entityIds || [],
-                        jurisdictions: params.compliance.jurisdictions || [],
-                        categories: params.compliance.categories || [],
+                        jurisdictions: stringsToJurisdictions(params.compliance.jurisdictions || []),
+                        categories: stringsToCategories(params.compliance.categories || []),
                         referenceId: params.compliance.referenceId || ""
                     };
 

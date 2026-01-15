@@ -169,6 +169,7 @@ function ChatInner({
             fetch('/api/chat/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                keepalive: true,
                 body: JSON.stringify({
                     chatId: id,
                     messages,
