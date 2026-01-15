@@ -158,6 +158,20 @@ export const useWalletHistory = (walletAddress?: string) => {
                     const isTransfer = tx.details.functionCall === 'Token Transfer' || tx.details.functionCall === 'Native MNT Transfer';
                     return isTransfer;
                 }
+
+                // Filter out transactions before deployment (ghost transactions)
+                const deployedAt = query.data?.deployedAt ? new Date(Number(query.data.deployedAt) * 1000) : null;
+                if (deployedAt) {
+                    const txDate = new Date(tx.timestamp);
+                    // Allow slight buffer (e.g. 1 minute) or strict inequality? 
+                    // Assuming ghost tx is significantly older or specific glitch. 
+                    // Using strict comparison might hide WALLET_CREATED if seconds differ slightly.
+                    // But WALLET_CREATED should match deployedAt exactly if indexed correctly.
+                    // Safest is to allow WALLET_CREATED explicitly.
+                    if (tx.type === ActivityType.WALLET_CREATED) return true;
+                    return txDate >= deployedAt;
+                }
+
                 return true;
             });
     }, [query.data]);
