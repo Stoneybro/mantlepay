@@ -1,6 +1,7 @@
 "use client";
 import { AppSidebar } from "@/components/wallet/app-sidebar";
 import { Dashboard } from "@/components/dashboard/dashboard";
+import { ComplianceDashboard } from "@/components/compliance/ComplianceDashboard";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import Chat from "@/components/chat/chat";
 import { PaymentForm } from "@/components/payment-form/PaymentForm";
@@ -58,6 +59,7 @@ export default function Page() {
                 <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="form">Form</TabsTrigger>
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="compliance">Compliance</TabsTrigger>
               </TabsList>
               <TabsContent value="chat">
                 <Chat
@@ -70,6 +72,9 @@ export default function Page() {
               </TabsContent>
               <TabsContent value="dashboard">
                 <Dashboard walletAddress={walletAddress!} />
+              </TabsContent>
+              <TabsContent value="compliance">
+                <ComplianceDashboard walletAddress={walletAddress!} />
               </TabsContent>
             </Tabs>
           </div>

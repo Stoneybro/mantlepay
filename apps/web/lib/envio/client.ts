@@ -51,3 +51,19 @@ export const GET_WALLET_ACTIVITY = gql`
     }
   }
 `;
+
+export const GET_ALL_TRANSACTIONS = gql`
+  query GetAllTransactions($walletId: String!) {
+    Transaction(
+      where: { wallet_id: { _eq: $walletId } }
+      order_by: { timestamp: desc }
+    ) {
+      id
+      transactionType
+      timestamp
+      txHash
+      title
+      details
+    }
+  }
+`;
