@@ -104,13 +104,7 @@ export function WalletOverview({ walletAddress }: WalletOverviewProps) {
                     isLoading={historyIsLoading}
                 />
             </div>
-            <div className="@container/main flex flex-col gap-2  ">
-                <div className="text-lg font-semibold ml-2 md:ml-4">Compliance Tracking:</div>
-                <ComplianceSummary
-                    transactions={transactions}
-                    isLoading={historyIsLoading}
-                />
-            </div>
+
             <div className="@container/main flex flex-col gap-2  ">
 
                 <PaymentTable walletAddress={walletAddress} />

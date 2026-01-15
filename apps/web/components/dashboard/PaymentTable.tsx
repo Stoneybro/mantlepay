@@ -84,11 +84,11 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
             const details = tx.details || {};
             const recipients = details.recipients || [];
             const tokenSymbol = details.token || 'MNT'; // Use details.token or fallback to MNT
-            const amount = details.totalCommitment ? formatUnits(BigInt(details.totalCommitment), 6) : '0'; // MNT has 6 decimals
+            const amount = details.totalCommitment ? formatUnits(BigInt(details.totalCommitment), 18) : '0';
             return (
                 <TableRow key={tx.id} >
                     <TableCell className="font-medium truncate max-w-[200px]" title={tx.title}>{tx.title || 'Untitled Payment'}</TableCell>
-                    <TableCell className="font-medium">{amount} {tokenSymbol}</TableCell>
+                    <TableCell className="font-medium">{Number(amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} {tokenSymbol}</TableCell>
                     <TableCell>
                         {recipients.length > 1 ? (
                             <Select>
@@ -148,8 +148,8 @@ export default function PaymentTable({ walletAddress }: PaymentTableProps) {
                             variant="destructive"
                             size="sm"
                             className="h-7 text-xs"
-                            onClick={() => cancelIntent({ intentId: tx.id as `0x${string}` })}
-                            disabled={isCancelling || tx.status === 'success'}
+                            onClick={() => cancelIntent({ intentId: details.intentId as `0x${string}` })}
+                            disabled={isCancelling || (details.endDate && new Date(details.endDate) < new Date())}
                         >
                             {isCancelling ? '...' : 'Cancel'}
                         </Button>

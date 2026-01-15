@@ -35,6 +35,7 @@ export const useComplianceData = (walletAddress?: string) => {
             const response = await envioClient.request(GET_ALL_TRANSACTIONS, {
                 walletId: walletAddress.toLowerCase()
             });
+            console.log(response);
             const data = (response as any).Transaction || [];
 
             const transactions: ComplianceData[] = [];
@@ -166,7 +167,7 @@ export const useComplianceData = (walletAddress?: string) => {
                             periodId: compliance.referenceId || "",
                             reference: tx.title || "Batch Payment",
                             details,
-                            recipientAddress: r.recipient || r.target || ""
+                            recipientAddress: r.recipient || r.target || r.address || ""
                         };
                         transactions.push(item);
 

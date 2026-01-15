@@ -140,6 +140,7 @@ export const useWalletHistory = (walletAddress?: string) => {
             if (!walletAddress) return null;
             const variables = { walletId: walletAddress.toLowerCase() };
             const data: any = await envioClient.request(GET_WALLET_ACTIVITY, variables);
+
             return data.Wallet?.[0] || null;
         },
         enabled: !!walletAddress,

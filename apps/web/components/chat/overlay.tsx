@@ -27,24 +27,23 @@ function Overlay({ setInput, walletAddress }: OverlayProps) {
 
   return (
     <>
-      <div className="absolute left-1/2 -translate-x-1/2 top-10 w-[90%] md:w-[70%] lg:w-[60%] flex flex-col gap-6">
+      <div className="absolute left-1/2 -translate-x-1/2 top-5 w-[90%] md:w-[70%] lg:w-[60%] flex flex-col gap-6">
         <div className="text-2xl font-semibold text-center">what would you like to do?</div>
 
         {/* NEW NOTE AS REQUESTED */}
         <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Pro Tip</AlertTitle>
-          <AlertDescription>
-            Use the templates below for the most reliable payment experience.
-          </AlertDescription>
+          <Info className="h-4 w-4 mb-4" />
+          <AlertTitle >
+            Use the templates below or the form for the most reliable payment experience.
+          </AlertTitle>
         </Alert>
 
         <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-2 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs w-full">
           <Card
-            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors"
+            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors p-0 gap-0"
             onClick={() => openTemplate('SINGLE')}
           >
-            <CardHeader>
+            <CardHeader className="p-3 pb-1">
               <CardTitle>
                 <Badge variant="outline">
                   Send
@@ -54,21 +53,21 @@ function Overlay({ setInput, walletAddress }: OverlayProps) {
                 <BsArrowUpRight />
               </CardAction>
             </CardHeader>
-            <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <CardFooter className="flex-col items-start gap-1 p-3 pt-0 text-sm">
               <div className="line-clamp-1 flex gap-2 font-medium">
                 single payment
               </div>
-              <div className="text-muted-foreground">
+              <div className="text-muted-foreground text-xs">
                 transfer funds to a single recipient
               </div>
             </CardFooter>
           </Card>
 
           <Card
-            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors"
+            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors p-0 gap-0"
             onClick={() => openTemplate('BATCH')}
           >
-            <CardHeader>
+            <CardHeader className="p-3 pb-1">
               <CardTitle>
                 <Badge variant="outline">
                   bulk send
@@ -78,21 +77,21 @@ function Overlay({ setInput, walletAddress }: OverlayProps) {
                 <FaUsers />
               </CardAction>
             </CardHeader>
-            <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <CardFooter className="flex-col items-start gap-1 p-3 pt-0 text-sm">
               <div className="line-clamp-1 flex gap-2 font-medium">
                 Batch Payment
               </div>
-              <div className="text-muted-foreground">
+              <div className="text-muted-foreground text-xs">
                 distribute payment to multiple people at once
               </div>
             </CardFooter>
           </Card>
 
           <Card
-            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors"
+            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors p-0 gap-0"
             onClick={() => openTemplate('RECURRING')}
           >
-            <CardHeader>
+            <CardHeader className="p-3 pb-1">
               <CardTitle>
                 <Badge variant="outline">
                   create subscription
@@ -102,21 +101,21 @@ function Overlay({ setInput, walletAddress }: OverlayProps) {
                 <BsArrowRepeat />
               </CardAction>
             </CardHeader>
-            <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <CardFooter className="flex-col items-start gap-1 p-3 pt-0 text-sm">
               <div className="line-clamp-1 flex gap-2 font-medium">
                 Single Recurring Payment
               </div>
-              <div className="text-muted-foreground">
+              <div className="text-muted-foreground text-xs">
                 Set up a recurring transfer to one address
               </div>
             </CardFooter>
           </Card>
 
           <Card
-            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors"
+            className="@container/card cursor-pointer hover:bg-muted/50 transition-colors p-0 gap-0"
             onClick={() => openTemplate('BATCH_RECURRING')}
           >
-            <CardHeader>
+            <CardHeader className="p-3 pb-1">
               <CardTitle>
                 <Badge variant="outline">
                   run payroll
@@ -126,7 +125,7 @@ function Overlay({ setInput, walletAddress }: OverlayProps) {
                 <FaUsersGear />
               </CardAction>
             </CardHeader>
-            <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <CardFooter className="flex-col items-start gap-1 p-3 pt-0 text-sm">
               <div className="line-clamp-1 flex gap-2 font-medium">
                 Batch Recurring Payment
               </div>

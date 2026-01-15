@@ -15,6 +15,7 @@ export function useCancelIntent() {
 
     return useMutation({
         mutationFn: async (params: CancelIntentParams) => {
+            console.log("[useCancelIntent] Triggered with params:", params);
             try {
                 const smartAccountClient = await getClient();
                 if (!smartAccountClient) {

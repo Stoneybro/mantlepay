@@ -16,6 +16,7 @@ export function useRecurringPayment(availableEthBalance?: string) {
 
     return useMutation({
         mutationFn: async (params: RecurringPaymentParams) => {
+
             try {
                 // Calculate total commitment
                 const amountPerPayment = params.amounts.reduce((sum, amount) => sum + parseFloat(amount), 0);

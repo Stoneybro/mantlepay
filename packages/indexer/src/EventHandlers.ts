@@ -112,18 +112,45 @@ MpSmartWallet.WalletAction.handler(async ({ event }) => {
   }
 });
 
-MpSmartWallet.ComplianceExecuted.handler(async ({ event }) => {
-  // Cache compliance data for correlation with transaction events
+// GLOBAL STORE for linking ComplianceExecuted to the main Transaction
+// Map<txHash, transactionEntityId>
+let pendingComplianceTxCache: Map<string, string> = new Map();
+
+MpSmartWallet.ComplianceExecuted.handler(async ({ event, context }) => {
   const txHash = event.transaction.hash;
+  const transactionId = pendingComplianceTxCache.get(txHash);
 
-  complianceCache.set(txHash, {
-    entityIds: event.params.entityIds || [],
-    jurisdiction: event.params.jurisdiction || "",
-    category: event.params.category || "",
-    referenceId: event.params.referenceId || ""
-  });
+  if (transactionId) {
+    // Fetch the already-created transaction
+    const transaction = await context.Transaction.get(transactionId);
 
-  console.log(`ComplianceExecuted: Cached compliance for tx ${txHash}`);
+    if (transaction) {
+      console.log(`[ComplianceExecuted] Updating Transaction ${transactionId} with compliance data.`);
+
+      const detailsObj = JSON.parse(transaction.details);
+
+      detailsObj.compliance = {
+        entityIds: event.params.entityIds || [],
+        jurisdiction: event.params.jurisdictions ? event.params.jurisdictions.map((x: any) => x.toString()).join(",") : "",
+        category: event.params.categories ? event.params.categories.map((x: any) => x.toString()).join(",") : "",
+        referenceId: event.params.referenceId || ""
+      };
+
+      const updatedTransaction: Transaction = {
+        ...transaction,
+        details: JSON.stringify(detailsObj)
+      };
+
+      context.Transaction.set(updatedTransaction);
+    } else {
+      console.warn(`[ComplianceExecuted] Transaction ${transactionId} not found in context (race condition?).`);
+    }
+
+    // Cleanup
+    pendingComplianceTxCache.delete(txHash);
+  } else {
+    console.log(`[ComplianceExecuted] No pending transaction found for ${txHash}. (Maybe indexer restarted or event order mismatch?)`);
+  }
 });
 
 MpSmartWallet.Executed.handler(async ({ event, context }) => {
@@ -133,9 +160,8 @@ MpSmartWallet.Executed.handler(async ({ event, context }) => {
   if (wallet) {
     const txHash = event.transaction.hash;
     const selector = event.params.data.slice(0, 10);
-
-    // Check for compliance data
-    const compliance = complianceCache.get(txHash);
+    const logIndex = event.logIndex;
+    const transactionId = `${txHash}-${logIndex}`;
 
     let title = "Single Payment";
     let detailsObj: any = {
@@ -152,20 +178,17 @@ MpSmartWallet.Executed.handler(async ({ event, context }) => {
       detailsObj.recipient = event.params.target.toString();
     }
 
-    // Add compliance if present
-    if (compliance) {
-      detailsObj.compliance = compliance;
-      complianceCache.delete(txHash);
-    }
+    // Register this transaction for potential compliance update
+    pendingComplianceTxCache.set(txHash, transactionId);
 
     const transaction: Transaction = {
-      id: `${txHash}-${event.logIndex}`,
+      id: transactionId,
       wallet_id: walletId,
       transactionType: "EXECUTE",
       timestamp: BigInt(event.block.timestamp),
       blockNumber: BigInt(event.block.number),
       txHash: txHash,
-      logIndex: event.logIndex,
+      logIndex: logIndex,
       title: title,
       details: JSON.stringify(detailsObj)
     };
@@ -185,12 +208,11 @@ MpSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
 
   if (wallet) {
     const txHash = event.transaction.hash;
+    const logIndex = event.logIndex;
+    const transactionId = `${txHash}-${logIndex}`;
 
     // Get wallet actions from cache
     const walletActions = batchCallsCache.get(txHash) || [];
-
-    // Get compliance data if present
-    const compliance = complianceCache.get(txHash);
 
     // Build calls array from wallet actions (native MNT transfers)
     const calls = walletActions.map(action => ({
@@ -203,25 +225,23 @@ MpSmartWallet.ExecutedBatch.handler(async ({ event, context }) => {
     // Calculate total value
     const totalValue = walletActions.reduce((sum, a) => sum + BigInt(a.value), 0n);
 
+    // Register this transaction for potential compliance update
+    pendingComplianceTxCache.set(txHash, transactionId);
+
     const detailsObj: any = {
       batchSize: Number(event.params.batchSize),
       totalValue: totalValue.toString(),
       calls: calls
     };
 
-    if (compliance) {
-      detailsObj.compliance = compliance;
-      complianceCache.delete(txHash);
-    }
-
     const transaction: Transaction = {
-      id: `${txHash}-${event.logIndex}`,
+      id: transactionId,
       wallet_id: walletId,
       transactionType: "EXECUTE_BATCH",
       timestamp: BigInt(event.block.timestamp),
       blockNumber: BigInt(event.block.number),
       txHash: txHash,
-      logIndex: event.logIndex,
+      logIndex: logIndex,
       title: "Batch Payment",
       details: JSON.stringify(detailsObj)
     };
@@ -325,6 +345,7 @@ MpIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
   // Build transaction details
   const details = JSON.stringify({
     scheduleName: event.params.name,
+    intentId: intentId,
     token: "MNT",
     totalCommitment: event.params.totalCommitment.toString(),
     recipientCount: event.params.recipients.length,

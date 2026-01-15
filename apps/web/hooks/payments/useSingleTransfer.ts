@@ -15,6 +15,7 @@ export function useSingleTransfer(availableEthBalance?: string) {
 
     return useMutation({
         mutationFn: async (params: SingleTransferParams) => {
+
             try {
                 // Balance check
                 if (availableEthBalance) {

@@ -15,6 +15,7 @@ export function useBatchTransfer(availableEthBalance?: string) {
 
     return useMutation({
         mutationFn: async (params: BatchTransferParams) => {
+
             try {
                 // Calculate total amount
                 const totalAmount = params.amounts.reduce((sum, amount) => sum + parseFloat(amount), 0).toString();

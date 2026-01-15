@@ -1,5 +1,6 @@
 
 import { TransactionItemProps } from '@/hooks/useWalletHistory';
+import { JURISDICTION_DISPLAY, CATEGORY_DISPLAY } from "@/lib/compliance-enums";
 import { ActivityType } from '@/lib/envio/client';
 import { cn } from '@/lib/utils';
 import { formatEther } from 'viem';
@@ -31,7 +32,7 @@ const formatCurrency = (amount?: string, token?: string) => {
 
 export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
     const [expanded, setExpanded] = useState(false);
-    console.log(item);
+
     return (
         <div className="bg-card hover:bg-accent/50 transition-colors border-border/50 overflow-hidden">
             <div
@@ -97,6 +98,44 @@ export const TransactionItem = ({ item }: { item: TransactionItemProps }) => {
                                                     <span className="font-medium">{formatCurrency(r.amount, item.details.token)}</span>
                                                 </div>
                                             ))}
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            if (key === 'compliance' && typeof value === 'object' && value !== null) {
+                                const comp = value as any;
+                                return (
+                                    <div key={key} className="col-span-2 mt-2 bg-muted/20 p-2 rounded">
+                                        <span className="text-muted-foreground block text-[10px] uppercase tracking-wider mb-1">Compliance Data</span>
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                            {comp.entityIds?.length > 0 && (
+                                                <div className="col-span-2">
+                                                    <span className="text-muted-foreground mr-1">Entities:</span>
+                                                    <span className="font-mono">{Array.isArray(comp.entityIds) ? comp.entityIds.join(", ") : comp.entityIds}</span>
+                                                </div>
+                                            )}
+                                            {comp.jurisdiction && (
+                                                <div>
+                                                    <span className="text-muted-foreground block text-[10px]">Jurisdictions</span>
+                                                    <span>
+                                                        {comp.jurisdiction.split(',').map((j: string) => JURISDICTION_DISPLAY[Number(j)] || j).join(", ")}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {comp.category && (
+                                                <div>
+                                                    <span className="text-muted-foreground block text-[10px]">Categories</span>
+                                                    <span>
+                                                        {comp.category.split(',').map((c: string) => CATEGORY_DISPLAY[Number(c)] || c).join(", ")}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {comp.referenceId && (
+                                                <div className="col-span-2">
+                                                    <span className="text-muted-foreground mr-1">Ref ID:</span>
+                                                    <span className="font-mono">{comp.referenceId}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );

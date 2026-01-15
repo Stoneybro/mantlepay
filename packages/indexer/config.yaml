@@ -24,7 +24,7 @@ networks:
           - event: IntentTransferSuccess(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
           - event: TransferFailed(bytes32 indexed intentId, uint256 indexed transactionCount, address indexed recipient, address token, uint256 amount)
           - event: WalletAction(address indexed initiator, address indexed target, uint256 value, bytes4 indexed selector, bool success, bytes32 actionType)
-          - event: ComplianceExecuted(bytes32 indexed txType, string[] entityIds, string jurisdiction, string category, string referenceId)
+          - event: ComplianceExecuted(bytes32 indexed txType, string[] entityIds, uint8[] jurisdictions, uint8[] categories, string referenceId)
       - name: MpSmartWalletFactory
         address:
           - 0xd63E841AAb10D118a3cb541FbeF011eBae6437C6

@@ -44,7 +44,9 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
 
     // Memoize contacts for combobox
     const contactOptions = useMemo(() => {
-        return contacts.flatMap(c =>
+        console.log("raw contacts:", contacts);
+        const seenAddresses = new Set<string>();
+        const opt = contacts.flatMap(c =>
             c.addresses.map(a => ({
                 label: c.name + (c.addresses.length > 1 ? ` (${a.address.slice(0, 6)}...)` : ''),
                 value: a.address,
@@ -52,6 +54,8 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
                 addressDetails: a
             }))
         );
+        console.log("computed options:", opt);
+        return opt;
     }, [contacts]);
 
     const addRecipient = () => {
@@ -110,6 +114,7 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
             let interval = 2592000;
             if (intervalUnit === 'daily') interval = 86400;
             if (intervalUnit === 'weekly') interval = 604800;
+            if (intervalUnit === 'test_minute') interval = 60;
             // monthly default
             template += ` | INTERVAL: ${interval}`;
 
@@ -119,6 +124,7 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
             if (durationUnit === 'days') duration = val * 86400;
             if (durationUnit === 'weeks') duration = val * 604800;
             if (durationUnit === 'months') duration = val * 2592000;
+            if (durationUnit === 'minutes') duration = val * 60;
             template += ` | DURATION: ${duration}`;
 
             // Start time
@@ -188,6 +194,7 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
                                         <SelectItem value="daily">Daily</SelectItem>
                                         <SelectItem value="weekly">Weekly</SelectItem>
                                         <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="test_minute">Test (1 Minute)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -209,10 +216,12 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
                                             <SelectItem value="days">Days</SelectItem>
                                             <SelectItem value="weeks">Weeks</SelectItem>
                                             <SelectItem value="months">Months</SelectItem>
+                                            <SelectItem value="minutes">Minutes (Test)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
+
 
                             <div className="flex flex-col gap-2 col-span-2">
                                 <Label>Start Date (Optional - defaults to Now)</Label>
@@ -276,41 +285,38 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent className="w-full p-0">
-                                                    <Command>
-                                                        <CommandInput placeholder="Search contacts..." onChangeCapture={(e: any) => handleSelectContact(index, e.target.value)} />
-                                                        <CommandList>
-                                                            <CommandEmpty>
-                                                                <div className="p-2 text-sm text-muted-foreground" onClick={() => {
-                                                                    // Allow clicking "Not found" to just use the typed value? 
-                                                                    // Shadcn command is tricky with custom input.
-                                                                    // For now, users can paste address in the input above if they don't want to use the picker,
-                                                                    // OR we add a manual input field if this is too restrictive.
-                                                                }}>
-                                                                    No contacts found. Type 0x...
-                                                                </div>
-                                                            </CommandEmpty>
-                                                            <CommandGroup>
+                                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                                    <div className="max-h-[300px] overflow-y-auto p-1">
+                                                        {contactOptions.length === 0 ? (
+                                                            <div className="py-6 text-center text-sm text-muted-foreground">
+                                                                No contacts found.
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-0.5">
                                                                 {contactOptions.map((contact) => (
-                                                                    <CommandItem
+                                                                    <div
                                                                         key={`${contact.contact.id}-${contact.value}`}
-                                                                        value={contact.value}
-                                                                        onSelect={(currentValue) => {
-                                                                            handleSelectContact(index, currentValue)
+                                                                        className={cn(
+                                                                            "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer",
+                                                                            "hover:bg-accent hover:text-accent-foreground",
+                                                                            recipient.address === contact.value && (!recipient.contactName || recipient.contactName === contact.contact.name) ? "bg-accent/50" : ""
+                                                                        )}
+                                                                        onClick={() => {
+                                                                            handleSelectContact(index, contact.value);
                                                                         }}
                                                                     >
                                                                         <Check
                                                                             className={cn(
-                                                                                "mr-2 h-4 w-4",
-                                                                                recipient.address === contact.value ? "opacity-100" : "opacity-0"
+                                                                                "mr-2 h-4 w-4 shrink-0",
+                                                                                recipient.address === contact.value && (!recipient.contactName || recipient.contactName === contact.contact.name) ? "opacity-100" : "opacity-0"
                                                                             )}
                                                                         />
-                                                                        {contact.label}
-                                                                    </CommandItem>
+                                                                        <span className="truncate">{contact.label}</span>
+                                                                    </div>
                                                                 ))}
-                                                            </CommandGroup>
-                                                        </CommandList>
-                                                    </Command>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </PopoverContent>
                                             </Popover>
                                             {/* Fallback manual input for when user wants to paste address directly */}
@@ -399,6 +405,6 @@ export function TemplateDialog({ open, onOpenChange, type, onSubmit, walletAddre
                     <Button onClick={handleSubmit}>Generate Template</Button>
                 </DialogFooter>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

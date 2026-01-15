@@ -22,36 +22,24 @@ interface ChatProps {
 }
 
 function Chat({ walletAddress, id }: ChatProps) {
-    const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(null);
-
-    useEffect(() => {
-        const loadMessages = async () => {
-            if (!id) {
-                setInitialMessages([]);
-                return;
+    const { data: initialMessages, isLoading, error } = useQuery({
+        queryKey: ['chat', id],
+        queryFn: async () => {
+            if (!id) return [];
+            const response = await fetch(`/api/chat/${id}`);
+            if (!response.ok) {
+                // Return empty if 404 or error to allow new chat to start
+                return [];
             }
+            const data = await response.json();
+            return data.messages || [];
+        },
+        enabled: !!id,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: 2,
+    });
 
-            try {
-                // If it's a new generated ID (long string), checking API is fine.
-                // If API returns 404 or empty, we start with empty messages.
-                const response = await fetch(`/api/chat/${id}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setInitialMessages(data.messages || []);
-                } else {
-                    setInitialMessages([]);
-                }
-            } catch (error) {
-                console.error("Error loading chat:", error);
-                setInitialMessages([]);
-            }
-        };
-
-        setInitialMessages(null); // Reset while loading new ID
-        loadMessages();
-    }, [id]);
-
-    if (!initialMessages && id) {
+    if (isLoading) {
         return (
             <div className="flex h-full w-full flex-col p-4 md:p-8 gap-4">
                 {/* Chat skeleton loader */}
@@ -81,8 +69,8 @@ function Chat({ walletAddress, id }: ChatProps) {
         );
     }
 
-    // If no ID, we are in a "new chat" state conceptually, but usually app redirects to a generated ID.
-    // If we have ID and messages loaded, render ChatInner.
+    // If no ID or loaded, render ChatInner
+    // If error, likely fallback to empty messages via useQuery default or empty array above
     return (
         <ChatInner
             key={id} // Force re-mount when ID changes to reset useChat

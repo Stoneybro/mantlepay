@@ -186,7 +186,7 @@ export function TaxReportGenerator({ data }: TaxReportGeneratorProps) {
                                         <td className="px-3 py-2 font-mono text-xs">{row.date.toISOString().split('T')[0]}</td>
                                         <td className="px-3 py-2 font-mono text-xs">{row.entityId || "-"}</td>
                                         <td className="px-3 py-2 font-mono text-xs truncate max-w-[100px]">{row.recipientAddress.slice(0, 6)}...{row.recipientAddress.slice(-4)}</td>
-                                        <td className="px-3 py-2 text-right font-mono">{Number(Number(row.amount) / 1e18).toFixed(2)}</td>
+                                        <td className="px-3 py-2 text-right font-mono">{Number(Number(row.amount) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
                                         <td className="px-3 py-2 text-xs truncate max-w-[100px]">{row.jurisdiction}</td>
                                         <td className="px-3 py-2 text-xs truncate max-w-[100px]">{row.category}</td>
                                     </tr>
