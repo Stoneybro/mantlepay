@@ -18,17 +18,55 @@ contract MpIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
                                 TYPES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Jurisdiction codes for compliance tracking
+    /// @dev Add new jurisdictions as needed (requires contract upgrade)
+    enum Jurisdiction {
+        NONE, // 0 - Not specified
+        US_CA, // 1 - United States - California
+        US_NY, // 2 - United States - New York
+        US_TX, // 3 - United States - Texas
+        US_FL, // 4 - United States - Florida
+        US_OTHER, // 5 - United States - Other
+        UK, // 6 - United Kingdom
+        EU_DE, // 7 - Germany
+        EU_FR, // 8 - France
+        EU_OTHER, // 9 - Other EU
+        NG, // 10 - Nigeria
+        SG, // 11 - Singapore
+        AE, // 12 - UAE
+        OTHER // 13 - Other
+    }
+
+    /// @notice Compliance categories for payment classification
+    /// @dev Add new categories as needed (requires contract upgrade)
+    enum Category {
+        NONE, // 0 - Not specified
+        PAYROLL_W2, // 1 - W2 Employee Payroll
+        PAYROLL_1099, // 2 - 1099 Contractor Payroll
+        CONTRACTOR, // 3 - General Contractor
+        BONUS, // 4 - Bonus Payment
+        INVOICE, // 5 - Invoice Payment
+        VENDOR, // 6 - Vendor Payment
+        GRANT, // 7 - Grant/Funding
+        DIVIDEND, // 8 - Dividend Distribution
+        REIMBURSEMENT, // 9 - Expense Reimbursement
+        OTHER // 10 - Other
+    }
+
     /// @notice Universal compliance metadata for jurisdiction-aware payment tracking
-    /// @dev Supports payroll, contractor, invoice, vendor, and other compliance categories
+    /// @dev All array fields MUST match recipients.length for batch/recurring payments
     struct ComplianceMetadata {
         /// @notice Per-recipient identifiers (employee ID, vendor ID, customer ID, etc.)
-        /// @dev Length MUST match recipients.length for intents, or be empty/single for single transfers
+        /// @dev Length MUST match recipients.length for intents, or be empty for non-compliant
         string[] entityIds;
-        /// @notice Jurisdiction code (e.g., "US-CA", "UK", "EU-DE", "NG", empty if not specified)
-        string jurisdiction;
-        /// @notice Compliance category (e.g., "PAYROLL_W2", "CONTRACTOR", "INVOICE", "VENDOR", "GRANT")
-        string category;
-        /// @notice Reference identifier (e.g., "2025-01", "INV-001", "PO-123", empty if not specified)
+        /// @notice Per-recipient jurisdiction codes
+        /// @dev Length MUST match recipients.length for intents, or be empty for non-compliant
+        Jurisdiction[] jurisdictions;
+        /// @notice Per-recipient compliance categories
+        /// @dev Length MUST match recipients.length for intents, or be empty for non-compliant
+        Category[] categories;
+        /// @notice Shared reference identifier (e.g., "2025-01", "INV-001", "PO-123")
+        /// @dev This is shared across all recipients in the payment (pay period, invoice batch, etc.)
         string referenceId;
     }
 
@@ -465,12 +503,7 @@ contract MpIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
                 intentId,
                 currentTransactionCount,
                 intent.revertOnFailure,
-                IMpSmartWallet.ComplianceMetadata({
-                    entityIds: intent.compliance.entityIds,
-                    jurisdiction: intent.compliance.jurisdiction,
-                    category: intent.compliance.category,
-                    referenceId: intent.compliance.referenceId
-                })
+                _convertCompliance(intent.compliance)
             );
 
         ///@notice Track failed amounts for recovery
@@ -479,6 +512,37 @@ contract MpIntentRegistry is AutomationCompatibleInterface, ReentrancyGuard {
         }
 
         emit IntentExecuted(wallet, intentId, intent.name, currentTransactionCount, totalAmount);
+    }
+
+    /**
+     * @notice Converts local ComplianceMetadata to interface format
+     * @dev Required because Solidity doesn't allow direct struct conversion between contracts
+     * @param local The local ComplianceMetadata struct
+     * @return The interface-compatible ComplianceMetadata struct
+     */
+    function _convertCompliance(ComplianceMetadata storage local)
+        internal
+        view
+        returns (IMpSmartWallet.ComplianceMetadata memory)
+    {
+        // Convert local enums to interface enums (same values, different types)
+        IMpSmartWallet.Jurisdiction[] memory jurisdictions =
+            new IMpSmartWallet.Jurisdiction[](local.jurisdictions.length);
+        for (uint256 i = 0; i < local.jurisdictions.length; i++) {
+            jurisdictions[i] = IMpSmartWallet.Jurisdiction(uint8(local.jurisdictions[i]));
+        }
+
+        IMpSmartWallet.Category[] memory categories = new IMpSmartWallet.Category[](local.categories.length);
+        for (uint256 i = 0; i < local.categories.length; i++) {
+            categories[i] = IMpSmartWallet.Category(uint8(local.categories[i]));
+        }
+
+        return IMpSmartWallet.ComplianceMetadata({
+            entityIds: local.entityIds,
+            jurisdictions: jurisdictions,
+            categories: categories,
+            referenceId: local.referenceId
+        });
     }
 
     /**

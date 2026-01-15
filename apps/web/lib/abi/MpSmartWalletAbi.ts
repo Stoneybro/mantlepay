@@ -147,14 +147,14 @@ export const MpSmartWalletABI = [
             "internalType": "string[]"
           },
           {
-            "name": "jurisdiction",
-            "type": "string",
-            "internalType": "string"
+            "name": "jurisdictions",
+            "type": "uint8[]",
+            "internalType": "enum IMpSmartWallet.Jurisdiction[]"
           },
           {
-            "name": "category",
-            "type": "string",
-            "internalType": "string"
+            "name": "categories",
+            "type": "uint8[]",
+            "internalType": "enum IMpSmartWallet.Category[]"
           },
           {
             "name": "referenceId",
@@ -210,14 +210,14 @@ export const MpSmartWalletABI = [
             "internalType": "string[]"
           },
           {
-            "name": "jurisdiction",
-            "type": "string",
-            "internalType": "string"
+            "name": "jurisdictions",
+            "type": "uint8[]",
+            "internalType": "enum IMpSmartWallet.Jurisdiction[]"
           },
           {
-            "name": "category",
-            "type": "string",
-            "internalType": "string"
+            "name": "categories",
+            "type": "uint8[]",
+            "internalType": "enum IMpSmartWallet.Category[]"
           },
           {
             "name": "referenceId",
@@ -260,14 +260,14 @@ export const MpSmartWalletABI = [
             "internalType": "string[]"
           },
           {
-            "name": "jurisdiction",
-            "type": "string",
-            "internalType": "string"
+            "name": "jurisdictions",
+            "type": "uint8[]",
+            "internalType": "enum IMpSmartWallet.Jurisdiction[]"
           },
           {
-            "name": "category",
-            "type": "string",
-            "internalType": "string"
+            "name": "categories",
+            "type": "uint8[]",
+            "internalType": "enum IMpSmartWallet.Category[]"
           },
           {
             "name": "referenceId",
@@ -542,16 +542,16 @@ export const MpSmartWalletABI = [
         "internalType": "string[]"
       },
       {
-        "name": "jurisdiction",
-        "type": "string",
+        "name": "jurisdictions",
+        "type": "uint8[]",
         "indexed": false,
-        "internalType": "string"
+        "internalType": "enum IMpSmartWallet.Jurisdiction[]"
       },
       {
-        "name": "category",
-        "type": "string",
+        "name": "categories",
+        "type": "uint8[]",
         "indexed": false,
-        "internalType": "string"
+        "internalType": "enum IMpSmartWallet.Category[]"
       },
       {
         "name": "referenceId",

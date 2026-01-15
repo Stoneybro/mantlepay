@@ -302,14 +302,38 @@ export async function POST(req: Request) {
         console.log("📇 Contacts found:", userContacts.length, userContacts.map(c => c.name));
 
         if (userContacts.length > 0) {
+          // Build enhanced contact list with compliance metadata
           const contactList = userContacts
-            .map(c => `- "${c.name}" = ${c.addresses.map(a => a.address).join(', ')}`)
+            .map(c => {
+              const addrDetails = c.addresses.map(a => {
+                let addrLine = a.address;
+                const complianceParts: string[] = [];
+                if (a.entityId) complianceParts.push(`entityId="${a.entityId}"`);
+                if (a.jurisdiction) complianceParts.push(`jurisdiction="${a.jurisdiction}"`);
+                if (a.category) complianceParts.push(`category="${a.category}"`);
+                if (complianceParts.length > 0) {
+                  addrLine += ` (${complianceParts.join(', ')})`;
+                }
+                return addrLine;
+              }).join(', ');
+              return `- "${c.name}" = ${addrDetails}`;
+            })
             .join('\n');
           contactContext = `
 
-=== USER'S SAVED CONTACTS (USE THESE ADDRESSES) ===
-The user has saved these contacts. When they mention any of these names, USE THE ADDRESS DIRECTLY - do NOT ask for the address:
+=== USER'S SAVED CONTACTS (USE THESE ADDRESSES AND COMPLIANCE DATA) ===
+The user has saved these contacts. When they mention any of these names:
+1. USE THE ADDRESS DIRECTLY - do NOT ask for the address
+2. IF THE CONTACT HAS COMPLIANCE DATA (entityId, jurisdiction, category), USE IT AUTOMATICALLY in the tool call
+3. Format: "Name" = address (entityId="...", jurisdiction="...", category="...")
+
 ${contactList}
+
+IMPORTANT: When using a contact with saved compliance metadata:
+- Use the entityId as the entityIds array value for that recipient
+- Use the jurisdiction value for the jurisdiction field
+- Use the category value for the category field
+This saves the user from re-entering compliance info they've already configured!
 ===================================================
 `;
           console.log("📇 Injected context:", contactContext);
@@ -318,6 +342,7 @@ ${contactList}
         console.error("Failed to fetch contacts:", error);
       }
     }
+
 
     const result = streamText({
       model: google("gemini-2.5-flash-lite"),
@@ -528,19 +553,19 @@ DO NOT USE IF:
                 .describe(
                   'Array of identifiers per recipient (e.g., ["EMP-001", "EMP-002"] or ["VENDOR-A", "VENDOR-B"]). Leave empty if not applicable.'
                 ),
-              jurisdiction: z
-                .string()
+              jurisdictions: z
+                .array(z.string())
                 .optional()
-                .default("")
+                .default([])
                 .describe(
-                  'Jurisdiction code detected from context (e.g., "US-CA", "UK", "EU-DE", "NG"). Leave empty if not detected.'
+                  'Array of jurisdiction codes per recipient (e.g., ["US-CA", "UK", "NG"]). Leave empty if not detected.'
                 ),
-              category: z
-                .string()
+              categories: z
+                .array(z.string())
                 .optional()
-                .default("")
+                .default([])
                 .describe(
-                  'Compliance category: "PAYROLL_W2", "PAYROLL_1099", "CONTRACTOR", "BONUS", "INVOICE", "VENDOR", "GRANT". Leave empty if not applicable.'
+                  'Array of compliance categories per recipient: "PAYROLL_W2", "PAYROLL_1099", "CONTRACTOR", "BONUS", "INVOICE", "VENDOR", "GRANT". Leave empty if not applicable.'
                 ),
               referenceId: z
                 .string()

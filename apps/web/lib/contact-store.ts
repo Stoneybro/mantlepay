@@ -3,26 +3,46 @@ import { contacts, contactAddresses } from "../db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { generateId } from "ai";
 
+// Compliance metadata for contacts (optional fields)
+export type ContactCompliance = {
+    entityId?: string;      // e.g., "EMP-001", "CTR-005", "VENDOR-AWS"
+    jurisdiction?: string;  // e.g., "US-CA", "UK", "EU-DE", "NG"
+    category?: string;      // e.g., "PAYROLL_W2", "CONTRACTOR", "INVOICE"
+};
+
+export type ContactAddress = {
+    id: string;
+    address: string;
+    label?: string;
+    entityId?: string;
+    jurisdiction?: string;
+    category?: string;
+};
+
 export type Contact = {
     id: string;
     userId: string;
     name: string;
     type: 'individual' | 'group';
-    addresses: Array<{
-        id: string;
-        address: string;
-        label?: string;
-    }>;
+    addresses: ContactAddress[];
     createdAt: Date;
     updatedAt: Date;
 };
 
-// Create new contact with addresses
+export type CreateAddressInput = {
+    address: string;
+    label?: string;
+    entityId?: string;
+    jurisdiction?: string;
+    category?: string;
+};
+
+// Create new contact with addresses (including compliance metadata)
 export async function createContact(
     userId: string,
     name: string,
     type: 'individual' | 'group',
-    addresses: Array<{ address: string; label?: string }>
+    addresses: CreateAddressInput[]
 ): Promise<Contact> {
     const contactId = generateId();
 
@@ -37,13 +57,16 @@ export async function createContact(
             updatedAt: new Date(),
         });
 
-        // Insert addresses
+        // Insert addresses with compliance metadata
         for (const addr of addresses) {
             await tx.insert(contactAddresses).values({
                 id: generateId(),
                 contactId,
                 address: addr.address,
-                label: addr.label,
+                label: addr.label || null,
+                entityId: addr.entityId || null,
+                jurisdiction: addr.jurisdiction || null,
+                category: addr.category || null,
                 createdAt: new Date(),
             });
         }
@@ -52,7 +75,7 @@ export async function createContact(
     return getContact(contactId) as Promise<Contact>;
 }
 
-// Get all contacts for user (with addresses)
+// Get all contacts for user (with addresses and compliance metadata)
 export async function getContacts(userId: string): Promise<Contact[]> {
     const results = await db
         .select()
@@ -82,6 +105,9 @@ export async function getContacts(userId: string): Promise<Contact[]> {
                 id: row.contact_addresses.id,
                 address: row.contact_addresses.address,
                 label: row.contact_addresses.label || undefined,
+                entityId: row.contact_addresses.entityId || undefined,
+                jurisdiction: row.contact_addresses.jurisdiction || undefined,
+                category: row.contact_addresses.category || undefined,
             });
         }
     }
@@ -115,6 +141,9 @@ export async function getContact(contactId: string): Promise<Contact | null> {
                 id: row.contact_addresses.id,
                 address: row.contact_addresses.address,
                 label: row.contact_addresses.label || undefined,
+                entityId: row.contact_addresses.entityId || undefined,
+                jurisdiction: row.contact_addresses.jurisdiction || undefined,
+                category: row.contact_addresses.category || undefined,
             });
         }
     }
@@ -156,6 +185,9 @@ export async function getContactByName(
                 id: row.contact_addresses.id,
                 address: row.contact_addresses.address,
                 label: row.contact_addresses.label || undefined,
+                entityId: row.contact_addresses.entityId || undefined,
+                jurisdiction: row.contact_addresses.jurisdiction || undefined,
+                category: row.contact_addresses.category || undefined,
             });
         }
     }
@@ -169,7 +201,7 @@ export async function updateContact(
     data: {
         name?: string;
         type?: 'individual' | 'group';
-        addresses?: Array<{ address: string; label?: string }>;
+        addresses?: CreateAddressInput[];
     }
 ): Promise<Contact> {
     await db.transaction(async (tx) => {
@@ -185,7 +217,7 @@ export async function updateContact(
                 .where(eq(contacts.id, contactId));
         }
 
-        // If addresses provided, replace all
+        // If addresses provided, replace all (including compliance metadata)
         if (data.addresses) {
             await tx.delete(contactAddresses).where(eq(contactAddresses.contactId, contactId));
 
@@ -194,7 +226,10 @@ export async function updateContact(
                     id: generateId(),
                     contactId,
                     address: addr.address,
-                    label: addr.label,
+                    label: addr.label || null,
+                    entityId: addr.entityId || null,
+                    jurisdiction: addr.jurisdiction || null,
+                    category: addr.category || null,
                     createdAt: new Date(),
                 });
             }
@@ -213,3 +248,4 @@ export async function updateContact(
 export async function deleteContact(contactId: string): Promise<void> {
     await db.delete(contacts).where(eq(contacts.id, contactId));
 }
+

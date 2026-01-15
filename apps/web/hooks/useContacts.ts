@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Contact } from '@/lib/contact-store';
+import type { Contact, CreateAddressInput } from '@/lib/contact-store';
 
 // Fetch all contacts for user
 export function useContacts(userId?: string) {
@@ -26,7 +26,7 @@ export function useCreateContact() {
             userId: string;
             name: string;
             type: 'individual' | 'group';
-            addresses: Array<{ address: string; label?: string }>;
+            addresses: CreateAddressInput[];
         }) => {
             const res = await fetch('/api/contacts', {
                 method: 'POST',
@@ -54,7 +54,7 @@ export function useUpdateContact() {
             userId: string;
             name?: string;
             type?: 'individual' | 'group';
-            addresses?: Array<{ address: string; label?: string }>;
+            addresses?: CreateAddressInput[];
         }) => {
             const res = await fetch(`/api/contacts/${data.contactId}`, {
                 method: 'PUT',
@@ -91,3 +91,4 @@ export function useDeleteContact() {
         },
     });
 }
+

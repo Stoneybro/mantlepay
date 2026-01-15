@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useContacts, useDeleteContact } from '@/hooks/useContacts';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   SidebarGroup,
   SidebarGroupContent,
 } from '@/components/ui/sidebar';
-import { Loader2, Users, User, Trash2 } from 'lucide-react';
+import { Loader2, Users, User, Trash2, MapPin, Tag } from 'lucide-react';
 import { ContactForm } from './ContactForm';
 import { toast } from 'sonner';
 import type { Contact } from '@/lib/contact-store';
@@ -44,6 +45,22 @@ export function ContactList({ walletAddress, showForm, onCloseForm }: ContactLis
     onCloseForm();
   };
 
+  // Check if contact has any compliance info
+  const hasComplianceInfo = (contact: Contact) => {
+    return contact.addresses.some(a => a.entityId || a.jurisdiction || a.category);
+  };
+
+  // Get first compliance badge info
+  const getComplianceSummary = (contact: Contact) => {
+    const addr = contact.addresses.find(a => a.entityId || a.jurisdiction || a.category);
+    if (!addr) return null;
+    return {
+      jurisdiction: addr.jurisdiction,
+      category: addr.category,
+      entityId: addr.entityId,
+    };
+  };
+
   if (showForm || editingContact) {
     return (
       <ContactForm
@@ -67,40 +84,61 @@ export function ContactList({ walletAddress, showForm, onCloseForm }: ContactLis
           </div>
         ) : (
           <div className="space-y-1 p-2">
-            {contacts.map((contact) => (
-              <div
-                key={contact.id}
-                className="group flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
-                onClick={() => handleEdit(contact)}
-              >
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted-foreground/10">
-                  {contact.type === 'group' ? (
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <User className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{contact.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {contact.addresses.length === 1
-                      ? `${contact.addresses[0].address.slice(0, 6)}...${contact.addresses[0].address.slice(-4)}`
-                      : `${contact.addresses.length} addresses`}
-                  </div>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 group-hover:opacity-100 h-8 w-8"
-                  onClick={(e) => handleDelete(e, contact.id)}
-                  disabled={isDeleting}
+            {contacts.map((contact) => {
+              const compliance = getComplianceSummary(contact);
+              return (
+                <div
+                  key={contact.id}
+                  className="group flex items-start gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
+                  onClick={() => handleEdit(contact)}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted-foreground/10 shrink-0 mt-0.5">
+                    {contact.type === 'group' ? (
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <User className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{contact.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {contact.addresses.length === 1
+                        ? `${contact.addresses[0].address.slice(0, 6)}...${contact.addresses[0].address.slice(-4)}`
+                        : `${contact.addresses.length} addresses`}
+                    </div>
+
+                    {/* Compliance badges */}
+                    {compliance && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {compliance.jurisdiction && (
+                          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 gap-0.5">
+                            <MapPin className="h-2.5 w-2.5" />
+                            {compliance.jurisdiction}
+                          </Badge>
+                        )}
+                        {compliance.category && (
+                          <Badge variant="outline" className="text-[10px] h-5 px-1.5 gap-0.5">
+                            <Tag className="h-2.5 w-2.5" />
+                            {compliance.category.replace('PAYROLL_', '').replace('_', ' ')}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="opacity-0 group-hover:opacity-100 h-8 w-8 shrink-0"
+                    onClick={(e) => handleDelete(e, contact.id)}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
       </SidebarGroupContent>

@@ -59,8 +59,8 @@ export function useRecurringPayment(availableEthBalance?: string) {
                         params.revertOnFailure ?? true,
                         {
                             entityIds: params.compliance?.entityIds ?? [],
-                            jurisdiction: params.compliance?.jurisdiction ?? "",
-                            category: params.compliance?.category ?? "",
+                            jurisdictions: params.compliance?.jurisdictions ?? [],
+                            categories: params.compliance?.categories ?? [],
                             referenceId: params.compliance?.referenceId ?? "",
                         },
                     ],

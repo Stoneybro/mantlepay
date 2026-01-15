@@ -12,11 +12,45 @@ interface IMpSmartWallet {
                                 TYPES
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Jurisdiction codes for compliance tracking
+    enum Jurisdiction {
+        NONE,
+        US_CA,
+        US_NY,
+        US_TX,
+        US_FL,
+        US_OTHER,
+        UK,
+        EU_DE,
+        EU_FR,
+        EU_OTHER,
+        NG,
+        SG,
+        AE,
+        OTHER
+    }
+
+    /// @notice Compliance categories for payment classification
+    enum Category {
+        NONE,
+        PAYROLL_W2,
+        PAYROLL_1099,
+        CONTRACTOR,
+        BONUS,
+        INVOICE,
+        VENDOR,
+        GRANT,
+        DIVIDEND,
+        REIMBURSEMENT,
+        OTHER
+    }
+
     /// @notice Universal compliance metadata for jurisdiction-aware payment tracking
+    /// @dev All array fields MUST match recipients.length for batch/recurring payments
     struct ComplianceMetadata {
         string[] entityIds;
-        string jurisdiction;
-        string category;
+        Jurisdiction[] jurisdictions;
+        Category[] categories;
         string referenceId;
     }
 

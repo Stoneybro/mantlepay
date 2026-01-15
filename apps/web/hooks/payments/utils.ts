@@ -10,7 +10,7 @@ export function checkSufficientBalance({ availableBalance, requiredAmount, token
     if (required > available) {
         return {
             sufficient: false,
-            message: `Insufficient ${token} balance. Required: ${required} ${token}, Available: ${available.toFixed(token === "ETH" ? 4 : 2)} ${token}`
+            message: `Insufficient ${token} balance. Required: ${required} ${token}, Available: ${available.toFixed(2)} ${token}`
         };
     }
 

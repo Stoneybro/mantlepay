@@ -79,7 +79,11 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
 
     /// @notice Emitted when a transaction includes compliance metadata
     event ComplianceExecuted(
-        bytes32 indexed txType, string[] entityIds, string jurisdiction, string category, string referenceId
+        bytes32 indexed txType,
+        string[] entityIds,
+        IMpSmartWallet.Jurisdiction[] jurisdictions,
+        IMpSmartWallet.Category[] categories,
+        string referenceId
     );
 
     /// @notice The event emitted when a wallet action is performed
@@ -327,7 +331,7 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
         emit WalletAction(msg.sender, target, value, selector, true, "EXECUTE");
         emit Executed(target, value, data);
         emit ComplianceExecuted(
-            "SINGLE", compliance.entityIds, compliance.jurisdiction, compliance.category, compliance.referenceId
+            "SINGLE", compliance.entityIds, compliance.jurisdictions, compliance.categories, compliance.referenceId
         );
     }
 
@@ -380,7 +384,7 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
         }
         emit ExecutedBatch(calls.length, totalValue);
         emit ComplianceExecuted(
-            "BATCH", compliance.entityIds, compliance.jurisdiction, compliance.category, compliance.referenceId
+            "BATCH", compliance.entityIds, compliance.jurisdictions, compliance.categories, compliance.referenceId
         );
     }
 
@@ -452,10 +456,10 @@ contract MpSmartWallet is IAccount, IMpSmartWallet, ReentrancyGuard, Initializab
 
         emit IntentBatchTransferExecuted(intentId, transactionCount, token, recipients.length, totalValue, totalFailed);
 
-        // Emit compliance event if category is provided (C-03 fix)
-        if (bytes(compliance.category).length > 0) {
+        // Emit compliance event if categories are provided
+        if (compliance.categories.length > 0) {
             emit ComplianceExecuted(
-                "INTENT", compliance.entityIds, compliance.jurisdiction, compliance.category, compliance.referenceId
+                "INTENT", compliance.entityIds, compliance.jurisdictions, compliance.categories, compliance.referenceId
             );
         }
 

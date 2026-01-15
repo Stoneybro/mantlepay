@@ -5,6 +5,7 @@ import { BsArrowRepeat } from "react-icons/bs";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { formatInterval, formatStartTime } from "@/utils/format";
+import { stringsToJurisdictions, stringsToCategories } from "@/lib/compliance-enums";
 
 type RecurringPaymentInput = {
     name: string;
@@ -14,10 +15,10 @@ type RecurringPaymentInput = {
     duration: number;
     transactionStartTime: number;
     revertOnFailure?: boolean;
-    // Compliance metadata (universal)
+    // Compliance metadata (per-recipient arrays)
     entityIds?: string[];
-    jurisdiction?: string;
-    category?: string;
+    jurisdictions?: string[];
+    categories?: string[];
     referenceId?: string;
 };
 
@@ -77,30 +78,32 @@ export function RecurringPaymentTool({
                             <p><strong>Starts:</strong> {formatStartTime(recurringInput.transactionStartTime)}</p>
                             <p><strong>Failure handling:</strong> {recurringInput.revertOnFailure ? "Stop on failure" : "Skip failures"}</p>
                             {/* Compliance Badges */}
-                            {(recurringInput.category || recurringInput.jurisdiction) && (
-                                <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
-                                    {recurringInput.category && (
-                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                                            📋 {recurringInput.category}
-                                        </span>
-                                    )}
-                                    {recurringInput.jurisdiction && (
-                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
-                                            📍 {recurringInput.jurisdiction}
-                                        </span>
-                                    )}
-                                    {recurringInput.referenceId && (
-                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
-                                            📅 {recurringInput.referenceId}
-                                        </span>
-                                    )}
-                                    {recurringInput.entityIds && recurringInput.entityIds.length > 0 && (
-                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
-                                            👥 {recurringInput.entityIds.length} IDs
-                                        </span>
-                                    )}
-                                </div>
-                            )}
+                            {((recurringInput.categories && recurringInput.categories.length > 0) ||
+                                (recurringInput.jurisdictions && recurringInput.jurisdictions.length > 0) ||
+                                recurringInput.referenceId) && (
+                                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                                        {recurringInput.categories && recurringInput.categories.filter(c => c).length > 0 && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                                📋 {[...new Set(recurringInput.categories.filter(c => c))].join(", ")}
+                                            </span>
+                                        )}
+                                        {recurringInput.jurisdictions && recurringInput.jurisdictions.filter(j => j).length > 0 && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                                                📍 {[...new Set(recurringInput.jurisdictions.filter(j => j))].join(", ")}
+                                            </span>
+                                        )}
+                                        {recurringInput.referenceId && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                                                📅 {recurringInput.referenceId}
+                                            </span>
+                                        )}
+                                        {recurringInput.entityIds && recurringInput.entityIds.filter(e => e).length > 0 && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                                                👥 {recurringInput.entityIds.filter(e => e).length} IDs
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                         </div>
 
                         <div className="flex gap-2 w-full">
@@ -115,11 +118,15 @@ export function RecurringPaymentTool({
                                             duration: recurringInput.duration,
                                             transactionStartTime: recurringInput.transactionStartTime,
                                             revertOnFailure: recurringInput.revertOnFailure,
-                                            // Compliance metadata
+                                            // Compliance metadata (convert strings to enum numbers)
                                             compliance: {
                                                 entityIds: recurringInput.entityIds,
-                                                jurisdiction: recurringInput.jurisdiction,
-                                                category: recurringInput.category,
+                                                jurisdictions: recurringInput.jurisdictions
+                                                    ? stringsToJurisdictions(recurringInput.jurisdictions)
+                                                    : undefined,
+                                                categories: recurringInput.categories
+                                                    ? stringsToCategories(recurringInput.categories)
+                                                    : undefined,
                                                 referenceId: recurringInput.referenceId,
                                             },
                                         });
