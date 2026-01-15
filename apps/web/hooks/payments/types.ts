@@ -28,13 +28,13 @@ export type BalanceCheckParams = {
 export type SingleTransferParams = {
     to: `0x${string}`;
     amount: string;
-    compliance?: ComplianceMetadataUI;
+    compliance?: ComplianceMetadata;
 };
 
 export type BatchTransferParams = {
     recipients: `0x${string}`[];
     amounts: string[];
-    compliance?: ComplianceMetadataUI;
+    compliance?: ComplianceMetadata;
 };
 
 export type RecurringPaymentParams = {

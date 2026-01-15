@@ -2,7 +2,7 @@
 
 > **Compliance-ready payment infrastructure for global businesses on-chain.**
 
-MantlePay is a jurisdiction-aware smart wallet platform that transforms how businesses handle crypto payments. Using AI-powered natural language processing and ERC-4337 account abstraction, it enables automated payroll, contractor payments, vendor invoices, and subscriptions with built-in compliance metadata—all executed automatically on Mantle Network.
+MantlePay is a compliance-aware smart wallet platform that transforms how businesses handle crypto payments. Using  ERC-4337 account abstraction, it enables automated payroll, contractor payments, vendor invoices, and subscriptions with built-in compliance metadata—all executed automatically on Mantle Network.
 
 [![Built on Mantle](https://img.shields.io/badge/Built%20on-Mantle-blue)](https://mantle.xyz)
 [![ERC-4337](https://img.shields.io/badge/ERC--4337-Account%20Abstraction-green)](https://eips.ethereum.org/EIPS/eip-4337)

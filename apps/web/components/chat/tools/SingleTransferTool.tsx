@@ -4,6 +4,7 @@ import { Loader2, Check, X } from 'lucide-react';
 import { BsArrowUpRight } from "react-icons/bs";
 import { FaDollarSign, FaCheck, FaTimes } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
+import { stringsToJurisdictions, stringsToCategories } from "@/lib/compliance-enums";
 
 type SingleTransferInput = {
     to: string;
@@ -57,6 +58,18 @@ export function SingleTransferTool({
                         <div className="text-sm space-y-1 mb-4">
                             <p><strong>To:</strong> {input.to}</p>
                             <p><strong>Amount:</strong> {type === 'MNT' ? '$' : ''}{input.amount} {type}</p>
+
+                            {/* Compliance Display */}
+                            {input.referenceId && <p><strong>Ref ID:</strong> {input.referenceId}</p>}
+                            {input.entityIds && input.entityIds.length > 0 && (
+                                <p><strong>Entities:</strong> {input.entityIds.join(", ")}</p>
+                            )}
+                            {input.jurisdictions && input.jurisdictions.length > 0 && (
+                                <p><strong>Jurisdictions:</strong> {input.jurisdictions.join(", ")}</p>
+                            )}
+                            {input.categories && input.categories.length > 0 && (
+                                <p><strong>Categories:</strong> {input.categories.join(", ")}</p>
+                            )}
                         </div>
 
                         <div className="flex gap-2 w-full">
@@ -68,8 +81,8 @@ export function SingleTransferTool({
                                             amount: input.amount,
                                             compliance: {
                                                 entityIds: input.entityIds,
-                                                jurisdictions: input.jurisdictions,
-                                                categories: input.categories,
+                                                jurisdictions: stringsToJurisdictions(input.jurisdictions || []),
+                                                categories: stringsToCategories(input.categories || []),
                                                 referenceId: input.referenceId
                                             }
                                         });

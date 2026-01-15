@@ -6,7 +6,6 @@ import { parseEther, encodeFunctionData } from "viem";
 import { BatchTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 import { MpSmartWalletABI } from "@/lib/abi/MpSmartWalletAbi";
-import { stringsToJurisdictions, stringsToCategories } from "@/lib/compliance-enums";
 
 export function useBatchTransfer(availableEthBalance?: string) {
     const { getClient } = useSmartAccountContext();
@@ -65,8 +64,8 @@ export function useBatchTransfer(availableEthBalance?: string) {
                     // Encode custom execution for compliance
                     const complianceData = {
                         entityIds: params.compliance.entityIds || [],
-                        jurisdictions: stringsToJurisdictions(params.compliance.jurisdictions || []),
-                        categories: stringsToCategories(params.compliance.categories || []),
+                        jurisdictions: params.compliance.jurisdictions || [],
+                        categories: params.compliance.categories || [],
                         referenceId: params.compliance.referenceId || ""
                     };
 

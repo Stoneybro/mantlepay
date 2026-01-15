@@ -3,6 +3,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { FaUsers, FaCheck, FaTimes } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
+import { stringsToJurisdictions, stringsToCategories } from "@/lib/compliance-enums";
 
 type BatchTransferInput = {
     recipients: string[];
@@ -64,6 +65,18 @@ export function BatchTransferTool({
                                     <p key={idx} className="text-xs">• {addr}: {type === 'MNT' ? '$' : ''}{batchInput.amounts[idx]} {type}</p>
                                 ))}
                             </div>
+
+                            {/* Compliance Display */}
+                            {batchInput.referenceId && <p><strong>Ref ID:</strong> {batchInput.referenceId}</p>}
+                            {batchInput.entityIds && batchInput.entityIds.length > 0 && (
+                                <p><strong>Entities:</strong> {batchInput.entityIds.join(", ")}</p>
+                            )}
+                            {batchInput.jurisdictions && batchInput.jurisdictions.length > 0 && (
+                                <p><strong>Jurisdictions:</strong> {batchInput.jurisdictions.join(", ")}</p>
+                            )}
+                            {batchInput.categories && batchInput.categories.length > 0 && (
+                                <p><strong>Categories:</strong> {batchInput.categories.join(", ")}</p>
+                            )}
                         </div>
 
                         <div className="flex gap-2 w-full">
@@ -75,8 +88,8 @@ export function BatchTransferTool({
                                             amounts: batchInput.amounts,
                                             compliance: {
                                                 entityIds: batchInput.entityIds,
-                                                jurisdictions: batchInput.jurisdictions,
-                                                categories: batchInput.categories,
+                                                jurisdictions: stringsToJurisdictions(batchInput.jurisdictions || []),
+                                                categories: stringsToCategories(batchInput.categories || []),
                                                 referenceId: batchInput.referenceId
                                             }
                                         });

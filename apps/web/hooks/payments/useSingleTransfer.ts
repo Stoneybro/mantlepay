@@ -6,7 +6,6 @@ import { parseEther, encodeFunctionData } from "viem";
 import { SingleTransferParams } from "./types";
 import { checkSufficientBalance } from "./utils";
 import { MpSmartWalletABI } from "@/lib/abi/MpSmartWalletAbi";
-import { stringsToJurisdictions, stringsToCategories } from "@/lib/compliance-enums";
 
 export function useSingleTransfer(availableEthBalance?: string) {
     const { getClient } = useSmartAccountContext();
@@ -53,8 +52,8 @@ export function useSingleTransfer(availableEthBalance?: string) {
                 if (hasCompliance && params.compliance) {
                     const complianceData = {
                         entityIds: params.compliance.entityIds || [],
-                        jurisdictions: stringsToJurisdictions(params.compliance.jurisdictions || []),
-                        categories: stringsToCategories(params.compliance.categories || []),
+                        jurisdictions: params.compliance.jurisdictions || [],
+                        categories: params.compliance.categories || [],
                         referenceId: params.compliance.referenceId || ""
                     };
 
