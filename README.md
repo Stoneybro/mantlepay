@@ -818,7 +818,7 @@ cp packages/indexer/.env.example packages/indexer/.env
 # apps/web/.env.local
 NEXT_PUBLIC_PRIVY_APP_ID=           # Privy app ID
 PIMLICO_API_KEY=                     # Pimlico bundler key
-NEXT_PUBLIC_PIMPLICO_SPONSOR_ID=     # Paymaster policy ID
+NEXT_PUBLIC_PIMLICO_SPONSOR_ID=     # Paymaster policy ID
 OPENAI_API_KEY=                      # For AI (or use Gemini)
 DATABASE_URL=                        # Postgres connection string
 
@@ -860,9 +860,8 @@ pnpm contracts:test
 ### Deployed Addresses (Mantle Sepolia)
 
 ```
-MpIntentRegistry:        0x6A0C73162c20Bc56212D643112c339f654C45198
-MpSmartWalletFactory:    0x43e0BC90661dAF20C6fFbae1079d6E07E88
-e403A
+MpIntentRegistry:        0x5D16F29E70e90ac48C7F4fb2c1145911a774eFbF
+MpSmartWalletFactory:    0xd63E841AAb10D118a3cb541FbeF011eBae6437C6
 MpSmartWallet (impl):    0x6c6b5c86752D8B5330Cb055A967E2f6253D09195
 ```
 

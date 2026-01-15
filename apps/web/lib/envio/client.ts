@@ -1,7 +1,7 @@
 import { GraphQLClient, gql } from 'graphql-request';
 
 // TODO: Move to env var
-const ENVIO_API_URL = 'http://localhost:8080/v1/graphql';
+const ENVIO_API_URL = 'https://indexer.dev.hyperindex.xyz/a130455/v1/graphql';
 
 export const envioClient = new GraphQLClient(ENVIO_API_URL);
 
