@@ -17,7 +17,7 @@ export default function FinalCTA() {
             <Link href="/wallet" className="px-6 py-3 bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors text-center">
               Get Started
             </Link>
-            <Link href="https://github.com/Stoneybro/mneepaymenthub" target="_blank" rel="noopener noreferrer" className="px-6 py-3 border border-gray-300 text-gray-900 font-medium hover:border-gray-400 transition-colors flex items-center justify-center gap-2">
+            <Link href="https://github.com/Stoneybro/mantlepaymenthub" target="_blank" rel="noopener noreferrer" className="px-6 py-3 border border-gray-300 text-gray-900 font-medium hover:border-gray-400 transition-colors flex items-center justify-center gap-2">
               <Github className="w-4 h-4" />
               View on GitHub
             </Link>

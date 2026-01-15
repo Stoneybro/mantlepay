@@ -26,11 +26,99 @@ import {
     getCategoryOptions
 } from "@/lib/compliance-enums";
 
-// Get centralized options
+// Compliance options
 const JURISDICTION_OPTIONS = getJurisdictionOptions();
 const CATEGORY_OPTIONS = getCategoryOptions();
 
+// Recipient with optional compliance data from contact
+type RecipientData = {
+    address: string;
+    amount: string;
+    entityId?: string;
+    jurisdiction?: string;
+    category?: string;
+    contactName?: string;
+};
 
+// Extracted outside to prevent re-creation on every render (fixes focus loss)
+const RecipientRow = React.memo(({
+    recipient,
+    index,
+    type,
+    showRemove,
+    onUpdate,
+    onRemove,
+}: {
+    recipient: RecipientData;
+    index: number;
+    type: "batch" | "recurring";
+    showRemove: boolean;
+    onUpdate: (type: "batch" | "recurring", index: number, field: keyof RecipientData, value: string) => void;
+    onRemove: (type: "batch" | "recurring", index: number) => void;
+}) => (
+    <div className="space-y-2 p-3 border rounded-lg">
+        <div className="flex gap-2 items-center">
+            <Input
+                placeholder="0x..."
+                value={recipient.address}
+                onChange={(e) => onUpdate(type, index, "address", e.target.value)}
+                className="flex-1 font-mono text-sm"
+            />
+            <Input
+                type="number"
+                step="0.01"
+                placeholder="Amount"
+                value={recipient.amount}
+                onChange={(e) => onUpdate(type, index, "amount", e.target.value)}
+                className="w-32"
+            />
+            {showRemove && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onRemove(type, index)}
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            )}
+        </div>
+        <div className="flex gap-2">
+            <Input
+                placeholder="ID (e.g., EMP-001, CTR-004)"
+                value={recipient.entityId || ""}
+                onChange={(e) => onUpdate(type, index, "entityId", e.target.value)}
+                className="flex-1 text-sm bg-muted/20"
+            />
+        </div>
+        {/* Show compliance info if loaded from contact */}
+        {(recipient.contactName || recipient.entityId || recipient.jurisdiction || recipient.category) && (
+            <div className="flex flex-wrap gap-1 text-xs">
+                {recipient.contactName && (
+                    <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">
+                        {recipient.contactName}
+                    </span>
+                )}
+                {recipient.entityId && (
+                    <span className="px-2 py-0.5 bg-muted rounded">
+                        ID: {recipient.entityId}
+                    </span>
+                )}
+                {recipient.jurisdiction && (
+                    <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded">
+                        📍 {recipient.jurisdiction}
+                    </span>
+                )}
+                {recipient.category && (
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
+                        📋 {recipient.category}
+                    </span>
+                )}
+            </div>
+        )}
+    </div>
+));
+RecipientRow.displayName = "RecipientRow";
 
 interface PaymentFormProps {
     walletAddress?: `0x${string}`;
@@ -40,15 +128,6 @@ interface PaymentFormProps {
 type PaymentType = "single" | "batch" | "recurring";
 type PayrollCategory = "none" | "PAYROLL_W2" | "PAYROLL_1099" | "CONTRACTOR" | "BONUS" | "INVOICE" | "VENDOR" | "GRANT";
 
-// Recipient with optional compliance data from contact
-type RecipientData = {
-    address: string;
-    amount: string;
-    entityId?: string;
-    jurisdiction?: string;
-    category?: string;
-    contactName?: string; // Track which contact this came from
-};
 
 export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProps) {
     const [paymentType, setPaymentType] = useState<PaymentType>("single");
@@ -64,10 +143,9 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
     const [recurringRecipients, setRecurringRecipients] = useState<RecipientData[]>([{ address: "", amount: "" }]);
     const [recurringInterval, setRecurringInterval] = useState("86400"); // daily default
     const [recurringDuration, setRecurringDuration] = useState("");
+    const [recurringStartDate, setRecurringStartDate] = useState("");
 
     // Global payroll metadata (used when contact doesn't have it)
-    const [globalJurisdiction, setGlobalJurisdiction] = useState("none");
-    const [globalCategory, setGlobalCategory] = useState<PayrollCategory>("none");
     const [periodId, setPeriodId] = useState("");
 
     // Contacts hook
@@ -173,12 +251,8 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
     const buildCompliance = (recipients: RecipientData[]) => {
         // Collect per-recipient data as string arrays
         const entityIds = recipients.map(r => r.entityId || "");
-        const jurisdictionStrings = recipients.map(r =>
-            r.jurisdiction || (globalJurisdiction !== "none" ? globalJurisdiction : "")
-        );
-        const categoryStrings = recipients.map(r =>
-            r.category || (globalCategory !== "none" ? globalCategory : "")
-        );
+        const jurisdictionStrings = recipients.map(r => r.jurisdiction);
+        const categoryStrings = recipients.map(r => r.category);
 
         // Filter out empty arrays for optional fields
         const hasEntityIds = entityIds.some(id => id);
@@ -210,10 +284,7 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                     amount: singleRecipient.amount,
                     compliance: buildCompliance([singleRecipient]),
                 });
-                // Reset
                 setSingleRecipient({ address: "", amount: "" });
-                setGlobalCategory("none");
-                setGlobalJurisdiction("none");
                 setPeriodId("");
             } else if (paymentType === "batch") {
                 const validRecipients = batchRecipients.filter(r => r.address && r.amount);
@@ -227,8 +298,6 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                     compliance: buildCompliance(validRecipients),
                 });
                 setBatchRecipients([{ address: "", amount: "" }]);
-                setGlobalCategory("none");
-                setGlobalJurisdiction("none");
                 setPeriodId("");
             } else if (paymentType === "recurring") {
                 if (!recurringName) {
@@ -250,15 +319,15 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                     amounts: validRecipients.map(r => r.amount),
                     interval: parseInt(recurringInterval),
                     duration: parseInt(recurringDuration),
-                    transactionStartTime: 0,
+                    transactionStartTime: recurringStartDate ? Math.floor(new Date(recurringStartDate).getTime() / 1000) : 0,
                     compliance: buildCompliance(validRecipients),
                 });
                 // Reset
                 setRecurringName("");
                 setRecurringRecipients([{ address: "", amount: "" }]);
                 setRecurringDuration("");
-                setGlobalCategory("none");
-                setGlobalJurisdiction("none");
+                setRecurringDuration("");
+                setRecurringStartDate("");
                 setPeriodId("");
             }
         } catch (error) {
@@ -301,73 +370,6 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                 )}
             </SelectContent>
         </Select>
-    );
-
-    // Recipient row with compliance indicator
-    const RecipientRow = ({
-        recipient,
-        index,
-        type,
-        showRemove
-    }: {
-        recipient: RecipientData;
-        index: number;
-        type: "batch" | "recurring";
-        showRemove: boolean;
-    }) => (
-        <div className="space-y-2 p-3 border rounded-lg">
-            <div className="flex gap-2 items-center">
-                <Input
-                    placeholder="0x..."
-                    value={recipient.address}
-                    onChange={(e) => updateRecipient(type, index, "address", e.target.value)}
-                    className="flex-1 font-mono text-sm"
-                />
-                <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Amount"
-                    value={recipient.amount}
-                    onChange={(e) => updateRecipient(type, index, "amount", e.target.value)}
-                    className="w-32"
-                />
-                {showRemove && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeRecipient(type, index)}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-            {/* Show compliance info if loaded from contact */}
-            {(recipient.contactName || recipient.entityId || recipient.jurisdiction || recipient.category) && (
-                <div className="flex flex-wrap gap-1 text-xs">
-                    {recipient.contactName && (
-                        <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">
-                            {recipient.contactName}
-                        </span>
-                    )}
-                    {recipient.entityId && (
-                        <span className="px-2 py-0.5 bg-muted rounded">
-                            ID: {recipient.entityId}
-                        </span>
-                    )}
-                    {recipient.jurisdiction && (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded">
-                            📍 {recipient.jurisdiction}
-                        </span>
-                    )}
-                    {recipient.category && (
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">
-                            📋 {recipient.category}
-                        </span>
-                    )}
-                </div>
-            )}
-        </div>
     );
 
     return (
@@ -470,16 +472,21 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                                         <Plus className="h-4 w-4 mr-2" /> Add Manual
                                     </Button>
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Note: Manual entries bypass contact compliance data. Use contacts for auto-compliance.
+                                </p>
 
                                 <Label>Recipients</Label>
                                 <div className="space-y-2">
                                     {batchRecipients.map((recipient, index) => (
                                         <RecipientRow
-                                            key={index}
+                                            key={`batch-${index}`}
                                             recipient={recipient}
                                             index={index}
                                             type="batch"
                                             showRemove={batchRecipients.length > 1}
+                                            onUpdate={updateRecipient}
+                                            onRemove={removeRecipient}
                                         />
                                     ))}
                                 </div>
@@ -499,6 +506,18 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                                     />
                                 </div>
 
+                                <div className="space-y-2">
+                                    <Label htmlFor="recurring-start">Start Date (Optional)</Label>
+                                    <Input
+                                        id="recurring-start"
+                                        type="datetime-local"
+                                        value={recurringStartDate}
+                                        onChange={(e) => setRecurringStartDate(e.target.value)}
+                                        className="w-full"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Leave empty to start immediately.</p>
+                                </div>
+
                                 <div className="flex gap-2">
                                     <div className="flex-1">
                                         <ContactSelector
@@ -514,16 +533,22 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                                         <Plus className="h-4 w-4 mr-2" /> Add Manual
                                     </Button>
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Note: Manual entries bypass contact compliance data. Use contacts for auto-compliance.
+                                </p>
+
 
                                 <Label>Recipients</Label>
                                 <div className="space-y-2">
                                     {recurringRecipients.map((recipient, index) => (
                                         <RecipientRow
-                                            key={index}
+                                            key={`recurring-${index}`}
                                             recipient={recipient}
                                             index={index}
                                             type="recurring"
                                             showRemove={recurringRecipients.length > 1}
+                                            onUpdate={updateRecipient}
+                                            onRemove={removeRecipient}
                                         />
                                     ))}
                                 </div>
@@ -561,82 +586,34 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                                             </SelectContent>
                                         </Select>
                                     </div>
+                                    <div className="col-span-2 text-xs text-muted-foreground mt-2 bg-muted p-2 rounded">
+                                        💡 Tip: For more advanced schedules (e.g., &quot;every 3 days&quot;, &quot;first of month&quot;), try creating the payment using the AI Chat.
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Global Compliance Fallback (shown for all types) */}
+                        {/* Global Settings */}
                         <div className="border-t pt-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <Label className="text-base font-semibold">Compliance Settings</Label>
+                            <div className="flex items-center justify-between mb-4">
+                                <Label className="text-base font-semibold">Additional Details</Label>
                                 {complianceFromContact.hasAny && (
                                     <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
-                                        ✓ Using contact data
+                                        ✓ Using contact compliance data
                                     </span>
                                 )}
                             </div>
 
-                            {complianceFromContact.hasAny ? (
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    Compliance data loaded from saved contact(s). Override below if needed.
-                                </p>
-                            ) : (
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    Add compliance metadata for tax reporting and jurisdiction tracking.
-                                </p>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className={complianceFromContact.hasCategory ? "text-muted-foreground" : ""}>
-                                        Category {complianceFromContact.hasCategory && "(from contact)"}
-                                    </Label>
-                                    <Select
-                                        value={globalCategory}
-                                        onValueChange={(v) => setGlobalCategory(v as PayrollCategory)}
-                                        disabled={complianceFromContact.hasCategory}
-                                    >
-                                        <SelectTrigger className={complianceFromContact.hasCategory ? "opacity-50" : ""}>
-                                            <SelectValue placeholder="None" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {CATEGORY_OPTIONS.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className={complianceFromContact.hasJurisdiction ? "text-muted-foreground" : ""}>
-                                        Jurisdiction {complianceFromContact.hasJurisdiction && "(from contact)"}
-                                    </Label>
-                                    <Select
-                                        value={globalJurisdiction}
-                                        onValueChange={setGlobalJurisdiction}
-                                        disabled={complianceFromContact.hasJurisdiction}
-                                    >
-                                        <SelectTrigger className={complianceFromContact.hasJurisdiction ? "opacity-50" : ""}>
-                                            <SelectValue placeholder="None" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {JURISDICTION_OPTIONS.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 space-y-2">
-                                <Label htmlFor="period-id">Period/Reference ID (Optional)</Label>
+                            <div className="space-y-2">
+                                <Label htmlFor="period-id">Reference ID (Optional)</Label>
                                 <Input
                                     id="period-id"
-                                    placeholder="e.g., 2025-01, Q1-2025, INV-12345"
+                                    placeholder="e.g., Invoice #123, Q1 Payroll, Bonus"
                                     value={periodId}
                                     onChange={(e) => setPeriodId(e.target.value)}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Shared across all recipients. Entity IDs are per-recipient from contacts.
+                                    This reference ID will be included with the transaction metadata.
                                 </p>
                             </div>
                         </div>

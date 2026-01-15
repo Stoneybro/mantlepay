@@ -130,14 +130,14 @@
             "internalType": "string[]"
           },
           {
-            "name": "jurisdiction",
-            "type": "string",
-            "internalType": "string"
+            "name": "jurisdictions",
+            "type": "uint8[]",
+            "internalType": "enum MpIntentRegistry.Jurisdiction[]"
           },
           {
-            "name": "category",
-            "type": "string",
-            "internalType": "string"
+            "name": "categories",
+            "type": "uint8[]",
+            "internalType": "enum MpIntentRegistry.Category[]"
           },
           {
             "name": "referenceId",
@@ -282,14 +282,14 @@
                 "internalType": "string[]"
               },
               {
-                "name": "jurisdiction",
-                "type": "string",
-                "internalType": "string"
+                "name": "jurisdictions",
+                "type": "uint8[]",
+                "internalType": "enum MpIntentRegistry.Jurisdiction[]"
               },
               {
-                "name": "category",
-                "type": "string",
-                "internalType": "string"
+                "name": "categories",
+                "type": "uint8[]",
+                "internalType": "enum MpIntentRegistry.Category[]"
               },
               {
                 "name": "referenceId",
@@ -520,14 +520,14 @@
             "internalType": "string[]"
           },
           {
-            "name": "jurisdiction",
-            "type": "string",
-            "internalType": "string"
+            "name": "jurisdictions",
+            "type": "uint8[]",
+            "internalType": "enum MpIntentRegistry.Jurisdiction[]"
           },
           {
-            "name": "category",
-            "type": "string",
-            "internalType": "string"
+            "name": "categories",
+            "type": "uint8[]",
+            "internalType": "enum MpIntentRegistry.Category[]"
           },
           {
             "name": "referenceId",
@@ -670,14 +670,14 @@
             "internalType": "string[]"
           },
           {
-            "name": "jurisdiction",
-            "type": "string",
-            "internalType": "string"
+            "name": "jurisdictions",
+            "type": "uint8[]",
+            "internalType": "enum MpIntentRegistry.Jurisdiction[]"
           },
           {
-            "name": "category",
-            "type": "string",
-            "internalType": "string"
+            "name": "categories",
+            "type": "uint8[]",
+            "internalType": "enum MpIntentRegistry.Category[]"
           },
           {
             "name": "referenceId",

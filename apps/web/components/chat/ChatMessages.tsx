@@ -34,7 +34,7 @@ export function ChatMessages({
                         className={`break-words ${message.role === "user" ? "ml-auto" : ""} bg-accent px-4 py-2 rounded w-fit max-w-3xl`}
                     >
                         <span className="font-medium">
-                            {message.role === "user" ? "" : "Mneepay: "}
+                            {message.role === "user" ? "" : "mantlepay: "}
                         </span>
                         <span className="text-foreground/90">
                             {message.parts ? (

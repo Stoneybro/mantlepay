@@ -48,8 +48,8 @@ contract HelperConfig is Script {
 
     function getMantleEthConfig() public pure returns (NetworkConfig memory) {
         return NetworkConfig({
-            implementation:0x6c6b5c86752D8B5330Cb055A967E2f6253D09195,
-            registry: 0x6A0C73162c20Bc56212D643112c339f654C45198
+            implementation:0x37c5c677146A19e61295E40F0518bAf3f94305fE,
+            registry: 0x5D16F29E70e90ac48C7F4fb2c1145911a774eFbF
         });
     }
 

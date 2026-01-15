@@ -99,7 +99,7 @@ export function ChatList({
                                 onClick={onRefresh}
                                 className="w-full"
                             >
-                                <RefreshCw className="mr-2 h-4 w-4" />
+                                <RefreshCw className="mr-2 h-4 w-4 " />
                                 Refresh
                             </Button>
                         </div>

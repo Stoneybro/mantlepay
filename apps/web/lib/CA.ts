@@ -1,2 +1,2 @@
-export const MpRegistryAddress="0x6A0C73162c20Bc56212D643112c339f654C45198"
-export const MpSmartWalletFactoryAddress="0x43e0BC90661dAF20C6fFbae1079d6E07E88e403A"
+export const MpRegistryAddress="0x5D16F29E70e90ac48C7F4fb2c1145911a774eFbF"
+export const MpSmartWalletFactoryAddress="0xd63E841AAb10D118a3cb541FbeF011eBae6437C6"

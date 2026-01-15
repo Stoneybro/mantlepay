@@ -18,7 +18,7 @@ export default function Hero() {
               Get Started
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="https://github.com/Stoneybro/mneepaymenthub" target="_blank" rel="noopener noreferrer" className="px-6 py-3 border border-gray-300 text-gray-900 font-medium hover:border-gray-400 transition-colors text-center">
+            <Link href="https://github.com/Stoneybro/mantlepay" target="_blank" rel="noopener noreferrer" className="px-6 py-3 border border-gray-300 text-gray-900 font-medium hover:border-gray-400 transition-colors text-center">
               View Documentation
             </Link>
           </div>
