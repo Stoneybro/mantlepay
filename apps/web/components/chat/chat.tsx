@@ -206,8 +206,8 @@ function ChatInner({
     const isLoading = status === 'submitted' || status === 'streaming';
 
     return (
-        <div className='w-full h-full p-4 md:p-8 relative flex flex-col justify-center'>
-            {messages.length === 0 && <Overlay setInput={setInput} />}
+        <div className='w-full h-full p-4 md:p-8 md:pb-2 relative flex flex-col gap-6 justify-center'>
+            {messages.length === 0 && <Overlay setInput={setInput} walletAddress={walletAddress} />}
             <ChatMessages
                 messages={messages}
                 addToolResult={addToolResult}

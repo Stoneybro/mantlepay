@@ -22,7 +22,7 @@ export function ChatInput({
     isLoading
 }: ChatInputProps) {
     return (
-        <div className="w-full max-w-2xl mx-auto sticky bottom-4 z-10">
+        <div className="w-full max-w-2xl mx-auto sticky bottom-0 z-10">
             <InputGroup className="bg-white rounded-lg">
                 <InputGroupTextarea
                     value={input}

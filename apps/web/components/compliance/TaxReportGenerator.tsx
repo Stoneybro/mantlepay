@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,7 +14,28 @@ interface TaxReportGeneratorProps {
 export function TaxReportGenerator({ data }: TaxReportGeneratorProps) {
     const [jurisdiction, setJurisdiction] = useState<string>("all");
     const [category, setCategory] = useState<string>("all");
-    const [timePeriod, setTimePeriod] = useState<string>("all"); // simplified for demo
+    const [timePeriod, setTimePeriod] = useState<string>("all");
+
+    // Dynamic Period Generation
+    const periods = useMemo(() => {
+        const uniqueYears = new Set<number>();
+        const uniqueQuarters = new Set<string>();
+
+        data.forEach(item => {
+            const date = new Date(item.date);
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const quarter = Math.floor(month / 3) + 1;
+
+            uniqueYears.add(year);
+            uniqueQuarters.add(`${year}-Q${quarter}`);
+        });
+
+        const sortedYears = Array.from(uniqueYears).sort((a, b) => b - a);
+        const sortedQuarters = Array.from(uniqueQuarters).sort().reverse();
+
+        return { years: sortedYears, quarters: sortedQuarters };
+    }, [data]);
 
     // Filter Logic
     const filteredData = data.filter(item => {
@@ -31,12 +52,15 @@ export function TaxReportGenerator({ data }: TaxReportGeneratorProps) {
         if (timePeriod !== "all") {
             const date = new Date(item.date);
             const year = date.getFullYear();
-            const month = date.getMonth(); // 0-11
+            const month = date.getMonth();
+            const quarter = Math.floor(month / 3) + 1;
+            const quarterKey = `${year}-Q${quarter}`;
 
-            if (timePeriod === "q1-2025") {
-                if (year !== 2025 || month > 2) return false; // Jan, Feb, Mar are 0, 1, 2
-            } else if (timePeriod === "2024") {
-                if (year !== 2024) return false;
+            if (timePeriod.startsWith("YEAR-")) {
+                const targetYear = parseInt(timePeriod.split("-")[1]);
+                if (year !== targetYear) return false;
+            } else {
+                if (quarterKey !== timePeriod) return false;
             }
         }
 
@@ -91,8 +115,16 @@ export function TaxReportGenerator({ data }: TaxReportGeneratorProps) {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Time</SelectItem>
-                                <SelectItem value="q1-2025">Q1 2025</SelectItem>
-                                <SelectItem value="2024">2024 Full Year</SelectItem>
+                                {periods.years.map(year => (
+                                    <SelectItem key={`year-${year}`} value={`YEAR-${year}`}>
+                                        {year} Full Year
+                                    </SelectItem>
+                                ))}
+                                {periods.quarters.map(q => (
+                                    <SelectItem key={q} value={q}>
+                                        {q.replace('-', ' ')}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
