@@ -18,19 +18,39 @@ export function TaxReportGenerator({ data }: TaxReportGeneratorProps) {
 
     // Filter Logic
     const filteredData = data.filter(item => {
-        if (jurisdiction !== "all" && item.jurisdiction !== jurisdiction) return false;
-        if (category !== "all" && item.category !== category) return false;
-        // Time period logic could go here (e.g. Q1 2025)
+        if (jurisdiction !== "all") {
+            const selectedJur = getJurisdictionOptions().find(o => o.value === jurisdiction)?.label;
+            if (item.jurisdiction !== selectedJur) return false;
+        }
+
+        if (category !== "all") {
+            const selectedCat = getCategoryOptions().find(o => o.value === category)?.label;
+            if (item.category !== selectedCat) return false;
+        }
+
+        if (timePeriod !== "all") {
+            const date = new Date(item.date);
+            const year = date.getFullYear();
+            const month = date.getMonth(); // 0-11
+
+            if (timePeriod === "q1-2025") {
+                if (year !== 2025 || month > 2) return false; // Jan, Feb, Mar are 0, 1, 2
+            } else if (timePeriod === "2024") {
+                if (year !== 2024) return false;
+            }
+        }
+
         return true;
     });
 
     const totalAmount = filteredData.reduce((sum, item) => sum + (Number(item.amount) / 1e18), 0);
 
     const handleExport = () => {
-        const headers = ["Date", "Entity ID", "Amount", "Currency", "Jurisdiction", "Category", "Period ID", "Transaction Hash", "Reference"];
+        const headers = ["Date", "Entity ID", "Recipient", "Amount", "Currency", "Jurisdiction", "Category", "Period ID", "Transaction Hash", "Reference"];
         const rows = filteredData.map(item => [
             item.date.toISOString().split('T')[0],
             item.entityId,
+            item.recipientAddress,
             (Number(item.amount) / 1e18).toString(),
             item.currency,
             item.jurisdiction,
@@ -122,6 +142,7 @@ export function TaxReportGenerator({ data }: TaxReportGeneratorProps) {
                                 <tr>
                                     <th className="px-3 py-2">Date</th>
                                     <th className="px-3 py-2">Entity ID</th>
+                                    <th className="px-3 py-2">Recipient</th>
                                     <th className="px-3 py-2 text-right">Amount</th>
                                     <th className="px-3 py-2">Jur.</th>
                                     <th className="px-3 py-2">Cat.</th>
@@ -132,6 +153,7 @@ export function TaxReportGenerator({ data }: TaxReportGeneratorProps) {
                                     <tr key={i} className="hover:bg-muted/20">
                                         <td className="px-3 py-2 font-mono text-xs">{row.date.toISOString().split('T')[0]}</td>
                                         <td className="px-3 py-2 font-mono text-xs">{row.entityId || "-"}</td>
+                                        <td className="px-3 py-2 font-mono text-xs truncate max-w-[100px]">{row.recipientAddress.slice(0, 6)}...{row.recipientAddress.slice(-4)}</td>
                                         <td className="px-3 py-2 text-right font-mono">{Number(Number(row.amount) / 1e18).toFixed(2)}</td>
                                         <td className="px-3 py-2 text-xs truncate max-w-[100px]">{row.jurisdiction}</td>
                                         <td className="px-3 py-2 text-xs truncate max-w-[100px]">{row.category}</td>
