@@ -16,7 +16,7 @@ const integrationBenefits = [
   "Audit-ready transaction history on Mantle Explorer",
 ];
 
-export default function MneeStablecoin() {
+export default function MantleChain() {
   return (
     <section className="py-20 md:py-28 lg:py-32 bg-secondary">
       <div className="max-w-6xl mx-auto px-6">

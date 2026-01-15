@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { envioClient, ActivityType, GET_ALL_TRANSACTIONS } from "@/lib/envio/client";
+import { JURISDICTION_DISPLAY, CATEGORY_DISPLAY } from "@/lib/compliance-enums";
 
 export type ComplianceData = {
     date: Date;
@@ -61,8 +62,12 @@ export const useComplianceData = (walletAddress?: string) => {
                 if (tx.transactionType === ActivityType.EXECUTE) {
                     const compliance = details.compliance || {};
                     const entityId = compliance.entityIds?.[0] || "";
-                    const jurisdiction = compliance.jurisdiction || "None";
-                    const category = compliance.category || "None";
+
+                    const jurVal = Number(compliance.jurisdiction || 0);
+                    const catVal = Number(compliance.category || 0);
+
+                    const jurisdiction = JURISDICTION_DISPLAY[jurVal] || "None";
+                    const category = CATEGORY_DISPLAY[catVal] || "None";
 
                     const item: ComplianceData = {
                         date: new Date(Number(tx.timestamp) * 1000),
@@ -81,21 +86,23 @@ export const useComplianceData = (walletAddress?: string) => {
 
                     // Stats
                     const amountVal = Number(item.amount) / 1e18;
-                    const isCategorized = jurisdiction !== "None" || category !== "None";
+                    const isCategorized = jurVal !== 0 || catVal !== 0;
 
                     if (isCategorized) stats.totalCategorized++;
                     else stats.totalUncategorized++;
 
-                    if (jurisdiction !== "None") {
-                        if (!stats.byJurisdiction[jurisdiction]) stats.byJurisdiction[jurisdiction] = { count: 0, amount: 0 };
-                        stats.byJurisdiction[jurisdiction].count++;
-                        stats.byJurisdiction[jurisdiction].amount += amountVal;
+                    if (jurVal !== 0) {
+                        const jurLabel = JURISDICTION_DISPLAY[jurVal];
+                        if (!stats.byJurisdiction[jurLabel]) stats.byJurisdiction[jurLabel] = { count: 0, amount: 0 };
+                        stats.byJurisdiction[jurLabel].count++;
+                        stats.byJurisdiction[jurLabel].amount += amountVal;
                     }
 
-                    if (category !== "None") {
-                        if (!stats.byCategory[category]) stats.byCategory[category] = { count: 0, amount: 0 };
-                        stats.byCategory[category].count++;
-                        stats.byCategory[category].amount += amountVal;
+                    if (catVal !== 0) {
+                        const catLabel = CATEGORY_DISPLAY[catVal];
+                        if (!stats.byCategory[catLabel]) stats.byCategory[catLabel] = { count: 0, amount: 0 };
+                        stats.byCategory[catLabel].count++;
+                        stats.byCategory[catLabel].amount += amountVal;
                     }
                 }
 
@@ -134,17 +141,19 @@ export const useComplianceData = (walletAddress?: string) => {
                         // Resolve per-recipient metadata
                         const entId = entityIds[index] || "";
 
-                        let jur = "None";
-                        if (jurisdictions.length === recipients.length) jur = jurisdictions[index];
-                        else if (jurisdictions.length === 1) jur = jurisdictions[0]; // Broadcast
+                        let jurRaw = "0";
+                        if (jurisdictions.length === recipients.length) jurRaw = jurisdictions[index];
+                        else if (jurisdictions.length === 1) jurRaw = jurisdictions[0]; // Broadcast
 
-                        let cat = "None";
-                        if (categories.length === recipients.length) cat = categories[index];
-                        else if (categories.length === 1) cat = categories[0]; // Broadcast
+                        let catRaw = "0";
+                        if (categories.length === recipients.length) catRaw = categories[index];
+                        else if (categories.length === 1) catRaw = categories[0]; // Broadcast
 
-                        // Clean up empty strings
-                        if (!jur || jur === "undefined") jur = "None";
-                        if (!cat || cat === "undefined") cat = "None";
+                        const jurVal = Number(jurRaw || 0);
+                        const catVal = Number(catRaw || 0);
+
+                        const jur = JURISDICTION_DISPLAY[jurVal] || "None";
+                        const cat = CATEGORY_DISPLAY[catVal] || "None";
 
                         const item: ComplianceData = {
                             date: new Date(Number(tx.timestamp) * 1000),
@@ -162,17 +171,17 @@ export const useComplianceData = (walletAddress?: string) => {
                         transactions.push(item);
 
                         // Stats Aggregation
-                        const isCategorized = jur !== "None" || cat !== "None" || !!entId;
+                        const isCategorized = jurVal !== 0 || catVal !== 0 || !!entId;
                         if (isCategorized) stats.totalCategorized++;
                         else stats.totalUncategorized++;
 
-                        if (jur !== "None") {
+                        if (jurVal !== 0) {
                             if (!stats.byJurisdiction[jur]) stats.byJurisdiction[jur] = { count: 0, amount: 0 };
                             stats.byJurisdiction[jur].count++;
                             stats.byJurisdiction[jur].amount += amountVal;
                         }
 
-                        if (cat !== "None") {
+                        if (catVal !== 0) {
                             if (!stats.byCategory[cat]) stats.byCategory[cat] = { count: 0, amount: 0 };
                             stats.byCategory[cat].count++;
                             stats.byCategory[cat].amount += amountVal;

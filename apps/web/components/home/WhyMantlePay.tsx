@@ -1,4 +1,4 @@
-export default function WhyMneePay() {
+export default function WhyMantlePay() {
   return (
     <section className="py-20 md:py-28 lg:py-32 bg-secondary">
       <div className="max-w-4xl mx-auto px-6 text-center">

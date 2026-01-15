@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useAccount } from "wagmi";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ComplianceOverview } from "@/components/compliance/ComplianceOverview";
 import { TaxReportGenerator } from "@/components/compliance/TaxReportGenerator";
@@ -9,7 +9,13 @@ import { AuditTrail } from "@/components/compliance/AuditTrail";
 import { useComplianceData } from "@/hooks/useComplianceData";
 
 export default function CompliancePage() {
-    const { address } = useAccount();
+    const [address, setAddress] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        const saved = localStorage.getItem("wallet-deployed");
+        if (saved) setAddress(saved);
+    }, []);
+
     const { data, isLoading } = useComplianceData(address);
 
     return (
