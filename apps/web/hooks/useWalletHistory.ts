@@ -86,7 +86,7 @@ const mapTransactionToItem = (tx: Transaction): TransactionItemProps => {
                 type: ActivityType.EXECUTE,
                 description: details.functionCall === 'Token Transfer'
                     ? `Transfer to ${details.recipient?.slice(0, 6)}...` // Use recipient, NOT target (which is token contract)
-                    : `Contract Call: ${details.functionCall}`,
+                    : `${details.functionCall}`,
                 details: details,
 
             };
@@ -154,7 +154,7 @@ export const useWalletHistory = (walletAddress?: string) => {
             .filter((tx: TransactionItemProps) => {
                 // Filter out contract calls (non-transfer EXECUTE transactions)
                 if (tx.type === ActivityType.EXECUTE) {
-                    const isTransfer = tx.details.functionCall === 'Token Transfer';
+                    const isTransfer = tx.details.functionCall === 'Token Transfer' || tx.details.functionCall === 'Native MNT Transfer';
                     return isTransfer;
                 }
                 return true;

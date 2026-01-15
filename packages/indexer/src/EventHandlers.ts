@@ -275,11 +275,32 @@ MpIntentRegistry.IntentCreated.handler(async ({ event, context }) => {
   const intentId = event.params.intentId.toString();
 
   // Extract compliance metadata from event tuple
-  const complianceTuple = event.params.compliance || [[] as string[], "", "", ""] as unknown as readonly [readonly string[], string, string, string];
+  // compliance is (string[], uint8[], uint8[], string)
+  // uint8[] comes as BigInt[] or number[] depending on codegen, usually BigInt for arrays in envio
+  const complianceTuple = event.params.compliance;
+
+  // Helper to convert potential empty/undefined to valid arrays
+  const entityIds = complianceTuple[0] ? [...complianceTuple[0]] : [];
+  // Enum arrays might be BigInt[] or number[], convert to string for storage if needed, or keep as is?
+  // Our schema probably expects string or int? 
+  // Let's check schema.graphql? The Intent entity uses string for jurisdiction/category in the code below.
+  // "jurisdiction: compliance.jurisdiction" (which was string before).
+  // Now it's an array of enums. We should probably serialize it to string for the entity if the entity expects string.
+  // The Intent entity definition in Schema is likely just "jurisdiction: String!"?
+  // Let's assume we want to store it as a JSON string or comma-separated string if the Entity field is String.
+
+  // Checking previous code: "jurisdiction: complianceTuple[1] || """
+  // Meaning it expected a single string. 
+  // But Solidity has Jurisdiction[] (array).
+
+  // We need to serialize the arrays to store in the string fields on the Intent entity.
+  const jurisdictionStr = complianceTuple[1] ? complianceTuple[1].map(x => x.toString()).join(",") : "";
+  const categoryStr = complianceTuple[2] ? complianceTuple[2].map(x => x.toString()).join(",") : "";
+
   const compliance = {
-    entityIds: [...(complianceTuple[0] || [])],
-    jurisdiction: complianceTuple[1] || "",
-    category: complianceTuple[2] || "",
+    entityIds: entityIds,
+    jurisdiction: jurisdictionStr,
+    category: categoryStr,
     referenceId: complianceTuple[3] || ""
   };
 

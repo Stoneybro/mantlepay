@@ -20,7 +20,7 @@ const formatCurrency = (amount?: string, token?: string) => {
     // We assume indexer stores raw units.
     if (!amount.includes('.')) {
         try {
-            formatted = formatUnits(BigInt(amount), 6);
+            formatted = formatUnits(BigInt(amount), 18);
         } catch (e) {
             // Keep original if BigInt fails
         }

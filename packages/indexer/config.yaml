@@ -36,6 +36,6 @@ networks:
           - 0x5D16F29E70e90ac48C7F4fb2c1145911a774eFbF
         handler: src/EventHandlers.ts
         events:
-          - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime, address[] recipients, uint256[] amounts, (string[], string, string, string) compliance)
+          - event: IntentCreated(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 totalCommitment, uint256 totalTransactionCount, uint256 interval, uint256 duration, uint256 transactionStartTime, uint256 transactionEndTime, address[] recipients, uint256[] amounts, (string[], uint8[], uint8[], string) compliance)
           - event: IntentExecuted(address indexed wallet, bytes32 indexed intentId, string name, uint256 transactionCount, uint256 totalAmount)
           - event: IntentCancelled(address indexed wallet, bytes32 indexed intentId, address indexed token, string name, uint256 amountRefunded, uint256 failedAmountRecovered)

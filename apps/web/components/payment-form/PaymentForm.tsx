@@ -229,9 +229,17 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
 
     const removeRecipient = (type: "batch" | "recurring", index: number) => {
         if (type === "batch") {
-            setBatchRecipients(batchRecipients.filter((_, i) => i !== index));
+            if (batchRecipients.length > 1) {
+                setBatchRecipients(batchRecipients.filter((_, i) => i !== index));
+            } else {
+                setBatchRecipients([{ address: "", amount: "" }]);
+            }
         } else {
-            setRecurringRecipients(recurringRecipients.filter((_, i) => i !== index));
+            if (recurringRecipients.length > 1) {
+                setRecurringRecipients(recurringRecipients.filter((_, i) => i !== index));
+            } else {
+                setRecurringRecipients([{ address: "", amount: "" }]);
+            }
         }
     };
 
@@ -484,7 +492,7 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                                             recipient={recipient}
                                             index={index}
                                             type="batch"
-                                            showRemove={batchRecipients.length > 1}
+                                            showRemove={batchRecipients.length > 1 || !!recipient.address || !!recipient.amount}
                                             onUpdate={updateRecipient}
                                             onRemove={removeRecipient}
                                         />
@@ -546,7 +554,7 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                                             recipient={recipient}
                                             index={index}
                                             type="recurring"
-                                            showRemove={recurringRecipients.length > 1}
+                                            showRemove={recurringRecipients.length > 1 || !!recipient.address || !!recipient.amount}
                                             onUpdate={updateRecipient}
                                             onRemove={removeRecipient}
                                         />
@@ -576,6 +584,7 @@ export function PaymentForm({ walletAddress, availableBalance }: PaymentFormProp
                                                 <SelectValue placeholder="Select duration" />
                                             </SelectTrigger>
                                             <SelectContent>
+                                                <SelectItem value="300">5 Minutes (testing)</SelectItem>
                                                 <SelectItem value="3600">1 Hour</SelectItem>
                                                 <SelectItem value="86400">1 Day</SelectItem>
                                                 <SelectItem value="604800">1 Week</SelectItem>
